@@ -1,3 +1,4 @@
+import 'package:cricunity/design_system/components/app_button.dart';
 import 'package:cricunity/main.dart';
 import 'package:cricunity/navigation/app_router.dart';
 import 'package:cricunity/navigation/pinned_live_match_provider.dart';
@@ -34,7 +35,7 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('Home placeholder row 0'), findsOneWidget);
-      expect(find.byType(FloatingActionButton), findsOneWidget);
+      expect(find.byType(AppFab), findsOneWidget);
       final scaffold = tester.widget<Scaffold>(find.byType(Scaffold));
       expect(
         scaffold.floatingActionButtonLocation,

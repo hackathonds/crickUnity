@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../design_system/components/app_button.dart';
 import '../design_system/icons/app_icon.dart';
 import '../design_system/icons/app_icon_id.dart';
 import '../design_system/tokens/app_colors.dart';
@@ -71,13 +72,10 @@ class AppShell extends ConsumerWidget {
     return Scaffold(
       drawer: const AppDrawer(),
       body: navigationShell,
-      floatingActionButton: FloatingActionButton(
+      floatingActionButton: AppFab(
+        icon: AppIconId.plus,
+        semanticLabel: 'Create',
         onPressed: () => _onCreatePressed(context),
-        child: AppIcon(
-          id: AppIconId.plus,
-          semanticLabel: 'Create',
-          color: colors.onPrimary,
-        ),
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
       bottomNavigationBar: BottomAppBar(
