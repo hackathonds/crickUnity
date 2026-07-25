@@ -9,6 +9,7 @@ import 'dropdown_screen.dart';
 import 'forms_kit_screen.dart';
 import 'match_cards_screen.dart';
 import 'money_cards_screen.dart';
+import 'player_stat_cards_screen.dart';
 import 'stepper_screen.dart';
 import 'icon_gallery_screen.dart';
 import 'sheet_dialog_snackbar_screen.dart';
@@ -177,6 +178,13 @@ class DebugMenuScreen extends StatelessWidget {
             onTap: () => Navigator.of(
               context,
             ).push(MaterialPageRoute(builder: (_) => const MoneyCardsScreen())),
+          ),
+          ListTile(
+            title: const Text('Player & stat cards'),
+            subtitle: const Text('E0-08 (3/12) — Player card, Statistics card'),
+            onTap: () => Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => const PlayerStatCardsScreen()),
+            ),
           ),
         ],
       ),
