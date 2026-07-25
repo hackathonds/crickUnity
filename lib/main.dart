@@ -1,22 +1,33 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
-import 'design_system/debug/type_specimen_screen.dart';
 import 'design_system/theme/app_theme.dart';
 import 'design_system/tokens/app_typography.dart';
+import 'navigation/app_router.dart';
 
 void main() {
-  runApp(const CricUnityApp());
+  runApp(const ProviderScope(child: CricUnityApp()));
 }
 
-/// Root widget wiring the design-tokens package into a real [MaterialApp].
-/// `home` points at the type-specimen QA screen (E0-02's AC) since no
-/// navigation shell exists yet (that lands in E0-04).
+/// Root widget wiring the design-tokens package and the E0-04 app shell
+/// into a real [MaterialApp]. The debug QA menu (type specimen, icon
+/// gallery, shell debug controls) is reachable from the Profile tab now
+/// that the shell is the real home.
+///
+/// [router] defaults to a single production instance created once; tests
+/// pass their own `createAppRouter()` so each test gets independent
+/// navigation state (see `createAppRouter`'s doc comment).
 class CricUnityApp extends StatelessWidget {
-  const CricUnityApp({super.key});
+  static final GoRouter _productionRouter = createAppRouter();
+
+  final GoRouter? router;
+
+  const CricUnityApp({super.key, this.router});
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
+    return MaterialApp.router(
       title: 'CricUnity',
       theme: AppTheme.themes[AppTheme.defaultLight],
       darkTheme: AppTheme.themes[AppTheme.defaultDark],
@@ -29,7 +40,7 @@ class CricUnityApp extends StatelessWidget {
           child: child!,
         );
       },
-      home: const TypeSpecimenScreen(),
+      routerConfig: router ?? _productionRouter,
     );
   }
 }
