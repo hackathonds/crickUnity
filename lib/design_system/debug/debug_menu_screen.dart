@@ -8,6 +8,7 @@ import 'calendar_screen.dart';
 import 'dropdown_screen.dart';
 import 'forms_kit_screen.dart';
 import 'gamification_cards_screen.dart';
+import 'leaderboard_screen.dart';
 import 'match_cards_screen.dart';
 import 'money_cards_screen.dart';
 import 'player_stat_cards_screen.dart';
@@ -194,6 +195,15 @@ class DebugMenuScreen extends StatelessWidget {
               MaterialPageRoute(
                 builder: (_) => const GamificationCardsScreen(),
               ),
+            ),
+          ),
+          ListTile(
+            title: const Text('Leaderboard'),
+            subtitle: const Text(
+              'E0-08 (5/12) — row, top-3, sticky self-clone',
+            ),
+            onTap: () => Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => const LeaderboardScreen()),
             ),
           ),
         ],
