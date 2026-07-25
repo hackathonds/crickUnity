@@ -1,14 +1,16 @@
 import 'package:flutter/material.dart';
 
+import 'design_system/debug/type_specimen_screen.dart';
 import 'design_system/theme/app_theme.dart';
+import 'design_system/tokens/app_typography.dart';
 
 void main() {
   runApp(const CricUnityApp());
 }
 
-/// Placeholder root widget wiring the design-tokens package into a real
-/// [MaterialApp] so the theme assembly is exercised end-to-end. Screens and
-/// components land in later E0 stories.
+/// Root widget wiring the design-tokens package into a real [MaterialApp].
+/// `home` points at the type-specimen QA screen (E0-02's AC) since no
+/// navigation shell exists yet (that lands in E0-04).
 class CricUnityApp extends StatelessWidget {
   const CricUnityApp({super.key});
 
@@ -18,7 +20,16 @@ class CricUnityApp extends StatelessWidget {
       title: 'CricUnity',
       theme: AppTheme.themes[AppTheme.defaultLight],
       darkTheme: AppTheme.themes[AppTheme.defaultDark],
-      home: const Scaffold(body: SizedBox.shrink()),
+      builder: (context, child) {
+        final mediaQuery = MediaQuery.of(context);
+        return MediaQuery(
+          data: mediaQuery.copyWith(
+            textScaler: AppTypography.clampTextScaler(mediaQuery.textScaler),
+          ),
+          child: child!,
+        );
+      },
+      home: const TypeSpecimenScreen(),
     );
   }
 }

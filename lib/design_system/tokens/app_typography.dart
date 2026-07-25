@@ -123,4 +123,12 @@ abstract final class AppTypography {
   /// Dynamic-type ceiling; layouts must reflow (never truncate — money
   /// wraps before it truncates) up to this scale factor.
   static const double maxTextScaleFactor = 1.35;
+
+  /// Clamps an OS/user text scaler to the DS §2.4 dynamic-type ceiling —
+  /// applied app-wide so nothing scales past 135% regardless of the
+  /// platform's own accessibility text-size setting.
+  static TextScaler clampTextScaler(TextScaler scaler) {
+    final factor = scaler.scale(1).clamp(1.0, maxTextScaleFactor);
+    return TextScaler.linear(factor);
+  }
 }
