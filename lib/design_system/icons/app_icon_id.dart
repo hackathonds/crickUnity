@@ -47,4 +47,14 @@ enum AppIconId {
   comment,
   shareArc,
   bookmark,
+
+  // Utility — generic chrome symbols DS §2.5's families don't cover
+  // (search bar, dialogs, navigation back). Hand-drawn in the same
+  // rounded-outline style as the rest of this set rather than falling
+  // back to Material icons, per DS §2.5: "never mix stroke weights."
+  search,
+  mic,
+  qrCode,
+  close,
+  backArrow,
 }

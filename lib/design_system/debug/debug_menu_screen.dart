@@ -4,6 +4,7 @@ import 'buttons_screen.dart';
 import 'card_screen.dart';
 import 'icon_gallery_screen.dart';
 import 'sheet_dialog_snackbar_screen.dart';
+import 'search_bar_screen.dart';
 import 'shell_debug_screen.dart';
 import 'state_scaffolds_screen.dart';
 import 'type_specimen_screen.dart';
@@ -77,6 +78,15 @@ class DebugMenuScreen extends StatelessWidget {
             onTap: () => Navigator.of(
               context,
             ).push(MaterialPageRoute(builder: (_) => const CardScreen())),
+          ),
+          ListTile(
+            title: const Text('Search bar'),
+            subtitle: const Text(
+              'E0-07 (3/10) — pill, expansion, recent list, voice, QR hook',
+            ),
+            onTap: () => Navigator.of(
+              context,
+            ).push(MaterialPageRoute(builder: (_) => const SearchBarScreen())),
           ),
         ],
       ),
