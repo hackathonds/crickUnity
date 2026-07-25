@@ -1,0 +1,145 @@
+ID,Title,Epic,Size,Dependencies
+E0-01,Design tokens package,E0 Design System & App Shell (everything depends on this),M,—
+E0-02,Typography system,E0 Design System & App Shell (everything depends on this),S,E0-01
+E0-03,Icon set,E0 Design System & App Shell (everything depends on this),M,E0-01
+E0-04,App shell & navigation,E0 Design System & App Shell (everything depends on this),L,E0-01..03
+E0-05,"Sheet, dialog, snackbar primitives",E0 Design System & App Shell (everything depends on this),M,E0-04
+E0-06,State scaffolds,E0 Design System & App Shell (everything depends on this),M,E0-04
+E0-07,Core components batch 1,E0 Design System & App Shell (everything depends on this),XL — split per component,E0-01..06
+E0-08,Core components batch 2,E0 Design System & App Shell (everything depends on this),XL — split,E0-07
+E0-09,Theme switcher & appearance settings,E0 Design System & App Shell (everything depends on this),S,E0-01
+E1-01,Welcome + registration + OTP,"E1 Onboarding, Identity & Guest",M,E0
+E1-02,Minor detection & guardian gate,"E1 Onboarding, Identity & Guest",M,E1-01
+E1-03,Profile wizard + permissions primer + warm-up,"E1 Onboarding, Identity & Guest",M,E1-01
+E1-04,Guest mode,"E1 Onboarding, Identity & Guest",M,E0
+E1-05,Onboarding checklist widget,"E1 Onboarding, Identity & Guest",S,E1-03
+E2-01,"Profile screen, viewer-relative",E2 Player Profile,L,E0
+E2-02,Edit profile,E2 Player Profile,M,E2-01
+E2-03,Stats tab + charts,E2 Player Profile,L,"E0-08, E13-01"
+E2-04,"Endorsements, style tags, private weaknesses",E2 Player Profile,M,E2-01
+E2-05,Achievements wall + badge detail,E2 Player Profile,M,E0-08
+E2-06,Activity calendar + heat privacy tiers,E2 Player Profile,S,E0-07
+E2-07,Trust & Sportsmanship bands,E2 Player Profile,M,E2-01
+E2-08,Titles equip + availability quick-toggle,E2 Player Profile,S,E2-01
+E2-09,Profile Timeline tab,E2 Player Profile,M,E2-01
+E3-01,Create/edit team,E3 Teams,M,E0
+E3-02,"Team home, viewer-relative tabs",E3 Teams,L,E3-01
+E3-03,Invites & join requests,E3 Teams,M,E3-01
+E3-04,Roles & permission matrix,E3 Teams,M,E3-02
+E3-05,Announcements,E3 Teams,S,E3-02
+E3-06,Availability matrix + nudges,E3 Teams,M,E3-02
+E3-07,Practice sessions + attendance,E3 Teams,L,E3-02
+E3-08,Selection board & lineup,E3 Teams,L,E3-06
+E3-09,Jersey board,E3 Teams,M,E3-02
+E3-11,Recruitment board + pipeline,E3 Teams,M,E3-02
+E3-12,Peer ratings + chemistry,E3 Teams,M,E4-10
+E3-13,Milestones + season summary + ceremony mode,E3 Teams,M,E3-02
+E3-14,Transfers,E3 Teams,M,E3-03
+E3-15,VC auto-elevation + captaincy succession,E3 Teams,M,E3-04
+E3-16,"Free-agent mode, player side",E3 Teams,M,E3-11
+E4-01,Create-match wizard,E4 Matches (core loop; exemplar-depth stories),L,"E0, E3-01"
+E4-02,Match detail pre-live,E4 Matches (core loop; exemplar-depth stories),M,E4-01
+E4-03,Toss,E4 Matches (core loop; exemplar-depth stories),S,E4-02
+E4-04,Scoring console — pad & over engine,E4 Matches (core loop; exemplar-depth stories),XL: split pad / extras / bowler-select / strike-swap,E0-08
+E4-05,Wicket flow,E4 Matches (core loop; exemplar-depth stories),M,E4-04
+E4-06,Undo & corrections,E4 Matches (core loop; exemplar-depth stories),M,E4-04
+E4-07,Interruptions & revised overs,E4 Matches (core loop; exemplar-depth stories),M,E4-04
+E4-08,Offline scoring,E4 Matches (core loop; exemplar-depth stories),M,"E4-04, E0-06"
+E4-09,Wagon input + field map + scorer handover,E4 Matches (core loop; exemplar-depth stories),M,E4-04
+E4-10,Scorecard + confirmation + dispute,E4 Matches (core loop; exemplar-depth stories),L,E4-04
+E4-11,Live spectator view,E4 Matches (core loop; exemplar-depth stories),L,E4-04
+E4-12,Post-match summary,E4 Matches (core loop; exemplar-depth stories),M,E4-10
+E4-13,MVP & awards,E4 Matches (core loop; exemplar-depth stories),S,E4-10
+E4-14,"Gallery, pin-to-ball, highlights builder",E4 Matches (core loop; exemplar-depth stories),L,E4-10
+E4-15,AI insights surfaces,E4 Matches (core loop; exemplar-depth stories),M,E4-10
+E4-16,Match sharing & privacy,E4 Matches (core loop; exemplar-depth stories),S,E4-02
+E4-17,Officials assignment in match setup + self-scoring rules,E4 Matches (core loop; exemplar-depth stories),M,"E4-01, E14-01"
+E4-18,Commentary stream + scorer quick-edit,E4 Matches (core loop; exemplar-depth stories),S,E4-04
+E5-01,Expense object + Add/Edit,E5 Expenses & Wallets,L,E0-07
+E5-03,Auto-split bundle,E5 Expenses & Wallets,M,"E5-01, E4-10"
+E5-04,Settle up + who-owes-whom,E5 Expenses & Wallets,L,E5-01
+E5-05,Reminders & pending views,E5 Expenses & Wallets,M,E5-01
+E5-06,Disputes & proof lifecycle,E5 Expenses & Wallets,M,E5-01
+E5-07,Collections & team wallet,E5 Expenses & Wallets,M,"E3-02, E5-01"
+E5-08,Reports & insights + export,E5 Expenses & Wallets,M,E5-01
+E5-10,Multi-currency expenses,E5 Expenses & Wallets,M,E5-01
+E5-11,Expense comments,E5 Expenses & Wallets,S,E5-01
+E6-01,Coin & XP engine surfaces,"E6 Rewards, Coins, XP, Gamification",M,E0-08
+E6-02,Streak system,"E6 Rewards, Coins, XP, Gamification",M,E6-01
+E6-03,Missions board + season planner,"E6 Rewards, Coins, XP, Gamification",M,E6-01
+E6-04,Badge engine + celebrations,"E6 Rewards, Coins, XP, Gamification",M,E6-01
+E6-05,"Wallet, marketplace, redemption","E6 Rewards, Coins, XP, Gamification",L,E6-01
+E6-06,Luck layer,"E6 Rewards, Coins, XP, Gamification",M,E6-05
+E6-07,Referral + Pro & Family,"E6 Rewards, Coins, XP, Gamification",M,E6-05
+E6-08,Ranks — percentile bands,"E6 Rewards, Coins, XP, Gamification",M,"E6-01, E8-01"
+E6-09,Season rewards & tier frames,"E6 Rewards, Coins, XP, Gamification",S,E6-04
+E7-01,Feed + ranking toggle,E7 Social,L,E0-08
+E7-02,Composer,E7 Social,M,E7-01
+E7-04,Stories + reels,E7 Social,L,E7-02
+E7-05,Messenger,E7 Social,XL — split list/thread/requests/voice/object-cards,E0-08
+E7-06,Groups + events,E7 Social,M,E7-01
+E7-07,"Moderation, report, block",E7 Social,M,E0-05
+E7-08,Bookmarks & saved collections,E7 Social,S,E7-01
+E7-09,Fan engagement system,E7 Social,M,"E4-11, E8-01"
+E8-01,Leaderboards hub,E8 Recognition,M,E0-08
+E8-02,Records hub + ground/tournament records + near-record alerts,E8 Recognition,L,E4-10
+E8-03,Challenges,E8 Recognition,M,E6-01
+E8-04,Compare + heatmap + PB shelf,E8 Recognition,M,E2-03
+E8-05,Goals,E8 Recognition,S,E6-01
+E8-06,Year in review,E8 Recognition,M,E2-06
+E8-07,Periodic awards engine,E8 Recognition,M,E8-01
+E8-08,Progress rings,E8 Recognition,S,E8-05
+E9-01,Discovery map+list+filters,E9 Grounds,M,
+E10-01,Creation wizard,E10 Tournaments,L,
+E10-02,Registration + escrow + eligibility flags,E10 Tournaments,L,
+E10-03,Fixtures generator + editor,E10 Tournaments,L,
+E10-04,Points table + NRR + what-if calculator,E10 Tournaments,M,
+E10-05,Brackets + seeding,E10 Tournaments,M,
+E10-06,Auction room,E10 Tournaments,XL — split lot/bidding/purse/spectator/reconnect,
+E10-07,Organizer console + wallet + payouts,E10 Tournaments,L,
+E10-08,Stats hub + awards + records,E10 Tournaments,M,
+E10-09,Sanctioning + association pages,E10 Tournaments,M,
+E11-01,Club home + console,"E11 Clubs, Academies, Coaching",L,
+E11-02,Academy console,"E11 Clubs, Academies, Coaching",L,
+E11-03,Coach console + drill library + homework,"E11 Clubs, Academies, Coaching",L,
+E11-04,Compliance vault + forms,"E11 Clubs, Academies, Coaching",M,
+E11-05,Personal training log,"E11 Clubs, Academies, Coaching",M,E11-03
+E12-01,Global search + grouped results + zero-state,E12 Search & Notifications,M,
+E12-02,Advanced per-type filters + saved filter sets,E12 Search & Notifications,M,
+E12-03,Voice + QR search/scanner,E12 Search & Notifications,M,
+E12-04,Notification center,E12 Search & Notifications,M,
+E12-05,"Channels, priorities, quiet hours, mute ladder, follow-ups",E12 Search & Notifications,M,
+E13-01,Chart library completion,E13 Analytics,L,E0-08
+E13-02,Player analytics,E13 Analytics,L,
+E13-03,Captain/team/match analysis rooms,E13 Analytics,L,
+E13-04,Custom Stats Explorer,E13 Analytics,L,
+E14-01,Gig board,E14 Officials & Knowledge,M,
+E14-02,Officials console + earnings + ratings + tiers,E14 Officials & Knowledge,L,
+E14-03,Conduct report + appeal,E14 Officials & Knowledge,M,
+E14-04,Commentator room + moment markers,E14 Officials & Knowledge,M,
+E14-05,Knowledge hub: trivia + quiz packs + certification exams,E14 Officials & Knowledge,L,
+E15-01,Go-Live + viewer + VOD chapters,"E15 Streaming, Sponsors, Marketplace, Discover",L,
+E15-02,Production kit + overlays + lower-thirds,"E15 Streaming, Sponsors, Marketplace, Discover",M,
+E15-03,Sponsor console + offers + campaign dashboard + fixed sponsored zones,"E15 Streaming, Sponsors, Marketplace, Discover",L,
+E15-04,Discover content lane,"E15 Streaming, Sponsors, Marketplace, Discover",M,
+E15-05,Gear exchange + shops directory,"E15 Streaming, Sponsors, Marketplace, Discover",L,
+E16-01,Privacy center,"E16 Privacy, Safety, Settings, Platform",L,
+E16-02,Blocking + restricted,"E16 Privacy, Safety, Settings, Platform",M,
+E16-03,Verification flows,"E16 Privacy, Safety, Settings, Platform",M,
+E16-04,Guardian view,"E16 Privacy, Safety, Settings, Platform",M,
+E16-05,Medical card + injury log + return-to-play,"E16 Privacy, Safety, Settings, Platform",M,
+E16-06,Data export + deactivate/delete semantics,"E16 Privacy, Safety, Settings, Platform",M,
+E16-07,"Help, sandbox tutorial, coach-marks, feature-request board","E16 Privacy, Safety, Settings, Platform",M,
+E16-08,Deep links + launcher shortcuts + calendar sync,"E16 Privacy, Safety, Settings, Platform",M,
+E16-09,Wearable glances + TV scoreboard mode,"E16 Privacy, Safety, Settings, Platform",M,
+E16-10,Localization + accessibility audit pass,"E16 Privacy, Safety, Settings, Platform",L,
+E16-11,Admin/moderation console + audit logs,"E16 Privacy, Safety, Settings, Platform",L,
+E16-12,Super-Admin economy console,"E16 Privacy, Safety, Settings, Platform",M,E16-11
+E17-01,Match Ripple integration test,E17 Cross-cutting Integration Stories (build last in each phase),M,"E4-10,E5-03,E6-01,E8-02"
+E17-02,Notification catalog conformance,E17 Cross-cutting Integration Stories (build last in each phase),M,E12-05
+E17-03,Click-budget audit,E17 Cross-cutting Integration Stories (build last in each phase),S,phase-end
+E17-04,State-contract sweep,E17 Cross-cutting Integration Stories (build last in each phase),M,phase-end
+E18-01,Home shell + widget framework,E18 Home Dashboard (was entirely absent — the largest gap),L,E0
+E18-02,Edit Home mode,E18 Home Dashboard (was entirely absent — the largest gap),S,E18-01
+E18-06,Weather widget + captain alert,E18 Home Dashboard (was entirely absent — the largest gap),S,E18-01
+E18-07,Quick-action chips + app-icon shortcuts + account/role switcher,E18 Home Dashboard (was entirely absent — the largest gap),M,E0-04
