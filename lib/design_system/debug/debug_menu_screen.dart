@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import 'avatar_screen.dart';
 import 'buttons_screen.dart';
 import 'card_screen.dart';
 import 'chips_screen.dart';
@@ -107,6 +108,15 @@ class DebugMenuScreen extends StatelessWidget {
             onTap: () => Navigator.of(
               context,
             ).push(MaterialPageRoute(builder: (_) => const ChipsScreen())),
+          ),
+          ListTile(
+            title: const Text('Avatars'),
+            subtitle: const Text(
+              'E0-07 (6/10) — sizes, level ring, presence, verified badge',
+            ),
+            onTap: () => Navigator.of(
+              context,
+            ).push(MaterialPageRoute(builder: (_) => const AvatarScreen())),
           ),
         ],
       ),
