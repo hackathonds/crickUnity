@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 
 import 'icon_gallery_screen.dart';
+import 'shell_debug_screen.dart';
 import 'type_specimen_screen.dart';
 
 /// Lists the internal QA screens built up across the E0 stories so far.
-/// Exists only because there's no real navigation shell yet (E0-04) —
-/// replaced by it once that story lands.
+/// Since E0-04, the app's real home is the navigation shell — this menu is
+/// reached via a temporary link on the Profile tab instead of being the
+/// app's `home`.
 class DebugMenuScreen extends StatelessWidget {
   const DebugMenuScreen({super.key});
 
@@ -28,6 +30,13 @@ class DebugMenuScreen extends StatelessWidget {
             onTap: () => Navigator.of(context).push(
               MaterialPageRoute(builder: (_) => const IconGalleryScreen()),
             ),
+          ),
+          ListTile(
+            title: const Text('Shell debug controls'),
+            subtitle: const Text('E0-04 — roles, badges, pinned live match'),
+            onTap: () => Navigator.of(
+              context,
+            ).push(MaterialPageRoute(builder: (_) => const ShellDebugScreen())),
           ),
         ],
       ),
