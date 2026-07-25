@@ -4,6 +4,7 @@ import 'avatar_screen.dart';
 import 'buttons_screen.dart';
 import 'card_screen.dart';
 import 'chips_screen.dart';
+import 'calendar_screen.dart';
 import 'dropdown_screen.dart';
 import 'forms_kit_screen.dart';
 import 'stepper_screen.dart';
@@ -147,6 +148,15 @@ class DebugMenuScreen extends StatelessWidget {
             onTap: () => Navigator.of(
               context,
             ).push(MaterialPageRoute(builder: (_) => const DropdownScreen())),
+          ),
+          ListTile(
+            title: const Text('Calendar'),
+            subtitle: const Text(
+              'E0-07 (10/10) — month grid, event dots, range-select, heat variant',
+            ),
+            onTap: () => Navigator.of(
+              context,
+            ).push(MaterialPageRoute(builder: (_) => const CalendarScreen())),
           ),
         ],
       ),
