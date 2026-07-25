@@ -1,4 +1,4 @@
-import 'package:cricunity/design_system/debug/type_specimen_screen.dart';
+import 'package:cricunity/design_system/debug/debug_menu_screen.dart';
 import 'package:cricunity/main.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -24,7 +24,7 @@ void main() {
       );
       await tester.pump();
 
-      final context = tester.element(find.byType(TypeSpecimenScreen));
+      final context = tester.element(find.byType(DebugMenuScreen));
       final effectiveScaler = MediaQuery.of(context).textScaler;
       expect(
         effectiveScaler.scale(100),
