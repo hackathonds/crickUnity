@@ -8,6 +8,7 @@ import 'calendar_screen.dart';
 import 'dropdown_screen.dart';
 import 'forms_kit_screen.dart';
 import 'match_cards_screen.dart';
+import 'money_cards_screen.dart';
 import 'stepper_screen.dart';
 import 'icon_gallery_screen.dart';
 import 'sheet_dialog_snackbar_screen.dart';
@@ -167,6 +168,15 @@ class DebugMenuScreen extends StatelessWidget {
             onTap: () => Navigator.of(
               context,
             ).push(MaterialPageRoute(builder: (_) => const MatchCardsScreen())),
+          ),
+          ListTile(
+            title: const Text('Money cards'),
+            subtitle: const Text(
+              'E0-08 (2/12) — Expense card, Expense row (states, swipe)',
+            ),
+            onTap: () => Navigator.of(
+              context,
+            ).push(MaterialPageRoute(builder: (_) => const MoneyCardsScreen())),
           ),
         ],
       ),
