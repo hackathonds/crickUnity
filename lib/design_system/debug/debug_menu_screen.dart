@@ -4,6 +4,7 @@ import 'avatar_screen.dart';
 import 'buttons_screen.dart';
 import 'card_screen.dart';
 import 'chips_screen.dart';
+import 'forms_kit_screen.dart';
 import 'icon_gallery_screen.dart';
 import 'sheet_dialog_snackbar_screen.dart';
 import 'search_bar_screen.dart';
@@ -117,6 +118,15 @@ class DebugMenuScreen extends StatelessWidget {
             onTap: () => Navigator.of(
               context,
             ).push(MaterialPageRoute(builder: (_) => const AvatarScreen())),
+          ),
+          ListTile(
+            title: const Text('Forms kit'),
+            subtitle: const Text(
+              'E0-07 (7/10) — floating label field, currency field, step progress',
+            ),
+            onTap: () => Navigator.of(
+              context,
+            ).push(MaterialPageRoute(builder: (_) => const FormsKitScreen())),
           ),
         ],
       ),
