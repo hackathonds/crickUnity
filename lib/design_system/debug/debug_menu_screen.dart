@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import 'buttons_screen.dart';
 import 'card_screen.dart';
+import 'chips_screen.dart';
 import 'icon_gallery_screen.dart';
 import 'sheet_dialog_snackbar_screen.dart';
 import 'search_bar_screen.dart';
@@ -97,6 +98,15 @@ class DebugMenuScreen extends StatelessWidget {
             onTap: () => Navigator.of(context).push(
               MaterialPageRoute(builder: (_) => const SegmentedControlScreen()),
             ),
+          ),
+          ListTile(
+            title: const Text('Chips'),
+            subtitle: const Text(
+              'E0-07 (5/10) — static tag/status chips, delta chip',
+            ),
+            onTap: () => Navigator.of(
+              context,
+            ).push(MaterialPageRoute(builder: (_) => const ChipsScreen())),
           ),
         ],
       ),
