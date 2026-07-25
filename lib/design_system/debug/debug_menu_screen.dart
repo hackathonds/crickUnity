@@ -5,6 +5,7 @@ import 'buttons_screen.dart';
 import 'card_screen.dart';
 import 'chips_screen.dart';
 import 'forms_kit_screen.dart';
+import 'stepper_screen.dart';
 import 'icon_gallery_screen.dart';
 import 'sheet_dialog_snackbar_screen.dart';
 import 'search_bar_screen.dart';
@@ -127,6 +128,15 @@ class DebugMenuScreen extends StatelessWidget {
             onTap: () => Navigator.of(
               context,
             ).push(MaterialPageRoute(builder: (_) => const FormsKitScreen())),
+          ),
+          ListTile(
+            title: const Text('Stepper'),
+            subtitle: const Text(
+              'E0-07 (8/10) — bounds, long-press auto-repeat, manual entry',
+            ),
+            onTap: () => Navigator.of(
+              context,
+            ).push(MaterialPageRoute(builder: (_) => const StepperScreen())),
           ),
         ],
       ),
