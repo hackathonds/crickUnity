@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 
 import 'icon_gallery_screen.dart';
+import 'sheet_dialog_snackbar_screen.dart';
 import 'shell_debug_screen.dart';
+import 'state_scaffolds_screen.dart';
 import 'type_specimen_screen.dart';
 
 /// Lists the internal QA screens built up across the E0 stories so far.
@@ -37,6 +39,24 @@ class DebugMenuScreen extends StatelessWidget {
             onTap: () => Navigator.of(
               context,
             ).push(MaterialPageRoute(builder: (_) => const ShellDebugScreen())),
+          ),
+          ListTile(
+            title: const Text('Sheet / dialog / snackbar'),
+            subtitle: const Text('E0-05 — bottom sheet, dialogs, snackbar'),
+            onTap: () => Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (_) => const SheetDialogSnackbarScreen(),
+              ),
+            ),
+          ),
+          ListTile(
+            title: const Text('State scaffolds'),
+            subtitle: const Text(
+              'E0-06 — empty/loading/error/offline, queued actions',
+            ),
+            onTap: () => Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => const StateScaffoldsScreen()),
+            ),
           ),
         ],
       ),
