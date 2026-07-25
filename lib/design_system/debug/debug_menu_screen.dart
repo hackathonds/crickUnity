@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import 'buttons_screen.dart';
 import 'icon_gallery_screen.dart';
 import 'sheet_dialog_snackbar_screen.dart';
 import 'shell_debug_screen.dart';
@@ -57,6 +58,15 @@ class DebugMenuScreen extends StatelessWidget {
             onTap: () => Navigator.of(context).push(
               MaterialPageRoute(builder: (_) => const StateScaffoldsScreen()),
             ),
+          ),
+          ListTile(
+            title: const Text('Buttons'),
+            subtitle: const Text(
+              'E0-07 (1/10) — primary/secondary/tertiary/destructive, chip, icon, FAB',
+            ),
+            onTap: () => Navigator.of(
+              context,
+            ).push(MaterialPageRoute(builder: (_) => const ButtonsScreen())),
           ),
         ],
       ),
