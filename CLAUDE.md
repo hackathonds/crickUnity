@@ -16,15 +16,20 @@ PR description — never guess behavior.
 
 ## Stack and commands
 
-<!-- FILL IN after the stack decision. Keep this section at the top of your
-     attention: exact commands, no prose. Example shape:
-Stack: Flutter 3.x, Riverpod, go_router
+Stack: Flutter 3.44.8 / Dart 3.12.2, confirmed working (E0-01). Riverpod and
+go_router land with E0-04/E0-09 — not added yet, nothing uses them before then.
+SDK location on this machine: `C:\Users\Admin\flutter\bin` (not on PATH by
+default in a fresh shell — prefix commands or add to PATH first).
+
 Run:    flutter run -d <device>
-Test:   flutter test
+Get:    flutter pub get
+Test:   flutter test              (add `-r expanded --concurrency=1` for a
+                                    clean serial log — the default concurrent
+                                    reporter interleaves progress lines)
 Lint:   flutter analyze
-Format: dart format .
-Screenshot for evidence: <your command / MCP tool>
--->
+Format: dart format --set-exit-if-changed .
+Screenshot for evidence: manual capture per DS reference frames (375w, 320w)
+starting when the first real UI ships (E0-02+) — E0-01 is componentless.
 
 ## Non-negotiables (from Backlog Section 0)
 
