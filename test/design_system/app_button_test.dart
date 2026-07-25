@@ -159,7 +159,7 @@ void main() {
     Border ringBorder() =>
         (tester
                         .widget<Container>(
-                          find.byKey(const ValueKey('appButtonFocusRing')),
+                          find.byKey(const ValueKey('appPressableFocusRing')),
                         )
                         .decoration
                     as BoxDecoration)

@@ -10,107 +10,11 @@ import '../tokens/app_motion.dart';
 import '../tokens/app_radius.dart';
 import '../tokens/app_spacing.dart';
 import '../tokens/app_typography.dart';
+import 'app_pressable.dart';
 
 /// DS §3.1's four label-button variants. Height/padding/radius/fill per
 /// the spec's table.
 enum AppButtonVariant { primary, secondary, tertiary, destructive }
-
-/// Shared press/focus mechanics for every button in this file — DS §3
-/// intro's global anatomy: pressed = scale 0.98 + 8% tint over 80ms;
-/// focused = 2px ring offset 2px (a reserved, always-present 2px gutter
-/// avoids layout shift when focus toggles).
-class _Pressable extends StatefulWidget {
-  final VoidCallback? onPressed;
-  final Widget child;
-  final Color tintColor;
-  final double cornerRadius;
-  final Color focusRingColor;
-
-  const _Pressable({
-    required this.onPressed,
-    required this.child,
-    required this.tintColor,
-    required this.cornerRadius,
-    required this.focusRingColor,
-  });
-
-  @override
-  State<_Pressable> createState() => _PressableState();
-}
-
-class _PressableState extends State<_Pressable>
-    with SingleTickerProviderStateMixin {
-  late final AnimationController _scaleController;
-  bool _focused = false;
-
-  @override
-  void initState() {
-    super.initState();
-    _scaleController = AnimationController(
-      vsync: this,
-      duration: AppMotionDuration.instant,
-    );
-  }
-
-  @override
-  void dispose() {
-    _scaleController.dispose();
-    super.dispose();
-  }
-
-  void _setPressed(bool pressed) {
-    if (pressed) {
-      _scaleController.forward();
-    } else {
-      _scaleController.reverse();
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final enabled = widget.onPressed != null;
-
-    return Focus(
-      onFocusChange: (value) => setState(() => _focused = value),
-      child: GestureDetector(
-        onTapDown: enabled ? (_) => _setPressed(true) : null,
-        onTapUp: enabled ? (_) => _setPressed(false) : null,
-        onTapCancel: enabled ? () => _setPressed(false) : null,
-        onTap: widget.onPressed,
-        child: Container(
-          key: const ValueKey('appButtonFocusRing'),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(widget.cornerRadius + 2),
-            border: Border.all(
-              color: _focused ? widget.focusRingColor : Colors.transparent,
-              width: 2,
-            ),
-          ),
-          padding: const EdgeInsets.all(2),
-          child: AnimatedBuilder(
-            animation: _scaleController,
-            builder: (context, child) {
-              final t = _scaleController.value;
-              return Transform.scale(
-                scale: 1.0 - (0.02 * t),
-                child: DecoratedBox(
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(widget.cornerRadius),
-                    color: enabled
-                        ? widget.tintColor.withValues(alpha: 0.08 * t)
-                        : null,
-                  ),
-                  child: child,
-                ),
-              );
-            },
-            child: widget.child,
-          ),
-        ),
-      ),
-    );
-  }
-}
 
 /// 20px Arc spinner — DS §5 pattern 4: "sweep 270°, rotate 900ms" (reuses
 /// [AppMotionDuration.ceremony], not a new token); freezes under reduced
@@ -270,7 +174,7 @@ class AppButton extends StatelessWidget {
             ],
           );
 
-    return _Pressable(
+    return AppPressable(
       onPressed: enabled ? onPressed : null,
       tintColor: colors.primary,
       cornerRadius: AppRadius.sm,
@@ -313,7 +217,7 @@ class AppIconButton extends StatelessWidget {
     final enabled = onPressed != null;
     final color = enabled ? colors.textPrimary : colors.disabledFg;
 
-    return _Pressable(
+    return AppPressable(
       onPressed: onPressed,
       tintColor: colors.primary,
       cornerRadius: AppRadius.full,
@@ -357,7 +261,7 @@ class AppChipActionButton extends StatelessWidget {
         ? colors.disabledFg
         : (selected ? colors.primary : colors.textPrimary);
 
-    return _Pressable(
+    return AppPressable(
       onPressed: onPressed,
       tintColor: colors.primary,
       cornerRadius: AppRadius.full,
@@ -402,7 +306,7 @@ class AppFab extends StatelessWidget {
   Widget build(BuildContext context) {
     final colors = Theme.of(context).extension<AppColors>()!;
 
-    return _Pressable(
+    return AppPressable(
       onPressed: onPressed,
       tintColor: colors.onPrimary,
       cornerRadius: AppRadius.full,
