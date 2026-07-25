@@ -5,6 +5,7 @@ import 'app_icon_glyphs_rewards.dart';
 import 'app_icon_glyphs_social.dart';
 import 'app_icon_glyphs_sports.dart';
 import 'app_icon_glyphs_status.dart';
+import 'app_icon_glyphs_utility.dart';
 import 'app_icon_id.dart';
 
 /// Every icon glyph, keyed by [AppIconId] — the single source the [AppIcon]
@@ -16,6 +17,7 @@ final Map<AppIconId, AppIconGlyph> appIconGlyphs = {
   ...rewardsIconGlyphs,
   ...expenseIconGlyphs,
   ...socialIconGlyphs,
+  ...utilityIconGlyphs,
 };
 
 /// Family groupings, in DS §2.5's order — used by the icon-gallery screen.
@@ -65,5 +67,12 @@ final Map<String, List<AppIconId>> appIconFamilies = {
     AppIconId.comment,
     AppIconId.shareArc,
     AppIconId.bookmark,
+  ],
+  'Utility': [
+    AppIconId.search,
+    AppIconId.mic,
+    AppIconId.qrCode,
+    AppIconId.close,
+    AppIconId.backArrow,
   ],
 };
