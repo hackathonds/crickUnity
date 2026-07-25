@@ -1,11 +1,10 @@
-import 'dart:math' as math;
-
 import 'package:flutter/material.dart';
 
 import '../icons/app_icon.dart';
 import '../icons/app_icon_id.dart';
 import '../tokens/app_colors.dart';
 import '../tokens/app_typography.dart';
+import 'app_arc_ring.dart';
 
 /// DS §3.23: "Sizes 24/32/40/48/64/96". The widget's outer footprint is
 /// always exactly this pixel value regardless of which optional adornments
@@ -31,64 +30,6 @@ const double _ringStrokeWidth = 2;
 const double _ringGap = 2;
 const double _ringMinPx = 40;
 const double _verifiedMinPx = 48;
-
-/// The Arc's ¾-ring device (DS §2.1) applied to avatars (DS §3.15/3.16:
-/// "Level ring on avatars (2px, Arc gap)"): 270° sweep, gap centered at
-/// canvas angle 45° (bottom-right). This paints the **static** ring only —
-/// the animated "+50 XP" fill-sweep (DS §5.9) is a Rewards-epic (E6)
-/// interaction layered over this primitive, not part of it.
-class _LevelRingPainter extends CustomPainter {
-  final double progress;
-  final Color trackColor;
-  final Color fillColor;
-
-  _LevelRingPainter({
-    required this.progress,
-    required this.trackColor,
-    required this.fillColor,
-  });
-
-  static const double _sweepStart = math.pi / 2;
-  static const double _totalSweep = math.pi * 1.5;
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final rect = Rect.fromLTWH(
-      _ringStrokeWidth / 2,
-      _ringStrokeWidth / 2,
-      size.width - _ringStrokeWidth,
-      size.height - _ringStrokeWidth,
-    );
-    final track = Paint()
-      ..color = trackColor
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = _ringStrokeWidth
-      ..strokeCap = StrokeCap.round;
-    canvas.drawArc(rect, _sweepStart, _totalSweep, false, track);
-
-    if (progress > 0) {
-      final fill = Paint()
-        ..color = fillColor
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = _ringStrokeWidth
-        ..strokeCap = StrokeCap.round;
-      canvas.drawArc(
-        rect,
-        _sweepStart,
-        _totalSweep * progress.clamp(0.0, 1.0),
-        false,
-        fill,
-      );
-    }
-  }
-
-  @override
-  bool shouldRepaint(covariant _LevelRingPainter oldDelegate) {
-    return oldDelegate.progress != progress ||
-        oldDelegate.trackColor != trackColor ||
-        oldDelegate.fillColor != fillColor;
-  }
-}
 
 String _initialsFor(String name) {
   final words = name.trim().split(RegExp(r'\s+')).where((w) => w.isNotEmpty);
@@ -152,13 +93,13 @@ class AppAvatar extends StatelessWidget {
           ),
           if (showRing)
             Positioned.fill(
-              child: CustomPaint(
+              child: AppArcRing(
                 key: const ValueKey('appAvatarRing'),
-                painter: _LevelRingPainter(
-                  progress: levelProgress!,
-                  trackColor: colors.border,
-                  fillColor: colors.accent,
-                ),
+                progress: levelProgress!,
+                size: px,
+                strokeWidth: _ringStrokeWidth,
+                trackColor: colors.border,
+                fillColor: colors.accent,
               ),
             ),
           if (presence != null)

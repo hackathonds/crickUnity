@@ -7,6 +7,7 @@ import 'chips_screen.dart';
 import 'calendar_screen.dart';
 import 'dropdown_screen.dart';
 import 'forms_kit_screen.dart';
+import 'gamification_cards_screen.dart';
 import 'match_cards_screen.dart';
 import 'money_cards_screen.dart';
 import 'player_stat_cards_screen.dart';
@@ -184,6 +185,15 @@ class DebugMenuScreen extends StatelessWidget {
             subtitle: const Text('E0-08 (3/12) — Player card, Statistics card'),
             onTap: () => Navigator.of(context).push(
               MaterialPageRoute(builder: (_) => const PlayerStatCardsScreen()),
+            ),
+          ),
+          ListTile(
+            title: const Text('Gamification cards'),
+            subtitle: const Text('E0-08 (4/12) — Reward card, Progress card'),
+            onTap: () => Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (_) => const GamificationCardsScreen(),
+              ),
             ),
           ),
         ],
