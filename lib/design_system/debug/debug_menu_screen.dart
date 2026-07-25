@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'icon_gallery_screen.dart';
+import 'sheet_dialog_snackbar_screen.dart';
 import 'shell_debug_screen.dart';
 import 'type_specimen_screen.dart';
 
@@ -37,6 +38,15 @@ class DebugMenuScreen extends StatelessWidget {
             onTap: () => Navigator.of(
               context,
             ).push(MaterialPageRoute(builder: (_) => const ShellDebugScreen())),
+          ),
+          ListTile(
+            title: const Text('Sheet / dialog / snackbar'),
+            subtitle: const Text('E0-05 — bottom sheet, dialogs, snackbar'),
+            onTap: () => Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (_) => const SheetDialogSnackbarScreen(),
+              ),
+            ),
           ),
         ],
       ),
