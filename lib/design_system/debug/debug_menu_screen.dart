@@ -7,6 +7,7 @@ import 'chips_screen.dart';
 import 'calendar_screen.dart';
 import 'dropdown_screen.dart';
 import 'forms_kit_screen.dart';
+import 'match_cards_screen.dart';
 import 'stepper_screen.dart';
 import 'icon_gallery_screen.dart';
 import 'sheet_dialog_snackbar_screen.dart';
@@ -157,6 +158,15 @@ class DebugMenuScreen extends StatelessWidget {
             onTap: () => Navigator.of(
               context,
             ).push(MaterialPageRoute(builder: (_) => const CalendarScreen())),
+          ),
+          ListTile(
+            title: const Text('Match-context cards'),
+            subtitle: const Text(
+              'E0-08 (1/12) — Match, Live Match, Tournament cards',
+            ),
+            onTap: () => Navigator.of(
+              context,
+            ).push(MaterialPageRoute(builder: (_) => const MatchCardsScreen())),
           ),
         ],
       ),
