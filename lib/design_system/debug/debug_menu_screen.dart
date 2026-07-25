@@ -4,6 +4,7 @@ import 'avatar_screen.dart';
 import 'buttons_screen.dart';
 import 'card_screen.dart';
 import 'chips_screen.dart';
+import 'dropdown_screen.dart';
 import 'forms_kit_screen.dart';
 import 'stepper_screen.dart';
 import 'icon_gallery_screen.dart';
@@ -137,6 +138,15 @@ class DebugMenuScreen extends StatelessWidget {
             onTap: () => Navigator.of(
               context,
             ).push(MaterialPageRoute(builder: (_) => const StepperScreen())),
+          ),
+          ListTile(
+            title: const Text('Dropdown-as-sheet'),
+            subtitle: const Text(
+              'E0-07 (9/10) — radio rows, search row above 8 options',
+            ),
+            onTap: () => Navigator.of(
+              context,
+            ).push(MaterialPageRoute(builder: (_) => const DropdownScreen())),
           ),
         ],
       ),
