@@ -5,6 +5,7 @@ import 'card_screen.dart';
 import 'icon_gallery_screen.dart';
 import 'sheet_dialog_snackbar_screen.dart';
 import 'search_bar_screen.dart';
+import 'segmented_control_screen.dart';
 import 'shell_debug_screen.dart';
 import 'state_scaffolds_screen.dart';
 import 'type_specimen_screen.dart';
@@ -87,6 +88,15 @@ class DebugMenuScreen extends StatelessWidget {
             onTap: () => Navigator.of(
               context,
             ).push(MaterialPageRoute(builder: (_) => const SearchBarScreen())),
+          ),
+          ListTile(
+            title: const Text('Segmented control'),
+            subtitle: const Text(
+              'E0-07 (4/10) — sliding track, scrollable-chip-row fallback',
+            ),
+            onTap: () => Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => const SegmentedControlScreen()),
+            ),
           ),
         ],
       ),
