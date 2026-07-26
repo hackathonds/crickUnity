@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../expenses/add_edit_expense_screen.dart';
+import '../../expenses/expense_models.dart';
+import '../../expenses/expenses_home_screen.dart';
+import '../../expenses/expenses_provider.dart';
 import '../../guest/guest_live_match_preview_screen.dart';
 import '../../matches/awards_screen.dart';
 import '../../matches/create_match_flow.dart';
@@ -1024,6 +1028,75 @@ class DebugMenuScreen extends StatelessWidget {
             onTap: () => Navigator.of(context).push(
               MaterialPageRoute(
                 builder: (_) => const LiveMatchViewScreen(isScorer: true),
+              ),
+            ),
+          ),
+          ListTile(
+            title: const Text('Expenses home'),
+            subtitle: const Text(
+              'E5-01 — net header, I-owe/Owed/All tabs, ledger rows',
+            ),
+            onTap: () {
+              final container = ProviderScope.containerOf(
+                context,
+                listen: false,
+              );
+              final notifier = container.read(expensesProvider.notifier);
+              if (container.read(expensesProvider).expenses.isEmpty) {
+                notifier.addExpense(
+                  title: 'Ground fee',
+                  category: ExpenseCategory.groundFees,
+                  amount: 800,
+                  paidBy: const [PaidByEntry(name: 'Kabir Singh', amount: 800)],
+                  splitMethod: SplitMethod.equal,
+                  splitAmong: equalSplit(800, mockExpenseParticipants()),
+                  createdByName: 'Kabir Singh',
+                  createdByIsCaptain: true,
+                );
+                notifier.addExpense(
+                  title: 'Post-match chai',
+                  category: ExpenseCategory.food,
+                  amount: 200,
+                  paidBy: const [PaidByEntry(name: 'Priya Nair', amount: 200)],
+                  splitMethod: SplitMethod.equal,
+                  splitAmong: equalSplit(200, mockExpenseParticipants()),
+                  createdByName: 'Priya Nair',
+                  createdByIsCaptain: false,
+                );
+                notifier.addExpense(
+                  title: 'Tournament entry',
+                  category: ExpenseCategory.tournamentEntry,
+                  amount: 1500,
+                  paidBy: const [
+                    PaidByEntry(name: 'Kabir Singh', amount: 1500),
+                  ],
+                  splitMethod: SplitMethod.equal,
+                  splitAmong: equalSplit(1500, mockExpenseParticipants()),
+                  createdByName: 'Kabir Singh',
+                  createdByIsCaptain: true,
+                );
+              }
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (_) => const ExpensesHomeScreen(
+                    viewerName: 'Kabir Singh',
+                    viewerIsCaptain: true,
+                  ),
+                ),
+              );
+            },
+          ),
+          ListTile(
+            title: const Text('Add expense'),
+            subtitle: const Text(
+              'E5-01 — category grid, split editor (6 methods), approval note',
+            ),
+            onTap: () => Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (_) => const AddEditExpenseScreen(
+                  viewerName: 'Kabir Singh',
+                  viewerIsCaptain: true,
+                ),
               ),
             ),
           ),
