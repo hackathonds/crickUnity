@@ -360,6 +360,37 @@ class InningsNotifier extends Notifier<InningsState> {
       ],
     );
   }
+
+  /// PRD §7.16: "decided by: opposing captain pick (preferred, prompts
+  /// them) or auto." Overrides the auto-suggestion whenever the
+  /// opposing captain acts -- see [InningsState.finalMvp].
+  void pickMvp(String playerName) {
+    state = state.copyWith(mvpCaptainPick: playerName);
+  }
+
+  /// PRD §7.16: "Awards mint profile entries + coins." Gated on the
+  /// scorecard already being confirmed (PRD §13 anti-fraud gate, same
+  /// gate the rest of the ripple respects) -- no real Profile module
+  /// exists to write into, so minting is a log of what would be written,
+  /// same convention as [_maybeFireRipple]'s ripple log. Guarded by
+  /// [InningsState.awardsMinted] so it can only fire once.
+  void mintAwards() {
+    if (state.awardsMinted || !state.rippleFired) return;
+    final entries = <String>['${state.finalMvp} awarded MVP (+50 coins)'];
+    final bestBatter = state.bestBatterName;
+    if (bestBatter != null) {
+      entries.add('$bestBatter awarded Best Batter (+20 coins)');
+    }
+    final bestBowler = state.bestBowlerName;
+    if (bestBowler != null) {
+      entries.add('$bestBowler awarded Best Bowler (+20 coins)');
+    }
+    final bestFielder = state.bestFielderName;
+    if (bestFielder != null) {
+      entries.add('$bestFielder awarded Best Fielder (+20 coins)');
+    }
+    state = state.copyWith(awardsMinted: true, awardsLog: entries);
+  }
 }
 
 final inningsProvider = NotifierProvider<InningsNotifier, InningsState>(

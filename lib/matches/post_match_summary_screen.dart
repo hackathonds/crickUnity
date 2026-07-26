@@ -7,39 +7,14 @@ import '../design_system/tokens/app_colors.dart';
 import '../design_system/tokens/app_money_text.dart';
 import '../design_system/tokens/app_spacing.dart';
 import '../design_system/tokens/app_typography.dart';
+import 'awards_screen.dart';
 import 'ball_timeline_screen.dart';
-import 'scoring_models.dart';
 import 'scoring_provider.dart';
 
 /// No 2-innings match model exists yet, so there's no real second
 /// score to compare against -- a mock opponent total stands in so a
 /// genuine result (winner + margin) can be computed and displayed.
 const int _mockOpponentTeamRuns = 142;
-
-/// A simple runs/wickets heuristic -- the real "opposing-captain pick
-/// preferred, minting to profiles" flow is E4-13's separate scope; this
-/// screen only needs an auto-suggested name to show in the MVP card.
-String _suggestedMvp(InningsState state) {
-  String? best;
-  var bestScore = -1;
-  for (final batter in state.batters.values) {
-    final wickets = state.bowlers[batter.name]?.wickets ?? 0;
-    final score = batter.runs + wickets * 20;
-    if (score > bestScore) {
-      bestScore = score;
-      best = batter.name;
-    }
-  }
-  for (final bowler in state.bowlers.values) {
-    if (state.batters.containsKey(bowler.name)) continue;
-    final score = bowler.wickets * 20;
-    if (score > bestScore) {
-      bestScore = score;
-      best = bowler.name;
-    }
-  }
-  return best ?? '-';
-}
 
 /// DS §7 screen 30 (Post-Match Summary): "Result hero (winner crest +
 /// margin Clash 22) -> MVP card -> my performance card [Share] -> XP/
@@ -96,7 +71,19 @@ class PostMatchSummaryScreen extends ConsumerWidget {
           _SummaryCard(
             key: const ValueKey('mvpCard'),
             title: 'MVP',
-            body: _suggestedMvp(state),
+            body: state.mvpIsCaptainPick
+                ? '${state.finalMvp} (picked by opposing captain)'
+                : '${state.finalMvp} (auto-suggested)',
+            trailing: AppButton(
+              key: const ValueKey('viewAwardsButton'),
+              variant: AppButtonVariant.tertiary,
+              label: 'Awards',
+              onPressed: () => Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (_) => const AwardsScreen(isOpposingCaptain: false),
+                ),
+              ),
+            ),
           ),
           // 3. My performance card [Share].
           _SummaryCard(
