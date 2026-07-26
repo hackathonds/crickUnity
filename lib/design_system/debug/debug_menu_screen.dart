@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 
 import '../../guest/guest_live_match_preview_screen.dart';
 import '../../onboarding/onboarding_flow.dart';
+import '../../profile/achievement_models.dart';
+import '../../profile/achievements_wall_screen.dart';
 import '../../profile/edit_profile_screen.dart';
 import 'avatar_screen.dart';
 import 'nearby_matches_preview_screen.dart';
@@ -348,6 +350,18 @@ class DebugMenuScreen extends StatelessWidget {
             ),
             onTap: () => Navigator.of(context).push(
               MaterialPageRoute(builder: (_) => const EditProfileScreen()),
+            ),
+          ),
+          ListTile(
+            title: const Text('Achievements wall'),
+            subtitle: const Text(
+              'E2-05 — badge wall, category filter, locked-tile criteria',
+            ),
+            onTap: () => Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (_) =>
+                    AchievementsWallScreen(badges: mockAchievementBadges()),
+              ),
             ),
           ),
           ListTile(
