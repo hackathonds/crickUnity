@@ -24,6 +24,8 @@ import '../../teams/carpool_screen.dart';
 import '../../teams/duty_roster_screen.dart';
 import '../../teams/kit_inventory_screen.dart';
 import '../../teams/recruitment_board_screen.dart';
+import '../../teams/season_summary_models.dart';
+import '../../teams/season_summary_screen.dart';
 import '../../teams/team_documents_screen.dart';
 import '../../teams/team_member_models.dart';
 import 'jersey_board_demo.dart';
@@ -605,6 +607,47 @@ class DebugMenuScreen extends StatelessWidget {
                 builder: (_) => const RecruitmentBoardScreen(
                   viewerName: 'Karan Bhatt',
                   viewerRole: TeamMemberRole.player,
+                ),
+              ),
+            ),
+          ),
+          ListTile(
+            title: const Text('Season summary (Captain)'),
+            subtitle: const Text(
+              'E3-13 — milestones, wrap cards, Present ceremony mode',
+            ),
+            onTap: () => Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (_) => SeasonSummaryScreen(
+                  viewerRole: TeamMemberRole.captain,
+                  data: mockSeasonSummary(),
+                ),
+              ),
+            ),
+          ),
+          ListTile(
+            title: const Text('Season summary (new team)'),
+            subtitle: const Text('E3-13 — insufficient-data state'),
+            onTap: () => Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (_) => const SeasonSummaryScreen(
+                  viewerRole: TeamMemberRole.player,
+                  data: SeasonSummaryData(
+                    matchesPlayed: 0,
+                    winsCount: 0,
+                    lossesCount: 0,
+                    drawsCount: 0,
+                    championshipsWon: 0,
+                    topScorerName: '',
+                    topScorerRuns: 0,
+                    topWicketTakerName: '',
+                    topWicketTakerWickets: 0,
+                    bestWinDescription: '',
+                    chemistryTrendPercent: 0,
+                    moneyCollectedRupees: 0,
+                    moneySpentRupees: 0,
+                    perHeadCostRupees: 0,
+                  ),
                 ),
               ),
             ),
