@@ -20,6 +20,7 @@ import 'stepper_screen.dart';
 import 'timeline_screen.dart';
 import 'icon_gallery_screen.dart';
 import 'sheet_dialog_snackbar_screen.dart';
+import 'scoreboard_screen.dart';
 import 'search_bar_screen.dart';
 import 'segmented_control_screen.dart';
 import 'shell_debug_screen.dart';
@@ -255,6 +256,15 @@ class DebugMenuScreen extends StatelessWidget {
             onTap: () => Navigator.of(
               context,
             ).push(MaterialPageRoute(builder: (_) => const BadgeTileScreen())),
+          ),
+          ListTile(
+            title: const Text('Scoreboard'),
+            subtitle: const Text(
+              'E0-08 (11/12) — odometer roll, wicket flash, TV mode',
+            ),
+            onTap: () => Navigator.of(
+              context,
+            ).push(MaterialPageRoute(builder: (_) => const ScoreboardScreen())),
           ),
         ],
       ),
