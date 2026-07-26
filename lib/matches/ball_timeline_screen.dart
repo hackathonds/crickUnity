@@ -40,6 +40,24 @@ class BallTimelineScreen extends ConsumerWidget {
       body: ListView(
         padding: const EdgeInsets.all(AppSpacing.lg),
         children: [
+          if (state.timelineEntries.isNotEmpty) ...[
+            Text(
+              'Match log',
+              style: AppTypography.label.copyWith(color: colors.textTertiary),
+            ),
+            const SizedBox(height: AppSpacing.sm),
+            for (final entry in state.timelineEntries.reversed)
+              Padding(
+                padding: const EdgeInsets.only(bottom: AppSpacing.xs),
+                child: Text(
+                  entry,
+                  style: AppTypography.caption.copyWith(
+                    color: colors.textSecondary,
+                  ),
+                ),
+              ),
+            const SizedBox(height: AppSpacing.xxl),
+          ],
           if (state.pendingCorrections.isNotEmpty) ...[
             Text(
               'Pending corrections',

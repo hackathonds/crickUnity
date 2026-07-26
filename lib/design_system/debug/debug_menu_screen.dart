@@ -7,6 +7,7 @@ import '../../matches/match_detail_screen.dart';
 import '../../matches/match_models.dart';
 import '../../matches/match_opponent_decision_screen.dart';
 import '../../matches/match_proposal_review_screen.dart';
+import '../../matches/field_map_screen.dart';
 import '../../matches/live_scoring_console_screen.dart';
 import '../../matches/match_viewer_screen.dart';
 import '../../matches/scoring_provider.dart';
@@ -940,6 +941,15 @@ class DebugMenuScreen extends StatelessWidget {
             onTap: () => Navigator.of(context).push(
               MaterialPageRoute(builder: (_) => const MatchViewerScreen()),
             ),
+          ),
+          ListTile(
+            title: const Text('Field map tool (captain)'),
+            subtitle: const Text(
+              'E4-09 — drag 11 fielder tokens, phase presets, team-private',
+            ),
+            onTap: () => Navigator.of(
+              context,
+            ).push(MaterialPageRoute(builder: (_) => const FieldMapScreen())),
           ),
           ListTile(
             title: const Text('Guest mode preview'),
