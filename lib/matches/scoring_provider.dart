@@ -26,6 +26,7 @@ class InningsNotifier extends Notifier<InningsState> {
       currentBowlerName: bowlingRoster[0],
       totalOversPerSide: 20,
       scorerName: 'Deepak Sharma',
+      scorecardPostedAt: DateTime.now(),
     );
   }
 
@@ -289,6 +290,75 @@ class InningsNotifier extends Notifier<InningsState> {
         opponentCaptainApprovedHandover: opponentApproved,
       );
     }
+  }
+
+  /// PRD §7.14: "both captains + scorer confirm." A dispute (checked
+  /// first) always wins -- confirming after a dispute is a no-op until
+  /// the dispute is resolved (no resolution flow exists yet, out of
+  /// this story's scope per the backlog's own AC, which only covers
+  /// confirm-fires-ripple and dispute-freezes-it).
+  void confirmScorecard(ConfirmerRole role) {
+    if (state.isDisputed) return;
+    state = switch (role) {
+      ConfirmerRole.composerCaptain => state.copyWith(
+        composerCaptainConfirmedScorecard: true,
+      ),
+      ConfirmerRole.opponentCaptain => state.copyWith(
+        opponentCaptainConfirmedScorecard: true,
+      ),
+      ConfirmerRole.scorer => state.copyWith(scorerConfirmedScorecard: true),
+    };
+    _maybeFireRipple();
+  }
+
+  /// PRD §13 anti-fraud gate: disputing "freezes downstream releases."
+  void disputeScorecard(String reason) {
+    state = state.copyWith(
+      isDisputed: true,
+      disputeReason: reason,
+      timelineEntries: [
+        ...state.timelineEntries,
+        'Scorecard disputed: $reason. Both captains notified; '
+            'rewards/settlement on hold.',
+      ],
+    );
+  }
+
+  /// PRD §7.14: "auto-confirm 48h if unchallenged."
+  void checkAutoConfirm({DateTime Function() now = DateTime.now}) {
+    if (!state.canAutoConfirm(now: now)) return;
+    state = state.copyWith(
+      composerCaptainConfirmedScorecard: true,
+      opponentCaptainConfirmedScorecard: true,
+      scorerConfirmedScorecard: true,
+    );
+    _maybeFireRipple();
+  }
+
+  /// PRD Pillar 1: "One completed match updates 9 systems
+  /// automatically." AC: "the full Match Ripple fires exactly once" --
+  /// [InningsState.rippleFired] guards against firing twice even if
+  /// confirmation state is touched again afterward. No E5 (Expenses) or
+  /// E6 (Rewards) module exists yet to genuinely call into, so this is
+  /// a log of what *would* fire, not real cross-module writes.
+  void _maybeFireRipple() {
+    if (state.rippleFired || state.isDisputed || !state.isFullyConfirmed) {
+      return;
+    }
+    state = state.copyWith(
+      rippleFired: true,
+      rippleLog: const [
+        'Player & team stats updated',
+        'Rankings recalculated',
+        'Expense split finalized & settlements opened',
+        'Coins/XP/badges awarded',
+        'Attendance written',
+        'Achievements & records checked (ground/tournament)',
+        'Social summary post drafted',
+        'Trust & Sportsmanship updated',
+        'AI insights & analytics fed',
+      ],
+    );
   }
 }
 
