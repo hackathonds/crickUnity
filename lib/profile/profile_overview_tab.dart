@@ -24,12 +24,14 @@ class ProfileOverviewTab extends StatelessWidget {
   final PlayerProfile profile;
   final ViewerRelation relation;
   final ValueChanged<List<String>>? onStyleTagsChanged;
+  final VoidCallback? onOpenActivityCalendar;
 
   const ProfileOverviewTab({
     super.key,
     required this.profile,
     required this.relation,
     this.onStyleTagsChanged,
+    this.onOpenActivityCalendar,
   });
 
   @override
@@ -59,6 +61,16 @@ class ProfileOverviewTab extends StatelessWidget {
                 const SizedBox(width: AppSpacing.sm),
               ],
             ],
+          ),
+          const SizedBox(height: AppSpacing.xxl),
+          sectionLabel('Activity'),
+          GestureDetector(
+            key: const ValueKey('profileViewActivityCalendar'),
+            onTap: onOpenActivityCalendar,
+            child: Text(
+              'View activity calendar',
+              style: AppTypography.body.copyWith(color: colors.primary),
+            ),
           ),
           if (profile.favoriteTeams.isNotEmpty) ...[
             const SizedBox(height: AppSpacing.xxl),

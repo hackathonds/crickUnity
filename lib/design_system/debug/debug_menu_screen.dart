@@ -4,7 +4,10 @@ import '../../guest/guest_live_match_preview_screen.dart';
 import '../../onboarding/onboarding_flow.dart';
 import '../../profile/achievement_models.dart';
 import '../../profile/achievements_wall_screen.dart';
+import '../../profile/activity_calendar_models.dart';
+import '../../profile/activity_calendar_screen.dart';
 import '../../profile/edit_profile_screen.dart';
+import '../../profile/profile_models.dart';
 import 'avatar_screen.dart';
 import 'nearby_matches_preview_screen.dart';
 import 'onboarding_checklist_screen.dart';
@@ -361,6 +364,20 @@ class DebugMenuScreen extends StatelessWidget {
               MaterialPageRoute(
                 builder: (_) =>
                     AchievementsWallScreen(badges: mockAchievementBadges()),
+              ),
+            ),
+          ),
+          ListTile(
+            title: const Text('Activity calendar'),
+            subtitle: const Text(
+              'E2-06 — heat grid, month pager, viewer-tiered day peek',
+            ),
+            onTap: () => Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (_) => ActivityCalendarScreen(
+                  entries: mockActivityEntries(),
+                  relation: ViewerRelation.self,
+                ),
               ),
             ),
           ),
