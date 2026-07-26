@@ -7,6 +7,7 @@ import '../design_system/components/app_text_field.dart';
 import '../design_system/tokens/app_colors.dart';
 import '../design_system/tokens/app_spacing.dart';
 import '../design_system/tokens/app_typography.dart';
+import 'gallery_provider.dart';
 import 'scoring_models.dart';
 import 'scoring_provider.dart';
 
@@ -34,6 +35,11 @@ class BallTimelineScreen extends ConsumerWidget {
     final colors = Theme.of(context).extension<AppColors>()!;
     final state = ref.watch(inningsProvider);
     final groups = _groupIndicesByOver(state.deliveries);
+    final gallery = ref.watch(galleryProvider);
+    final pinnedBallIndices = {
+      for (final item in gallery.items)
+        if (item.pinnedBallIndex != null) item.pinnedBallIndex!,
+    };
 
     return Scaffold(
       appBar: AppBar(title: const Text('Ball timeline')),
@@ -99,6 +105,7 @@ class BallTimelineScreen extends ConsumerWidget {
                           hasPendingCorrection: state.pendingCorrections.any(
                             (r) => r.deliveryIndex == index,
                           ),
+                          hasPinnedMedia: pinnedBallIndices.contains(index),
                         ),
                     ],
                   ),
@@ -116,12 +123,14 @@ class _BallChip extends ConsumerWidget {
   final Delivery delivery;
   final bool withinFreeWindow;
   final bool hasPendingCorrection;
+  final bool hasPinnedMedia;
 
   const _BallChip({
     required this.index,
     required this.delivery,
     required this.withinFreeWindow,
     required this.hasPendingCorrection,
+    required this.hasPinnedMedia,
   });
 
   @override
@@ -163,6 +172,14 @@ class _BallChip extends ConsumerWidget {
             if (hasPendingCorrection) ...[
               const SizedBox(width: AppSpacing.xs),
               Icon(Icons.hourglass_top, size: 12, color: colors.textTertiary),
+            ],
+            if (hasPinnedMedia) ...[
+              const SizedBox(width: AppSpacing.xs),
+              Icon(
+                Icons.photo_camera_back_outlined,
+                size: 12,
+                color: colors.textTertiary,
+              ),
             ],
           ],
         ),
