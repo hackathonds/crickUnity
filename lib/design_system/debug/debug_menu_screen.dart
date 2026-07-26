@@ -10,6 +10,11 @@ import '../../profile/edit_profile_screen.dart';
 import '../../profile/profile_models.dart';
 import '../../teams/create_team_flow.dart';
 import '../../teams/edit_team_screen.dart';
+import '../../teams/join_requests_screen.dart';
+import '../../teams/team_invite_decision_screen.dart';
+import '../../teams/team_invite_models.dart';
+import '../../teams/team_invite_sheet.dart';
+import '../../teams/team_models.dart';
 import 'avatar_screen.dart';
 import 'team_home_demo.dart';
 import 'nearby_matches_preview_screen.dart';
@@ -412,6 +417,40 @@ class DebugMenuScreen extends StatelessWidget {
             onTap: () => Navigator.of(
               context,
             ).push(MaterialPageRoute(builder: (_) => const TeamHomeDemo())),
+          ),
+          ListTile(
+            title: const Text('Invite to team'),
+            subtitle: const Text('E3-03 — QR / link (7d, revocable) / search'),
+            onTap: () => showTeamInviteSheet(
+              context: context,
+              teamName: mockTeam().name,
+            ),
+          ),
+          ListTile(
+            title: const Text('Join requests'),
+            subtitle: const Text(
+              'E3-03 — stats+Trust band+mutuals, approve/deny, rival-flag notice',
+            ),
+            onTap: () => Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => const JoinRequestsScreen()),
+            ),
+          ),
+          ListTile(
+            title: const Text('Team invite (invitee view)'),
+            subtitle: const Text(
+              'E3-03 — accept/decline, expiry countdown, 10-team cap AC',
+            ),
+            onTap: () => Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (_) => TeamInviteDecisionScreen(
+                  offer: TeamInviteOffer(
+                    teamName: mockTeam().name,
+                    roleOffered: 'Player',
+                    expiresAt: DateTime.now().add(const Duration(days: 6)),
+                  ),
+                ),
+              ),
+            ),
           ),
           ListTile(
             title: const Text('Guest mode preview'),
