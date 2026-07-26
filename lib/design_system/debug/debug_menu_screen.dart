@@ -11,6 +11,7 @@ import '../../matches/match_proposal_review_screen.dart';
 import '../../matches/field_map_screen.dart';
 import '../../matches/gallery_screen.dart';
 import '../../matches/highlights_builder_screen.dart';
+import '../../matches/insights_screen.dart';
 import '../../matches/scorecard_screen.dart';
 import '../../matches/scoring_models.dart';
 import '../../matches/live_scoring_console_screen.dart';
@@ -1065,6 +1066,34 @@ class DebugMenuScreen extends StatelessWidget {
             onTap: () => Navigator.of(context).push(
               MaterialPageRoute(
                 builder: (_) => const HighlightsBuilderScreen(isCaptain: true),
+              ),
+            ),
+          ),
+          ListTile(
+            title: const Text('AI insights (player)'),
+            subtitle: const Text(
+              'E4-15 — team + own-notes cards, no minors section',
+            ),
+            onTap: () => Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (_) => const InsightsScreen(
+                  viewerPlayerName: 'Rohan Verma',
+                  viewerRole: InsightViewerRole.player,
+                ),
+              ),
+            ),
+          ),
+          ListTile(
+            title: const Text('AI insights (coach/guardian)'),
+            subtitle: const Text(
+              'E4-15 — adds minor players\' notes (PRD §7.19 exception)',
+            ),
+            onTap: () => Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (_) => const InsightsScreen(
+                  viewerPlayerName: 'Deepak Sharma',
+                  viewerRole: InsightViewerRole.coach,
+                ),
               ),
             ),
           ),

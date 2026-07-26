@@ -9,6 +9,8 @@ import '../design_system/tokens/app_spacing.dart';
 import '../design_system/tokens/app_typography.dart';
 import 'awards_screen.dart';
 import 'ball_timeline_screen.dart';
+import 'insights_models.dart';
+import 'insights_screen.dart';
 import 'scoring_provider.dart';
 
 /// No 2-innings match model exists yet, so there's no real second
@@ -184,9 +186,20 @@ class PostMatchSummaryScreen extends ConsumerWidget {
           _SummaryCard(
             key: const ValueKey('insightsTeaserCard'),
             title: 'Insights',
-            body: state.wicketsLost >= 3
-                ? 'Wickets clustered mid-innings cost momentum.'
-                : 'A steady innings with few big swings.',
+            body: teamInsights(state).first.text,
+            trailing: AppButton(
+              key: const ValueKey('viewInsightsButton'),
+              variant: AppButtonVariant.tertiary,
+              label: 'View insights',
+              onPressed: () => Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (_) => InsightsScreen(
+                    viewerPlayerName: viewerPlayerName,
+                    viewerRole: InsightViewerRole.player,
+                  ),
+                ),
+              ),
+            ),
           ),
           const SizedBox(height: AppSpacing.sm),
           // 8. Timeline link.
