@@ -4,6 +4,7 @@ import 'avatar_screen.dart';
 import 'badge_tile_screen.dart';
 import 'buttons_screen.dart';
 import 'card_screen.dart';
+import 'chart_shell_screen.dart';
 import 'comment_widget_screen.dart';
 import 'chips_screen.dart';
 import 'coin_xp_screen.dart';
@@ -265,6 +266,15 @@ class DebugMenuScreen extends StatelessWidget {
             onTap: () => Navigator.of(
               context,
             ).push(MaterialPageRoute(builder: (_) => const ScoreboardScreen())),
+          ),
+          ListTile(
+            title: const Text('Chart shell'),
+            subtitle: const Text(
+              'E0-08 (12/12) — scrub tooltip, sticky legend, table toggle',
+            ),
+            onTap: () => Navigator.of(
+              context,
+            ).push(MaterialPageRoute(builder: (_) => const ChartShellScreen())),
           ),
         ],
       ),
