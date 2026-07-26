@@ -48,6 +48,22 @@ class InningsNotifier extends Notifier<InningsState> {
     );
   }
 
+  /// PRD §7.7 / AC: "Given format says no-ball = 1 run + rebowl, Then
+  /// extras honor the match's sub-rules from E4-01" -- [Delivery.extra]
+  /// reads [InningsState.subRules] to decide runs and over-legality.
+  void recordExtra(ExtraType type, {int additionalRuns = 0}) {
+    state = state.copyWith(
+      deliveries: [
+        ...state.deliveries,
+        Delivery.extra(
+          type: type,
+          additionalRuns: additionalRuns,
+          subRules: state.subRules,
+        ),
+      ],
+    );
+  }
+
   void undo() {
     if (state.deliveries.isEmpty) return;
     state = state.copyWith(

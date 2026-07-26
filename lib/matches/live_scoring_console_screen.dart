@@ -118,7 +118,7 @@ class LiveScoringConsoleScreen extends ConsumerWidget {
                             : colors.surfaceAlt,
                       ),
                       child: Text(
-                        delivery.isWicket ? 'W' : '${delivery.runs}',
+                        _beadLabel(delivery),
                         style: AppTypography.caption.copyWith(
                           color: delivery.isWicket
                               ? colors.error
@@ -185,6 +185,19 @@ class LiveScoringConsoleScreen extends ConsumerWidget {
                       ),
                   ],
                 ),
+                const SizedBox(height: AppSpacing.sm),
+                Wrap(
+                  spacing: AppSpacing.sm,
+                  children: [
+                    for (final type in ExtraType.values)
+                      AppButton(
+                        key: ValueKey('extraButton_${type.name}'),
+                        variant: AppButtonVariant.secondary,
+                        label: extraTypeShortLabels[type]!,
+                        onPressed: () => _showExtraSheet(context, type),
+                      ),
+                  ],
+                ),
                 const SizedBox(height: AppSpacing.md),
                 SizedBox(
                   width: double.infinity,
@@ -221,10 +234,39 @@ class LiveScoringConsoleScreen extends ConsumerWidget {
     );
   }
 
+  /// Every delivery (legal or not) since the last completed-over
+  /// boundary -- illegal balls (wides, rebowled no-balls) still show up
+  /// as beads even though they don't advance the over count.
   List<Delivery> _currentOverDeliveries(InningsState state) {
-    final ballsIntoOver = state.legalBallsThisOver;
-    final startIndex = state.deliveries.length - ballsIntoOver;
-    return state.deliveries.sublist(startIndex < 0 ? 0 : startIndex);
+    final target = state.legalBallsThisOver;
+    final result = <Delivery>[];
+    var legalCounted = 0;
+    for (var i = state.deliveries.length - 1; i >= 0; i--) {
+      final d = state.deliveries[i];
+      if (d.isLegal) {
+        if (legalCounted >= target) break;
+        legalCounted++;
+      }
+      result.insert(0, d);
+    }
+    return result;
+  }
+
+  String _beadLabel(Delivery delivery) {
+    if (delivery.isWicket) return 'W';
+    final type = delivery.extraType;
+    if (type == null) return '${delivery.runs}';
+    return delivery.runs > 0
+        ? '${extraTypeShortLabels[type]}${delivery.runs}'
+        : extraTypeShortLabels[type]!;
+  }
+
+  void _showExtraSheet(BuildContext context, ExtraType type) {
+    showAppBottomSheet<void>(
+      context: context,
+      title: extraTypeLabels[type],
+      contentBuilder: (context) => _ExtraRunStepperContent(type: type),
+    );
   }
 
   void _showDismissalSheet(BuildContext context, InningsState state) {
@@ -373,3 +415,55 @@ List<String> mockFielderNames() => const [
   'Sanjay Gupta',
   'Imran Khan',
 ];
+
+const List<int> _extraAdditionalRunOptions = [0, 1, 2, 3, 4];
+
+/// DS/PRD: "extras (Wd/Nb/B/Lb with run steppers)." The base
+/// wide/no-ball penalty run is applied automatically per the match's
+/// sub-rules (Delivery.extra); this stepper only picks any *additional*
+/// runs actually run/hit (overthrows, byes taken, etc).
+class _ExtraRunStepperContent extends ConsumerWidget {
+  final ExtraType type;
+
+  const _ExtraRunStepperContent({required this.type});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final colors = Theme.of(context).extension<AppColors>()!;
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            type == ExtraType.bye || type == ExtraType.legBye
+                ? 'Runs taken'
+                : 'Additional runs run/hit',
+            style: AppTypography.label.copyWith(color: colors.textTertiary),
+          ),
+          const SizedBox(height: AppSpacing.xs),
+          Wrap(
+            spacing: AppSpacing.xs,
+            children: [
+              for (final n in _extraAdditionalRunOptions)
+                ChoiceChip(
+                  key: ValueKey('extraRunsOption_${type.name}_$n'),
+                  label: Text('$n'),
+                  selected: false,
+                  onSelected: (_) {
+                    ref
+                        .read(inningsProvider.notifier)
+                        .recordExtra(type, additionalRuns: n);
+                    Navigator.of(context).pop();
+                  },
+                ),
+            ],
+          ),
+          const SizedBox(height: AppSpacing.lg),
+        ],
+      ),
+    );
+  }
+}
