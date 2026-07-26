@@ -44,6 +44,7 @@ class LiveScoringConsoleScreen extends ConsumerWidget {
     final nonStrikerStats = state.batters[nonStriker];
     final bowler = state.currentBowlerInnings;
     final needsNewBowler = bowler.completedOvers >= state.maxOversPerBowler;
+    final scoringDisabled = needsNewBowler || state.isPaused;
     final isLastBallWicket =
         state.deliveries.isNotEmpty && state.deliveries.last.isWicket;
     final odometerDuration = AppMotion.resolveDuration(
@@ -136,6 +137,16 @@ class LiveScoringConsoleScreen extends ConsumerWidget {
                   show: isLastBallWicket,
                   wicketsLost: state.wicketsLost,
                 ),
+                Text(
+                  key: const ValueKey('contextStrip'),
+                  state.requiredRunRate != null
+                      ? 'CRR ${state.currentRunRate.toStringAsFixed(2)} · '
+                            'RRR ${state.requiredRunRate!.toStringAsFixed(2)}'
+                      : 'CRR ${state.currentRunRate.toStringAsFixed(2)}',
+                  style: AppTypography.caption.copyWith(
+                    color: colors.textSecondary,
+                  ),
+                ),
               ],
             ),
           ),
@@ -206,6 +217,41 @@ class LiveScoringConsoleScreen extends ConsumerWidget {
             ),
           ),
           const Spacer(),
+          if (state.isPaused)
+            Padding(
+              padding: const EdgeInsets.symmetric(
+                horizontal: AppSpacing.lg,
+                vertical: AppSpacing.sm,
+              ),
+              child: Container(
+                key: const ValueKey('pausedBanner'),
+                width: double.infinity,
+                padding: const EdgeInsets.all(AppSpacing.md),
+                decoration: BoxDecoration(
+                  color: colors.error.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Match paused: ${state.interruptionReason}',
+                      style: AppTypography.body.copyWith(
+                        color: colors.textPrimary,
+                      ),
+                    ),
+                    const SizedBox(height: AppSpacing.sm),
+                    AppButton(
+                      key: const ValueKey('resumeMatchButton'),
+                      variant: AppButtonVariant.primary,
+                      label: 'Resume',
+                      fullWidth: true,
+                      onPressed: () => _showInterruptSheet(context, state),
+                    ),
+                  ],
+                ),
+              ),
+            ),
           if (needsNewBowler)
             Padding(
               padding: const EdgeInsets.symmetric(
@@ -262,7 +308,7 @@ class LiveScoringConsoleScreen extends ConsumerWidget {
                             backgroundColor: colors.surfaceAlt,
                             foregroundColor: colors.textPrimary,
                           ),
-                          onPressed: needsNewBowler
+                          onPressed: scoringDisabled
                               ? null
                               : () => notifier.recordRun(runs),
                           child: Text(
@@ -284,7 +330,7 @@ class LiveScoringConsoleScreen extends ConsumerWidget {
                         key: ValueKey('extraButton_${type.name}'),
                         variant: AppButtonVariant.secondary,
                         label: extraTypeShortLabels[type]!,
-                        onPressed: needsNewBowler
+                        onPressed: scoringDisabled
                             ? null
                             : () => _showExtraSheet(context, type),
                       ),
@@ -299,7 +345,7 @@ class LiveScoringConsoleScreen extends ConsumerWidget {
                     variant: AppButtonVariant.destructive,
                     label: 'WICKET',
                     fullWidth: true,
-                    onPressed: needsNewBowler
+                    onPressed: scoringDisabled
                         ? null
                         : () => _showDismissalSheet(context, state),
                   ),
@@ -322,7 +368,20 @@ class LiveScoringConsoleScreen extends ConsumerWidget {
                         key: const ValueKey('swapStrikeButton'),
                         variant: AppButtonVariant.tertiary,
                         label: 'Swap strike',
-                        onPressed: notifier.manualSwapStrike,
+                        onPressed: scoringDisabled
+                            ? null
+                            : notifier.manualSwapStrike,
+                      ),
+                    ),
+                    const SizedBox(width: AppSpacing.sm),
+                    SizedBox(
+                      width: 44,
+                      height: 44,
+                      child: IconButton(
+                        key: const ValueKey('interruptButton'),
+                        icon: const Icon(Icons.more_horiz),
+                        tooltip: 'Interrupt',
+                        onPressed: () => _showInterruptSheet(context, state),
                       ),
                     ),
                   ],
@@ -379,6 +438,16 @@ class LiveScoringConsoleScreen extends ConsumerWidget {
             state.maxOversPerBowler -
             (state.bowlers[name]?.completedOvers ?? 0),
       ),
+    );
+  }
+
+  /// DS §7's "Interrupt sheet" / PRD §7.7: "Rain/Delay button pauses
+  /// match clock, notifies followers, offers revised-overs calculator."
+  void _showInterruptSheet(BuildContext context, InningsState state) {
+    showAppBottomSheet<void>(
+      context: context,
+      title: state.isPaused ? 'Resume match' : 'Interrupt match',
+      contentBuilder: (context) => _InterruptSheetContent(state: state),
     );
   }
 }
@@ -724,4 +793,169 @@ class _BowlerSelectSheetContent extends ConsumerWidget {
       ),
     );
   }
+}
+
+class _InterruptSheetContent extends ConsumerStatefulWidget {
+  final InningsState state;
+
+  const _InterruptSheetContent({required this.state});
+
+  @override
+  ConsumerState<_InterruptSheetContent> createState() =>
+      _InterruptSheetContentState();
+}
+
+const List<String> _interruptionReasons = ['Rain', 'Bad light', 'Injury'];
+
+class _InterruptSheetContentState
+    extends ConsumerState<_InterruptSheetContent> {
+  String? _reason;
+  late int _revisedOvers = widget.state.effectiveTotalOvers;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = Theme.of(context).extension<AppColors>()!;
+    final state = widget.state;
+
+    if (!state.isPaused) {
+      return Padding(
+        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Reason',
+              style: AppTypography.label.copyWith(color: colors.textTertiary),
+            ),
+            const SizedBox(height: AppSpacing.xs),
+            Wrap(
+              spacing: AppSpacing.xs,
+              children: [
+                for (final reason in _interruptionReasons)
+                  ChoiceChip(
+                    key: ValueKey('interruptReason_$reason'),
+                    label: Text(reason),
+                    selected: _reason == reason,
+                    onSelected: (_) => setState(() => _reason = reason),
+                  ),
+              ],
+            ),
+            const SizedBox(height: AppSpacing.lg),
+            AppButton(
+              key: const ValueKey('pauseMatchButton'),
+              variant: AppButtonVariant.destructive,
+              label: 'Pause match',
+              fullWidth: true,
+              onPressed: _reason == null
+                  ? null
+                  : () {
+                      ref
+                          .read(inningsProvider.notifier)
+                          .startInterruption(_reason!);
+                      Navigator.of(context).pop();
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Followers notified: match paused'),
+                        ),
+                      );
+                    },
+            ),
+            const SizedBox(height: AppSpacing.lg),
+          ],
+        ),
+      );
+    }
+
+    final parTable = state.targetRuns != null
+        ? _proportionalParTable(state.targetRuns!, _revisedOvers)
+        : const <int, int>{};
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Revised overs for this innings',
+            style: AppTypography.label.copyWith(color: colors.textTertiary),
+          ),
+          Row(
+            children: [
+              IconButton(
+                key: const ValueKey('revisedOversDecrement'),
+                icon: const Icon(Icons.remove_circle_outline),
+                onPressed: _revisedOvers > 1
+                    ? () => setState(() => _revisedOvers -= 1)
+                    : null,
+              ),
+              Text(
+                '$_revisedOvers',
+                style: AppTypography.stat.copyWith(color: colors.textPrimary),
+              ),
+              IconButton(
+                key: const ValueKey('revisedOversIncrement'),
+                icon: const Icon(Icons.add_circle_outline),
+                onPressed: () => setState(() => _revisedOvers += 1),
+              ),
+            ],
+          ),
+          if (parTable.isNotEmpty) ...[
+            Text(
+              'Par score (simple proportional estimate, not real DLS)',
+              style: AppTypography.label.copyWith(color: colors.textTertiary),
+            ),
+            const SizedBox(height: AppSpacing.xs),
+            SizedBox(
+              height: 32,
+              child: ListView(
+                scrollDirection: Axis.horizontal,
+                children: [
+                  for (final entry in parTable.entries)
+                    Padding(
+                      padding: const EdgeInsets.only(right: AppSpacing.sm),
+                      child: Text(
+                        'Ov ${entry.key}: ${entry.value}',
+                        style: AppTypography.caption.copyWith(
+                          color: colors.textSecondary,
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+            ),
+          ],
+          const SizedBox(height: AppSpacing.lg),
+          AppButton(
+            key: const ValueKey('resumeButton'),
+            variant: AppButtonVariant.primary,
+            label: 'Resume',
+            fullWidth: true,
+            onPressed: () {
+              ref
+                  .read(inningsProvider.notifier)
+                  .resumeFromInterruption(revisedOvers: _revisedOvers);
+              Navigator.of(context).pop();
+            },
+          ),
+          const SizedBox(height: AppSpacing.lg),
+        ],
+      ),
+    );
+  }
+}
+
+/// PRD §7.7: "simple par table for reduced-over matches (simple par
+/// table, organizer-preset)." No organizer/tournament console exists to
+/// upload a real preset table, so this is a proportional stand-in: par
+/// at over N is the target scaled by N/[overs] -- a deliberately simple
+/// approximation, not real DLS. Parameterized (rather than an
+/// InningsState getter) since the sheet needs to preview it against the
+/// revised-overs value being edited, before the scorer confirms Resume.
+Map<int, int> _proportionalParTable(int target, int overs) {
+  return {
+    for (var over = 1; over <= overs; over++)
+      over: (target * over / overs).round(),
+  };
 }

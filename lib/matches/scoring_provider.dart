@@ -163,6 +163,33 @@ class InningsNotifier extends Notifier<InningsState> {
       ],
     );
   }
+
+  /// PRD §7.7: "Rain/Delay button pauses match clock, notifies
+  /// followers, offers revised-overs calculator." Pausing/notifying
+  /// followers is the screen's job (a toast, same as Toss's broadcast);
+  /// this just records that scoring is paused and why.
+  void startInterruption(String reason) {
+    state = state.copyWith(isPaused: true, interruptionReason: reason);
+  }
+
+  /// AC: "resuming recomputes RRR strip" -- [revisedOvers] (null keeps
+  /// the original format overs) flows straight into
+  /// [InningsState.effectiveTotalOvers], which every rate getter reads
+  /// fresh, so nothing needs to be explicitly "recomputed" here.
+  void resumeFromInterruption({int? revisedOvers}) {
+    state = state.copyWith(
+      isPaused: false,
+      clearInterruptionReason: true,
+      revisedOversForInnings: revisedOvers ?? state.revisedOversForInnings,
+    );
+  }
+
+  /// No 2-innings match model exists yet -- setting a chase target is a
+  /// standalone action rather than part of a real innings-transition
+  /// flow, just enough to make requiredRunRate demonstrable.
+  void setTarget(int target) {
+    state = state.copyWith(targetRuns: target);
+  }
 }
 
 final inningsProvider = NotifierProvider<InningsNotifier, InningsState>(
