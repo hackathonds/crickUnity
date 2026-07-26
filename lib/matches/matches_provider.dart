@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../teams/availability_matrix_models.dart';
 import 'match_models.dart';
 
 class MatchesState {
@@ -37,11 +38,72 @@ class MatchesNotifier extends Notifier<MatchesState> {
           composerTeamName: composerTeamName,
           draft: draft,
           status: MatchStatus.pendingOpponent,
+          squadNames: mockSquadNames(),
         ),
         ...state.matches,
       ],
     );
     return id;
+  }
+
+  /// DS §7-25 / PRD notification table: cancellation is terminal --
+  /// struck header + reason banner, no further RSVP action.
+  void cancelMatch(String matchId, String reason) {
+    state = state.copyWith(
+      matches: [
+        for (final m in state.matches)
+          if (m.id == matchId)
+            m.copyWith(status: MatchStatus.cancelled, cancelledReason: reason)
+          else
+            m,
+      ],
+    );
+  }
+
+  /// A reschedule keeps the match accepted/live but moves its date/time
+  /// and clears every existing response, forcing fresh RSVPs.
+  void rescheduleMatch(
+    String matchId, {
+    required DateTime newDateTime,
+    required String reason,
+  }) {
+    state = state.copyWith(
+      matches: [
+        for (final m in state.matches)
+          if (m.id == matchId)
+            m.copyWith(
+              draft: m.draft.copyWith(dateTime: newDateTime),
+              rescheduleReason: reason,
+              availabilityResponses: const {},
+              availabilityDeadline: newDateTime.subtract(
+                Duration(hours: m.draft.availabilityDeadlineHours),
+              ),
+            )
+          else
+            m,
+      ],
+    );
+  }
+
+  void respondAvailability(
+    String matchId,
+    String playerName,
+    AvailabilityResponse response,
+  ) {
+    state = state.copyWith(
+      matches: [
+        for (final m in state.matches)
+          if (m.id == matchId)
+            m.copyWith(
+              availabilityResponses: {
+                ...m.availabilityResponses,
+                playerName: response,
+              },
+            )
+          else
+            m,
+      ],
+    );
   }
 
   void acceptMatch(String matchId, {DateTime Function() now = DateTime.now}) {

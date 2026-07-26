@@ -85,6 +85,7 @@ class MatchOpponentDecisionScreen extends ConsumerWidget {
                     'Waiting on ${match.composerTeamName} to review your '
                         'proposed changes.',
                   MatchStatus.pendingOpponent => '',
+                  MatchStatus.cancelled => 'This match was cancelled.',
                 },
                 style: AppTypography.body.copyWith(color: colors.textPrimary),
               ),
