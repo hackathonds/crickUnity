@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../onboarding/onboarding_flow.dart';
 import 'avatar_screen.dart';
 import 'badge_tile_screen.dart';
 import 'buttons_screen.dart';
@@ -275,6 +276,33 @@ class DebugMenuScreen extends StatelessWidget {
             onTap: () => Navigator.of(
               context,
             ).push(MaterialPageRoute(builder: (_) => const ChartShellScreen())),
+          ),
+          ListTile(
+            title: const Text('Onboarding: Welcome + Registration + OTP'),
+            subtitle: const Text(
+              'E1-01 — 3-slide pager, phone→OTP 6-cell, name',
+            ),
+            onTap: () => Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (_) => OnboardingFlow(
+                  onExploreAsGuest: () {
+                    Navigator.of(context).pop();
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Guest mode is E1-04 — not built yet'),
+                      ),
+                    );
+                  },
+                  onContactSupport: () {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Support is E16-07 — not built yet'),
+                      ),
+                    );
+                  },
+                ),
+              ),
+            ),
           ),
         ],
       ),
