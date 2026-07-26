@@ -26,10 +26,12 @@ String formatFreshnessStamp(DateTime lastUpdated, {DateTime? now}) {
 
 /// A simple placeholder Arc illustration (DS's signature quarter-circle
 /// motif) — a first-pass abstraction standing in for real per-context
-/// empty-state art, same category as E0-03's hand-drawn icons.
-class _ArcIllustration extends StatelessWidget {
+/// empty-state/onboarding art, same category as E0-03's hand-drawn icons.
+/// Public (not just this file's Empty scaffold) since E1-01's Welcome pager
+/// reuses the same device rather than drawing a second one.
+class AppArcIllustration extends StatelessWidget {
   final Color color;
-  const _ArcIllustration({required this.color});
+  const AppArcIllustration({super.key, required this.color});
 
   @override
   Widget build(BuildContext context) {
@@ -94,7 +96,7 @@ class AppEmptyState extends StatelessWidget {
             child: Column(
               children: [
                 SizedBox(height: topSpace),
-                _ArcIllustration(color: colors.textTertiary),
+                AppArcIllustration(color: colors.textTertiary),
                 const SizedBox(height: AppSpacing.xl),
                 Text(
                   message,
