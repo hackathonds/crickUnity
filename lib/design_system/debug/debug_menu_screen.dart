@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'avatar_screen.dart';
 import 'buttons_screen.dart';
 import 'card_screen.dart';
+import 'comment_widget_screen.dart';
 import 'chips_screen.dart';
 import 'calendar_screen.dart';
 import 'dropdown_screen.dart';
@@ -215,6 +216,15 @@ class DebugMenuScreen extends StatelessWidget {
             onTap: () => Navigator.of(
               context,
             ).push(MaterialPageRoute(builder: (_) => const TimelineScreen())),
+          ),
+          ListTile(
+            title: const Text('Comment widget'),
+            subtitle: const Text(
+              'E0-08 (7/12) — composer, thread rows, expandable replies',
+            ),
+            onTap: () => Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => const CommentWidgetScreen()),
+            ),
           ),
         ],
       ),
