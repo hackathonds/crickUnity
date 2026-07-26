@@ -19,6 +19,7 @@ import '../../teams/availability_matrix_screen.dart';
 import 'announcements_demo.dart';
 import 'avatar_screen.dart';
 import 'members_roles_demo.dart';
+import '../../teams/selection_board_screen.dart';
 import 'practice_session_demo.dart';
 import 'team_home_demo.dart';
 import 'nearby_matches_preview_screen.dart';
@@ -492,6 +493,15 @@ class DebugMenuScreen extends StatelessWidget {
             ),
             onTap: () => Navigator.of(context).push(
               MaterialPageRoute(builder: (_) => const PracticeSessionDemo()),
+            ),
+          ),
+          ListTile(
+            title: const Text('Selection board & lineup'),
+            subtitle: const Text(
+              'E3-08 — drag pool to XI, WK warning, publish, lock, replacement flow',
+            ),
+            onTap: () => Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => const SelectionBoardScreen()),
             ),
           ),
           ListTile(
