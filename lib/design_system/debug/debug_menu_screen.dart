@@ -1,6 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../guest/guest_live_match_preview_screen.dart';
+import '../../matches/create_match_flow.dart';
+import '../../matches/match_models.dart';
+import '../../matches/match_opponent_decision_screen.dart';
+import '../../matches/match_proposal_review_screen.dart';
+import '../../matches/matches_provider.dart';
 import '../../onboarding/onboarding_flow.dart';
 import '../../profile/achievement_models.dart';
 import '../../profile/achievements_wall_screen.dart';
@@ -701,6 +707,74 @@ class DebugMenuScreen extends StatelessWidget {
                 builder: (_) => const FreeAgentScreen(playerName: 'Neha Rao'),
               ),
             ),
+          ),
+          ListTile(
+            title: const Text('Start a match'),
+            subtitle: const Text(
+              'E4-01 — 4-step create-match wizard, smart defaults',
+            ),
+            onTap: () => Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (_) => CreateMatchFlow(
+                  composerTeamName: 'Riverside Strikers',
+                  onMatchSent: (_) {},
+                ),
+              ),
+            ),
+          ),
+          ListTile(
+            title: const Text('Match invite (opponent view)'),
+            subtitle: const Text('E4-01 — Accept / Propose changes / Decline'),
+            onTap: () {
+              final container = ProviderScope.containerOf(
+                context,
+                listen: false,
+              );
+              final id = container
+                  .read(matchesProvider.notifier)
+                  .submitMatch(
+                    draft: MatchDraft(
+                      dateTime: DateTime.now().add(const Duration(days: 3)),
+                      opponentTeamName: 'Riverside Strikers',
+                      groundName: 'Central Ground',
+                    ),
+                    composerTeamName: 'Central Warriors',
+                  );
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (_) => MatchOpponentDecisionScreen(matchId: id),
+                ),
+              );
+            },
+          ),
+          ListTile(
+            title: const Text('Match proposal review (composer view)'),
+            subtitle: const Text('E4-01 — field-level diff, one-tap accept'),
+            onTap: () {
+              final container = ProviderScope.containerOf(
+                context,
+                listen: false,
+              );
+              final notifier = container.read(matchesProvider.notifier);
+              final id = notifier.submitMatch(
+                draft: MatchDraft(
+                  dateTime: DateTime.now().add(const Duration(days: 3)),
+                  opponentTeamName: 'Central Warriors',
+                  groundName: 'Riverside Ground',
+                ),
+                composerTeamName: 'Riverside Strikers',
+              );
+              notifier.proposeChanges(
+                id,
+                groundName: 'Central Ground',
+                dateTime: DateTime.now().add(const Duration(days: 4)),
+              );
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (_) => MatchProposalReviewScreen(matchId: id),
+                ),
+              );
+            },
           ),
           ListTile(
             title: const Text('Guest mode preview'),
