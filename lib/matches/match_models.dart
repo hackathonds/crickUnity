@@ -30,14 +30,18 @@ const Map<MatchVisibility, String> matchVisibilityLabels = {
   MatchVisibility.private: 'Private',
 };
 
-/// PRD §7.1: "scorer assignment (self/member/hire from Gig Board)." No
-/// Gig Board module exists yet (a later epic), so only the two
-/// self-contained options are offered here.
-enum ScorerAssignment { self, member }
+/// PRD §7.1: "scorer assignment (self/member/hire from Gig Board)."
+/// Gig Board is E14-01, a much later epic that doesn't exist yet --
+/// [hireFromGigBoard] is selectable (so the picker itself is complete)
+/// but resolves to no assignment, same "mock the missing piece, build
+/// everything else" treatment used for every other cross-epic gap this
+/// session.
+enum ScorerAssignment { self, member, hireFromGigBoard }
 
 const Map<ScorerAssignment, String> scorerAssignmentLabels = {
   ScorerAssignment.self: 'Score it myself',
   ScorerAssignment.member: 'Assign a team member',
+  ScorerAssignment.hireFromGigBoard: 'Hire from Gig Board',
 };
 
 /// PRD §7.1: "format (overs, players/side, wide/no-ball rules preset
@@ -113,6 +117,8 @@ class MatchDraft {
   final DateTime dateTime;
   final MatchVisibility visibility;
   final ScorerAssignment scorerAssignment;
+  final String? scorerMemberName;
+  final List<String> umpireNames;
   final bool expensePresetEnabled;
   final int availabilityDeadlineHours;
 
@@ -127,6 +133,8 @@ class MatchDraft {
     required this.dateTime,
     this.visibility = MatchVisibility.community,
     this.scorerAssignment = ScorerAssignment.self,
+    this.scorerMemberName,
+    this.umpireNames = const [],
     this.expensePresetEnabled = true,
     this.availabilityDeadlineHours = defaultAvailabilityDeadlineHours,
   });
@@ -142,6 +150,9 @@ class MatchDraft {
     DateTime? dateTime,
     MatchVisibility? visibility,
     ScorerAssignment? scorerAssignment,
+    String? scorerMemberName,
+    bool clearScorerMemberName = false,
+    List<String>? umpireNames,
     bool? expensePresetEnabled,
     int? availabilityDeadlineHours,
   }) {
@@ -156,6 +167,10 @@ class MatchDraft {
       dateTime: dateTime ?? this.dateTime,
       visibility: visibility ?? this.visibility,
       scorerAssignment: scorerAssignment ?? this.scorerAssignment,
+      scorerMemberName: clearScorerMemberName
+          ? null
+          : (scorerMemberName ?? this.scorerMemberName),
+      umpireNames: umpireNames ?? this.umpireNames,
       expensePresetEnabled: expensePresetEnabled ?? this.expensePresetEnabled,
       availabilityDeadlineHours:
           availabilityDeadlineHours ?? this.availabilityDeadlineHours,
@@ -250,6 +265,10 @@ class MatchRecord {
   final List<String> timelineEntries;
   final List<String> pendingViewerRequests;
   final List<String> approvedViewerNames;
+  final bool composerCaptainApprovedSelfScoring;
+  final bool opponentCaptainApprovedSelfScoring;
+  final bool composerCaptainWaivedUmpireConflict;
+  final bool opponentCaptainWaivedUmpireConflict;
 
   const MatchRecord({
     required this.id,
@@ -269,7 +288,18 @@ class MatchRecord {
     this.timelineEntries = const [],
     this.pendingViewerRequests = const [],
     this.approvedViewerNames = const [],
+    this.composerCaptainApprovedSelfScoring = false,
+    this.opponentCaptainApprovedSelfScoring = false,
+    this.composerCaptainWaivedUmpireConflict = false,
+    this.opponentCaptainWaivedUmpireConflict = false,
   });
+
+  bool get selfScoringOverrideApproved =>
+      composerCaptainApprovedSelfScoring && opponentCaptainApprovedSelfScoring;
+
+  bool get umpireConflictWaived =>
+      composerCaptainWaivedUmpireConflict &&
+      opponentCaptainWaivedUmpireConflict;
 
   MatchRecord copyWith({
     MatchDraft? draft,
@@ -290,6 +320,10 @@ class MatchRecord {
     List<String>? timelineEntries,
     List<String>? pendingViewerRequests,
     List<String>? approvedViewerNames,
+    bool? composerCaptainApprovedSelfScoring,
+    bool? opponentCaptainApprovedSelfScoring,
+    bool? composerCaptainWaivedUmpireConflict,
+    bool? opponentCaptainWaivedUmpireConflict,
   }) {
     return MatchRecord(
       id: id,
@@ -319,6 +353,18 @@ class MatchRecord {
       pendingViewerRequests:
           pendingViewerRequests ?? this.pendingViewerRequests,
       approvedViewerNames: approvedViewerNames ?? this.approvedViewerNames,
+      composerCaptainApprovedSelfScoring:
+          composerCaptainApprovedSelfScoring ??
+          this.composerCaptainApprovedSelfScoring,
+      opponentCaptainApprovedSelfScoring:
+          opponentCaptainApprovedSelfScoring ??
+          this.opponentCaptainApprovedSelfScoring,
+      composerCaptainWaivedUmpireConflict:
+          composerCaptainWaivedUmpireConflict ??
+          this.composerCaptainWaivedUmpireConflict,
+      opponentCaptainWaivedUmpireConflict:
+          opponentCaptainWaivedUmpireConflict ??
+          this.opponentCaptainWaivedUmpireConflict,
     );
   }
 }

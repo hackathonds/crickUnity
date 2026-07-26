@@ -48,8 +48,29 @@ class CreateMatchNotifier extends Notifier<CreateMatchState> {
       state = state.copyWith(draft: state.draft.copyWith(visibility: value));
 
   void setScorerAssignment(ScorerAssignment value) => state = state.copyWith(
-    draft: state.draft.copyWith(scorerAssignment: value),
+    draft: state.draft.copyWith(
+      scorerAssignment: value,
+      clearScorerMemberName: value != ScorerAssignment.member,
+    ),
   );
+
+  void setScorerMemberName(String value) => state = state.copyWith(
+    draft: state.draft.copyWith(scorerMemberName: value),
+  );
+
+  void toggleUmpire(String name) {
+    final current = state.draft.umpireNames;
+    state = state.copyWith(
+      draft: state.draft.copyWith(
+        umpireNames: current.contains(name)
+            ? [
+                for (final n in current)
+                  if (n != name) n,
+              ]
+            : [...current, name],
+      ),
+    );
+  }
 
   void setExpensePresetEnabled(bool value) => state = state.copyWith(
     draft: state.draft.copyWith(expensePresetEnabled: value),
