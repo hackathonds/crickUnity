@@ -28,6 +28,7 @@ import '../../teams/season_summary_models.dart';
 import '../../teams/season_summary_screen.dart';
 import '../../teams/team_documents_screen.dart';
 import '../../teams/team_member_models.dart';
+import '../../teams/transfer_screen.dart';
 import 'jersey_board_demo.dart';
 import 'practice_session_demo.dart';
 import 'team_home_demo.dart';
@@ -648,6 +649,20 @@ class DebugMenuScreen extends StatelessWidget {
                     moneySpentRupees: 0,
                     perHeadCostRupees: 0,
                   ),
+                ),
+              ),
+            ),
+          ),
+          ListTile(
+            title: const Text('Transfer'),
+            subtitle: const Text(
+              'E3-14 — player-move flow, window enforcement, courtesy note',
+            ),
+            onTap: () => Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (_) => const TransferScreen(
+                  playerName: 'Karan Bhatt',
+                  fromTeamName: 'Riverside Strikers',
                 ),
               ),
             ),
