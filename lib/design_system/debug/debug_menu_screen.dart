@@ -19,6 +19,7 @@ import '../../teams/availability_matrix_screen.dart';
 import 'announcements_demo.dart';
 import 'avatar_screen.dart';
 import 'members_roles_demo.dart';
+import 'practice_session_demo.dart';
 import 'team_home_demo.dart';
 import 'nearby_matches_preview_screen.dart';
 import 'onboarding_checklist_screen.dart';
@@ -482,6 +483,15 @@ class DebugMenuScreen extends StatelessWidget {
               MaterialPageRoute(
                 builder: (_) => const AvailabilityMatrixScreen(),
               ),
+            ),
+          ),
+          ListTile(
+            title: const Text('Practice session + attendance'),
+            subtitle: const Text(
+              'E3-07 — RSVP, check-in ±1h window, roll-call, no-show excuse, recap',
+            ),
+            onTap: () => Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => const PracticeSessionDemo()),
             ),
           ),
           ListTile(
