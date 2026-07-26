@@ -3,6 +3,8 @@ import 'package:go_router/go_router.dart';
 
 import '../design_system/debug/debug_menu_screen.dart';
 import '../design_system/tokens/app_motion.dart';
+import '../design_system/tokens/app_spacing.dart';
+import '../settings/appearance_settings_screen.dart';
 import '../widgets/placeholder_screen.dart';
 import '../widgets/tab_root_screen.dart';
 import 'app_shell.dart';
@@ -131,14 +133,29 @@ GoRouter createAppRouter() => GoRouter(
               rootTitle: 'Profile',
               branchIndex: 3,
               extra: Builder(
-                builder: (context) => OutlinedButton(
-                  onPressed: () =>
-                      Navigator.of(context, rootNavigator: true).push(
-                        MaterialPageRoute(
-                          builder: (_) => const DebugMenuScreen(),
-                        ),
-                      ),
-                  child: const Text('Design system QA / debug menu'),
+                builder: (context) => Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    OutlinedButton(
+                      onPressed: () =>
+                          Navigator.of(context, rootNavigator: true).push(
+                            MaterialPageRoute(
+                              builder: (_) => const AppearanceSettingsScreen(),
+                            ),
+                          ),
+                      child: const Text('Appearance settings'),
+                    ),
+                    const SizedBox(height: AppSpacing.md),
+                    OutlinedButton(
+                      onPressed: () =>
+                          Navigator.of(context, rootNavigator: true).push(
+                            MaterialPageRoute(
+                              builder: (_) => const DebugMenuScreen(),
+                            ),
+                          ),
+                      child: const Text('Design system QA / debug menu'),
+                    ),
+                  ],
                 ),
               ),
             ),
