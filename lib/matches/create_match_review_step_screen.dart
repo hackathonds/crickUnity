@@ -141,6 +141,53 @@ class CreateMatchReviewStepScreen extends ConsumerWidget {
                         ),
                     ],
                   ),
+                  if (draft.scorerAssignment == ScorerAssignment.member) ...[
+                    const SizedBox(height: AppSpacing.xs),
+                    Wrap(
+                      spacing: AppSpacing.xs,
+                      children: [
+                        for (final name in mockSquadNames())
+                          ChoiceChip(
+                            key: ValueKey('scorerMemberChip_$name'),
+                            label: Text(name),
+                            selected: draft.scorerMemberName == name,
+                            onSelected: (_) =>
+                                notifier.setScorerMemberName(name),
+                          ),
+                      ],
+                    ),
+                  ],
+                  if (draft.scorerAssignment ==
+                      ScorerAssignment.hireFromGigBoard) ...[
+                    const SizedBox(height: AppSpacing.xs),
+                    Text(
+                      'Gig Board (E14-01) isn\'t built yet -- no scorer '
+                      'will actually be hired.',
+                      style: AppTypography.caption.copyWith(
+                        color: colors.textTertiary,
+                      ),
+                    ),
+                  ],
+                  const SizedBox(height: AppSpacing.sm),
+                  Text(
+                    'Umpires (optional)',
+                    style: AppTypography.label.copyWith(
+                      color: colors.textTertiary,
+                    ),
+                  ),
+                  const SizedBox(height: AppSpacing.xs),
+                  Wrap(
+                    spacing: AppSpacing.xs,
+                    children: [
+                      for (final name in mockSquadNames())
+                        FilterChip(
+                          key: ValueKey('umpireChip_$name'),
+                          label: Text(name),
+                          selected: draft.umpireNames.contains(name),
+                          onSelected: (_) => notifier.toggleUmpire(name),
+                        ),
+                    ],
+                  ),
                   const SizedBox(height: AppSpacing.sm),
                   Row(
                     children: [

@@ -883,6 +883,40 @@ class DebugMenuScreen extends StatelessWidget {
             },
           ),
           ListTile(
+            title: const Text('Match detail (scorer/umpire conflicts)'),
+            subtitle: const Text(
+              'E4-17 — self-scoring block + umpire own-squad conflict',
+            ),
+            onTap: () {
+              final container = ProviderScope.containerOf(
+                context,
+                listen: false,
+              );
+              final notifier = container.read(matchesProvider.notifier);
+              final id = notifier.submitMatch(
+                draft: MatchDraft(
+                  dateTime: DateTime.now().add(const Duration(days: 3)),
+                  opponentTeamName: 'Central Warriors',
+                  groundName: 'Riverside Ground',
+                  scorerAssignment: ScorerAssignment.member,
+                  scorerMemberName: 'Kabir Singh',
+                  umpireNames: const ['Priya Nair'],
+                ),
+                composerTeamName: 'Riverside Strikers',
+              );
+              notifier.acceptMatch(id);
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (_) => MatchDetailScreen(
+                    matchId: id,
+                    viewerName: 'Rohan Kapoor',
+                    isCaptain: true,
+                  ),
+                ),
+              );
+            },
+          ),
+          ListTile(
             title: const Text('Match detail (rescheduled)'),
             subtitle: const Text('E4-02 — banner + cleared responses'),
             onTap: () {

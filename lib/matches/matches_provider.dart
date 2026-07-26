@@ -328,6 +328,55 @@ class MatchesNotifier extends Notifier<MatchesState> {
       ],
     );
   }
+
+  /// PRD §2.6: "Cannot score a match they are playing in (system
+  /// blocks; override only if both captains approve -- flagged
+  /// 'self-scored, reduced verification weight')." The flag itself
+  /// (not modeled here -- it lives entirely on this record, separate
+  /// from the independent live-scoring [InningsState] stack) survives
+  /// approval; only the block is lifted.
+  void approveSelfScoringOverride(
+    String matchId, {
+    required bool asComposerCaptain,
+  }) {
+    state = state.copyWith(
+      matches: [
+        for (final m in state.matches)
+          if (m.id == matchId)
+            m.copyWith(
+              composerCaptainApprovedSelfScoring: asComposerCaptain
+                  ? true
+                  : m.composerCaptainApprovedSelfScoring,
+              opponentCaptainApprovedSelfScoring: !asComposerCaptain
+                  ? true
+                  : m.opponentCaptainApprovedSelfScoring,
+            )
+          else
+            m,
+      ],
+    );
+  }
+
+  /// PRD §2.7: "cannot umpire a match involving their own active team;
+  /// conflict flag; both captains must waive."
+  void waiveUmpireConflict(String matchId, {required bool asComposerCaptain}) {
+    state = state.copyWith(
+      matches: [
+        for (final m in state.matches)
+          if (m.id == matchId)
+            m.copyWith(
+              composerCaptainWaivedUmpireConflict: asComposerCaptain
+                  ? true
+                  : m.composerCaptainWaivedUmpireConflict,
+              opponentCaptainWaivedUmpireConflict: !asComposerCaptain
+                  ? true
+                  : m.opponentCaptainWaivedUmpireConflict,
+            )
+          else
+            m,
+      ],
+    );
+  }
 }
 
 bool _defaultCoinPick() => Random().nextBool();

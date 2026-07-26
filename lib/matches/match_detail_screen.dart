@@ -43,6 +43,28 @@ class MatchDetailScreen extends ConsumerWidget {
     final draft = match.draft;
     final cancelled = match.status == MatchStatus.cancelled;
 
+    // PRD §2.6: resolve who's actually scoring -- "self" means the
+    // viewer of this screen (assumed to be the composer captain when
+    // isCaptain is true); "hire from Gig Board" has no name to resolve
+    // since E14-01 doesn't exist, so it can never trigger this check.
+    final resolvedScorerName = switch (draft.scorerAssignment) {
+      ScorerAssignment.self => viewerName,
+      ScorerAssignment.member => draft.scorerMemberName,
+      ScorerAssignment.hireFromGigBoard => null,
+    };
+    final scorerIsPlaying =
+        resolvedScorerName != null &&
+        match.squadNames.contains(resolvedScorerName);
+
+    // PRD §2.7: "cannot umpire a match involving their own active
+    // team." Simplification, flagged honestly: only the composer's own
+    // squadNames exists in this mock -- there's no opponent-squad data
+    // to also check against.
+    final conflictedUmpires = [
+      for (final name in draft.umpireNames)
+        if (match.squadNames.contains(name)) name,
+    ];
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Match detail'),
@@ -224,13 +246,82 @@ class MatchDetailScreen extends ConsumerWidget {
                   ),
                   const SizedBox(height: AppSpacing.lg),
                   _InfoRow(
-                    label: 'Officials',
-                    value: scorerAssignmentLabels[draft.scorerAssignment]!,
+                    label: 'Scorer',
+                    value: draft.scorerAssignment == ScorerAssignment.member
+                        ? '${scorerAssignmentLabels[draft.scorerAssignment]}: '
+                              '${draft.scorerMemberName ?? '-'}'
+                        : scorerAssignmentLabels[draft.scorerAssignment]!,
                   ),
+                  if (draft.umpireNames.isNotEmpty)
+                    _InfoRow(
+                      label: 'Umpires',
+                      value: draft.umpireNames.join(', '),
+                    ),
                   _InfoRow(
                     label: 'Ball',
                     value: ballTypeLabels[draft.ballType]!,
                   ),
+                  if (scorerIsPlaying) ...[
+                    const SizedBox(height: AppSpacing.sm),
+                    if (match.selfScoringOverrideApproved)
+                      Container(
+                        key: const ValueKey('selfScoredFlag'),
+                        padding: const EdgeInsets.all(AppSpacing.md),
+                        decoration: BoxDecoration(
+                          color: colors.warning.withValues(alpha: 0.12),
+                          borderRadius: BorderRadius.circular(14),
+                        ),
+                        child: Text(
+                          'Self-scored -- reduced verification weight',
+                          style: AppTypography.body.copyWith(
+                            color: colors.textPrimary,
+                          ),
+                        ),
+                      )
+                    else
+                      _DualCaptainConflictCard(
+                        key: const ValueKey('selfScoringConflictCard'),
+                        message:
+                            '$resolvedScorerName is also in the playing '
+                            'squad. Both captains must approve to continue '
+                            '-- the scorecard will be flagged self-scored, '
+                            'reduced verification weight.',
+                        composerApproved:
+                            match.composerCaptainApprovedSelfScoring,
+                        opponentApproved:
+                            match.opponentCaptainApprovedSelfScoring,
+                        onApprove: (asComposerCaptain) => ref
+                            .read(matchesProvider.notifier)
+                            .approveSelfScoringOverride(
+                              matchId,
+                              asComposerCaptain: asComposerCaptain,
+                            ),
+                        approveButtonKeyPrefix: 'selfScoring',
+                      ),
+                  ],
+                  if (conflictedUmpires.isNotEmpty &&
+                      !match.umpireConflictWaived) ...[
+                    const SizedBox(height: AppSpacing.sm),
+                    _DualCaptainConflictCard(
+                      key: const ValueKey('umpireConflictCard'),
+                      message:
+                          '${conflictedUmpires.join(', ')} '
+                          '${conflictedUmpires.length == 1 ? 'is' : 'are'} '
+                          'also in the playing squad. Both captains must '
+                          'waive this conflict.',
+                      composerApproved:
+                          match.composerCaptainWaivedUmpireConflict,
+                      opponentApproved:
+                          match.opponentCaptainWaivedUmpireConflict,
+                      onApprove: (asComposerCaptain) => ref
+                          .read(matchesProvider.notifier)
+                          .waiveUmpireConflict(
+                            matchId,
+                            asComposerCaptain: asComposerCaptain,
+                          ),
+                      approveButtonKeyPrefix: 'umpireConflict',
+                    ),
+                  ],
                   const SizedBox(height: AppSpacing.xxl),
                   Text(
                     'Your availability',
@@ -463,6 +554,78 @@ class _ShareSheetContent extends StatelessWidget {
             ),
           ),
           const SizedBox(height: AppSpacing.lg),
+        ],
+      ),
+    );
+  }
+}
+
+/// Two mock approve buttons on one device -- same convention as every
+/// other dual-captain approval this session (E4-06 corrections, E4-09
+/// handover) where no real multi-user session exists yet.
+class _DualCaptainConflictCard extends StatelessWidget {
+  final String message;
+  final bool composerApproved;
+  final bool opponentApproved;
+  final ValueChanged<bool> onApprove;
+  final String approveButtonKeyPrefix;
+
+  const _DualCaptainConflictCard({
+    super.key,
+    required this.message,
+    required this.composerApproved,
+    required this.opponentApproved,
+    required this.onApprove,
+    required this.approveButtonKeyPrefix,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = Theme.of(context).extension<AppColors>()!;
+
+    return Container(
+      padding: const EdgeInsets.all(AppSpacing.md),
+      decoration: BoxDecoration(
+        color: colors.error.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(14),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            message,
+            style: AppTypography.body.copyWith(color: colors.textPrimary),
+          ),
+          const SizedBox(height: AppSpacing.sm),
+          Row(
+            children: [
+              Expanded(
+                child: AppButton(
+                  key: ValueKey('${approveButtonKeyPrefix}ComposerApprove'),
+                  variant: composerApproved
+                      ? AppButtonVariant.secondary
+                      : AppButtonVariant.primary,
+                  label: composerApproved
+                      ? 'Composer approved'
+                      : 'Composer captain approve',
+                  onPressed: composerApproved ? null : () => onApprove(true),
+                ),
+              ),
+              const SizedBox(width: AppSpacing.sm),
+              Expanded(
+                child: AppButton(
+                  key: ValueKey('${approveButtonKeyPrefix}OpponentApprove'),
+                  variant: opponentApproved
+                      ? AppButtonVariant.secondary
+                      : AppButtonVariant.primary,
+                  label: opponentApproved
+                      ? 'Opponent approved'
+                      : 'Opponent captain approve',
+                  onPressed: opponentApproved ? null : () => onApprove(false),
+                ),
+              ),
+            ],
+          ),
         ],
       ),
     );
