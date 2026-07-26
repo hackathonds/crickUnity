@@ -12,12 +12,12 @@ import 'scoring_provider.dart';
 
 const List<int> _runButtons = [0, 1, 2, 3, 4, 6];
 
-/// DS §7 screen 27 (Live Scoring Console, scorer) -- sub-tasks 1-3 of
+/// DS §7 screen 27 (Live Scoring Console, scorer) -- all 4 sub-tasks of
 /// E4-04's XL split ("pad / extras / bowler-select / strike-swap"; see
-/// scoring_models.dart for the exact scope boundaries). "{Scoreboard
-/// 128 pinned} -> current-over beads strip 32 -> batter/bowler stat
-/// strips -> pad zone bottom 45%: run grid (0*1*2*3*4*6 big 64 targets)
-/// ... [WICKET] full-width error-outline 52, [Undo] left 44."
+/// scoring_models.dart for the exact scope of each). "{Scoreboard 128
+/// pinned} -> current-over beads strip 32 -> batter/bowler stat strips
+/// -> pad zone bottom 45%: run grid (0*1*2*3*4*6 big 64 targets) ...
+/// [WICKET] full-width error-outline 52, [Undo] left 44."
 class LiveScoringConsoleScreen extends ConsumerWidget {
   const LiveScoringConsoleScreen({super.key});
 
@@ -39,6 +39,8 @@ class LiveScoringConsoleScreen extends ConsumerWidget {
     final notifier = ref.read(inningsProvider.notifier);
     final striker = state.currentStriker;
     final strikerStats = state.batters[striker];
+    final nonStriker = state.currentNonStriker;
+    final nonStrikerStats = state.batters[nonStriker];
     final bowler = state.currentBowlerInnings;
     final needsNewBowler = bowler.completedOvers >= state.maxOversPerBowler;
     final odometerDuration = AppMotion.resolveDuration(
@@ -153,6 +155,14 @@ class LiveScoringConsoleScreen extends ConsumerWidget {
                   key: const ValueKey('strikerStrip'),
                   '$striker* ${strikerStats?.runs ?? 0} (${strikerStats?.balls ?? 0})',
                   style: AppTypography.body.copyWith(color: colors.textPrimary),
+                ),
+                Text(
+                  key: const ValueKey('nonStrikerStrip'),
+                  '$nonStriker ${nonStrikerStats?.runs ?? 0} '
+                  '(${nonStrikerStats?.balls ?? 0})',
+                  style: AppTypography.caption.copyWith(
+                    color: colors.textSecondary,
+                  ),
                 ),
                 Text(
                   key: const ValueKey('bowlerStrip'),
@@ -278,6 +288,15 @@ class LiveScoringConsoleScreen extends ConsumerWidget {
                             : notifier.undo,
                       ),
                     ),
+                    const SizedBox(width: AppSpacing.sm),
+                    Expanded(
+                      child: AppButton(
+                        key: const ValueKey('swapStrikeButton'),
+                        variant: AppButtonVariant.tertiary,
+                        label: 'Swap strike',
+                        onPressed: notifier.manualSwapStrike,
+                      ),
+                    ),
                   ],
                 ),
               ],
@@ -288,15 +307,17 @@ class LiveScoringConsoleScreen extends ConsumerWidget {
     );
   }
 
-  /// Every delivery (legal or not) since the last completed-over
-  /// boundary -- illegal balls (wides, rebowled no-balls) still show up
-  /// as beads even though they don't advance the over count.
+  /// Every ball (legal or not) since the last completed-over boundary --
+  /// illegal balls (wides, rebowled no-balls) still show up as beads
+  /// even though they don't advance the over count. Manual swap-strike
+  /// markers aren't balls at all and never appear here.
   List<Delivery> _currentOverDeliveries(InningsState state) {
     final target = state.legalBallsThisOver;
     final result = <Delivery>[];
     var legalCounted = 0;
     for (var i = state.deliveries.length - 1; i >= 0; i--) {
       final d = state.deliveries[i];
+      if (d.isManualSwap) continue;
       if (d.isLegal) {
         if (legalCounted >= target) break;
         legalCounted++;

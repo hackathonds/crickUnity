@@ -902,9 +902,9 @@ class DebugMenuScreen extends StatelessWidget {
             },
           ),
           ListTile(
-            title: const Text('Live scoring console (1/4: Pad)'),
+            title: const Text('Live scoring console'),
             subtitle: const Text(
-              'E4-04 (1/4) — run buttons, WICKET + dismissal sheet, undo',
+              'E4-04 — pad, extras, bowler-select, strike-swap',
             ),
             onTap: () => Navigator.of(context).push(
               MaterialPageRoute(

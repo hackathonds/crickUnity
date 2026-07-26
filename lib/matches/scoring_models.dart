@@ -2,12 +2,10 @@ import 'match_models.dart' show ExtraSubRules;
 
 /// PRD §7.7 (Live Scoring / Scorer Console) / DS §7 screen 27. E4-04's
 /// XL split ("pad / extras / bowler-select / strike-swap" per the
-/// backlog): sub-tasks 1-3 are layered in here -- the core ball-by-ball
-/// engine, run buttons, wicket + dismissal sheet, undo (1); extras (2);
-/// next-bowler rotation/enforcement (3). Still deliberately excluded:
-/// - strike rotation on odd runs/over-end -- sub-task 4 (the striker
-///   never changes here except when a new batter replaces a dismissed
-///   one)
+/// backlog): all 4 sub-tasks are layered in here -- the core
+/// ball-by-ball engine, run buttons, wicket + dismissal sheet, undo (1);
+/// extras (2); next-bowler rotation/enforcement (3); strike rotation on
+/// odd runs/over-end + manual swap (4).
 /// No Selection Board (E3-08) integration exists between match
 /// creation and an actual XI, so the batting/bowling lineups are mock.
 enum DismissalType { bowled, caught, lbw, runOut, stumped, hitWicket }
@@ -47,31 +45,55 @@ const Map<DismissalType, String> dismissalTypeLabels = {
 /// cricket scoring rules: wides and byes/leg-byes are never credited to
 /// the batter even though the team score moves; a no-ball's fixed
 /// penalty run isn't credited to the batter either, but any further
-/// runs actually run/hit off a no-ball are. [isLegal] says whether this
-/// ball counts toward the 6-ball over -- wides never count; no-balls
-/// count only if the match's sub-rules turn rebowl off.
+/// runs actually run/hit off a no-ball are. [ranRuns] is the subset the
+/// batters physically ran between the wickets -- what strike rotation
+/// keys off -- distinct from both of the above: a wide/no-ball's fixed
+/// penalty run is awarded automatically and involves no running, but
+/// any additional runs off either do; byes/leg-byes are entirely run.
+/// [isLegal] says whether this ball counts toward the 6-ball over --
+/// wides never count; no-balls count only if the match's sub-rules turn
+/// rebowl off. [isManualSwap] marks the scorer's own swap-strike
+/// control -- a zero-effect marker that only flips strike, contributing
+/// no runs/balls/overs to anything.
 class Delivery {
   final String bowlerName;
   final int runs;
   final int battingRuns;
+  final int ranRuns;
   final bool isWicket;
   final DismissalType? dismissalType;
   final String? fielderName;
   final String? newBatterName;
   final ExtraType? extraType;
   final bool isLegal;
+  final bool isManualSwap;
 
   const Delivery({
     required this.bowlerName,
     required this.runs,
     int? battingRuns,
+    int? ranRuns,
     this.isWicket = false,
     this.dismissalType,
     this.fielderName,
     this.newBatterName,
     this.extraType,
     this.isLegal = true,
-  }) : battingRuns = battingRuns ?? runs;
+    this.isManualSwap = false,
+  }) : battingRuns = battingRuns ?? runs,
+       ranRuns = ranRuns ?? runs;
+
+  const Delivery.manualSwap({required this.bowlerName})
+    : runs = 0,
+      battingRuns = 0,
+      ranRuns = 0,
+      isWicket = false,
+      dismissalType = null,
+      fielderName = null,
+      newBatterName = null,
+      extraType = null,
+      isLegal = false,
+      isManualSwap = true;
 
   /// PRD §7.7 / AC: "Given format says no-ball = 1 run + rebowl, Then
   /// extras honor the match's sub-rules from E4-01."
@@ -87,6 +109,7 @@ class Delivery {
           bowlerName: bowlerName,
           runs: subRules.wideRuns + additionalRuns,
           battingRuns: 0,
+          ranRuns: additionalRuns,
           extraType: type,
           isLegal: false,
         );
@@ -95,6 +118,7 @@ class Delivery {
           bowlerName: bowlerName,
           runs: subRules.noBallRuns + additionalRuns,
           battingRuns: additionalRuns,
+          ranRuns: additionalRuns,
           extraType: type,
           isLegal: !subRules.noBallRebowl,
         );
@@ -246,41 +270,72 @@ class InningsState {
     }).toList();
   }
 
-  Map<String, BatterInnings> get batters {
-    final result = <String, BatterInnings>{};
+  /// Single replay pass deriving both batters' stats and who's
+  /// currently on strike -- kept as one pass (rather than separate
+  /// getters re-deriving strike independently) so the two can never
+  /// disagree. PRD §7.7: "auto strike-swap on odd runs & over-end."
+  /// - Odd [Delivery.ranRuns] swaps strike (byes/leg-byes and any
+  ///   actually-run extra runs count; the fixed wide/no-ball penalty
+  ///   run never does, since nobody ran for it).
+  /// - Completing a legal over always swaps strike (the bowling end
+  ///   changes), regardless of the last ball's run parity.
+  /// - A wicket substitutes the new batter into the dismissed batter's
+  ///   crease position (same end/strike role) -- it is not itself a
+  ///   swap. Partial runs completed before a run-out aren't modeled
+  ///   (recordWicket always logs 0 runs), a deliberate simplification.
+  /// - [Delivery.isManualSwap] (the scorer's own swap-strike button)
+  ///   always swaps, independent of runs/over-boundary.
+  ({String striker, String nonStriker, Map<String, BatterInnings> stats})
+  get _replay {
     var striker = strikerName;
+    var nonStriker = nonStrikerName;
+    final stats = <String, BatterInnings>{};
+    var legalBallsInOver = 0;
+
+    void swap() {
+      final tmp = striker;
+      striker = nonStriker;
+      nonStriker = tmp;
+    }
+
     for (final d in deliveries) {
-      final current = result[striker] ?? BatterInnings(name: striker);
-      result[striker] = current.copyWith(
+      if (d.isManualSwap) {
+        swap();
+        continue;
+      }
+      final current = stats[striker] ?? BatterInnings(name: striker);
+      stats[striker] = current.copyWith(
         runs: current.runs + d.battingRuns,
         balls: current.balls + (d.isLegal ? 1 : 0),
       );
       if (d.isWicket) {
-        result[striker] = result[striker]!.copyWith(
+        stats[striker] = stats[striker]!.copyWith(
           isOut: true,
           dismissalType: d.dismissalType,
         );
-        if (d.newBatterName != null) {
-          striker = d.newBatterName!;
+        if (d.newBatterName != null) striker = d.newBatterName!;
+      } else if (d.ranRuns.isOdd) {
+        swap();
+      }
+      if (d.isLegal) {
+        legalBallsInOver++;
+        if (legalBallsInOver == 6) {
+          legalBallsInOver = 0;
+          swap();
         }
       }
     }
-    return result;
+    return (striker: striker, nonStriker: nonStriker, stats: stats);
   }
+
+  Map<String, BatterInnings> get batters => _replay.stats;
 
   BowlerInnings get currentBowlerInnings =>
       bowlers[currentBowlerName] ?? BowlerInnings(name: currentBowlerName);
 
-  /// The batter currently on strike -- the last new-batter substitution
-  /// recorded, or the innings' original striker if nobody has been
-  /// dismissed yet. (Sub-task 4 will add rotation on odd runs/over-end;
-  /// until then this is the only thing that ever changes strike.)
-  String get currentStriker {
-    for (final d in deliveries.reversed) {
-      if (d.isWicket && d.newBatterName != null) return d.newBatterName!;
-    }
-    return strikerName;
-  }
+  String get currentStriker => _replay.striker;
+
+  String get currentNonStriker => _replay.nonStriker;
 
   InningsState copyWith({
     List<Delivery>? deliveries,
