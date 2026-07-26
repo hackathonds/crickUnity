@@ -13,7 +13,11 @@ void main() {
   testWidgets('app boots with the default light theme applied', (
     WidgetTester tester,
   ) async {
-    await tester.pumpWidget(const ProviderScope(child: CricUnityApp()));
+    await tester.pumpWidget(
+      const ProviderScope(
+        child: CricUnityApp(startWithOnboardingComplete: true),
+      ),
+    );
     await tester.pump();
 
     expect(find.byType(CricUnityApp), findsOneWidget);
@@ -27,7 +31,7 @@ void main() {
         const ProviderScope(
           child: MediaQuery(
             data: MediaQueryData(textScaler: TextScaler.linear(3.0)),
-            child: CricUnityApp(),
+            child: CricUnityApp(startWithOnboardingComplete: true),
           ),
         ),
       );
@@ -49,7 +53,10 @@ void main() {
         ProviderScope(
           child: MediaQuery(
             data: const MediaQueryData(platformBrightness: Brightness.dark),
-            child: CricUnityApp(router: createAppRouter()),
+            child: CricUnityApp(
+              router: createAppRouter(),
+              startWithOnboardingComplete: true,
+            ),
           ),
         ),
       );
@@ -77,7 +84,12 @@ void main() {
     'OS setting is off (E0-09)',
     (tester) async {
       await tester.pumpWidget(
-        ProviderScope(child: CricUnityApp(router: createAppRouter())),
+        ProviderScope(
+          child: CricUnityApp(
+            router: createAppRouter(),
+            startWithOnboardingComplete: true,
+          ),
+        ),
       );
       await tester.pump();
 
@@ -94,4 +106,14 @@ void main() {
       expect(AppMotion.isReduced(resolvedContext), isTrue);
     },
   );
+
+  testWidgets('the app boots into onboarding by default (E1-03)', (
+    tester,
+  ) async {
+    await tester.pumpWidget(const ProviderScope(child: CricUnityApp()));
+    await tester.pump();
+
+    expect(find.text('Your career, verified'), findsOneWidget);
+    expect(find.byType(AppShell), findsNothing);
+  });
 }

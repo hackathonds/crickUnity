@@ -9,6 +9,7 @@ void main() {
   Widget harness({
     VoidCallback? onExploreAsGuest,
     VoidCallback? onContactSupport,
+    VoidCallback? onOnboardingComplete,
     bool showDebugSimulateApproval = false,
   }) => ProviderScope(
     child: MaterialApp(
@@ -16,6 +17,7 @@ void main() {
       home: OnboardingFlow(
         onExploreAsGuest: onExploreAsGuest ?? () {},
         onContactSupport: onContactSupport ?? () {},
+        onOnboardingComplete: onOnboardingComplete ?? () {},
         showDebugSimulateApproval: showDebugSimulateApproval,
       ),
     ),
@@ -84,11 +86,46 @@ void main() {
     await tester.pumpAndSettle();
   }
 
+  /// From the Photo step (start of the Profile wizard) through to the
+  /// Warm-up screen's Done, skipping every optional field.
+  Future<void> walkThroughProfileWizardToDone(WidgetTester tester) async {
+    expect(find.text('Add a profile photo'), findsOneWidget);
+    await tester.tap(find.byKey(const ValueKey('photoStepSkip')));
+    await tester.pumpAndSettle();
+
+    expect(find.text("What's your city?"), findsOneWidget);
+    await tester.tap(find.byKey(const ValueKey('cityStepContinue')));
+    await tester.pumpAndSettle();
+
+    expect(find.text('How do you play?'), findsOneWidget);
+    await tester.tap(find.byKey(const ValueKey('playingInfoContinue')));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Stay in the loop'), findsOneWidget);
+    await tester.tap(
+      find.byKey(const ValueKey('permissionCardAllow_location')),
+    );
+    await tester.pump();
+    await tester.tap(
+      find.byKey(const ValueKey('permissionCardAllow_notifications')),
+    );
+    await tester.pump();
+    await tester.tap(find.byKey(const ValueKey('permissionsPrimerContinue')));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Follow some players'), findsOneWidget);
+    await tester.tap(find.byKey(const ValueKey('warmUpDone')));
+    await tester.pumpAndSettle();
+  }
+
   testWidgets(
-    'an adult walks Welcome -> Phone -> OTP -> Name -> DOB -> completion, '
-    'skipping the guardian gate',
+    'an adult walks the whole flow to onOnboardingComplete, skipping the '
+    'guardian gate',
     (tester) async {
-      await tester.pumpWidget(harness());
+      var complete = false;
+      await tester.pumpWidget(
+        harness(onOnboardingComplete: () => complete = true),
+      );
 
       await walkToDobStep(tester);
       expect(find.text("What's your date of birth?"), findsOneWidget);
@@ -96,18 +133,25 @@ void main() {
       final adultYear = (DateTime.now().year - 25).toString();
       await submitDob(tester, day: '15', month: 'June', year: adultYear);
 
-      expect(find.text("You're all set, Priya Nair!"), findsOneWidget);
       expect(
         find.text('A parent or guardian needs to approve your account'),
         findsNothing,
       );
+      await walkThroughProfileWizardToDone(tester);
+
+      expect(complete, isTrue);
     },
   );
 
-  testWidgets('a minor walks the guardian gate to a Private+ completion', (
-    tester,
-  ) async {
-    await tester.pumpWidget(harness(showDebugSimulateApproval: true));
+  testWidgets('a minor walks the guardian gate, then the profile wizard, to '
+      'onOnboardingComplete', (tester) async {
+    var complete = false;
+    await tester.pumpWidget(
+      harness(
+        showDebugSimulateApproval: true,
+        onOnboardingComplete: () => complete = true,
+      ),
+    );
 
     await walkToDobStep(tester);
     final minorYear = (DateTime.now().year - 12).toString();
@@ -140,18 +184,19 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(find.text("You're all set, Priya Nair!"), findsOneWidget);
-    expect(
-      find.textContaining("we've set your profile to Private+"),
-      findsOneWidget,
-    );
+    await walkThroughProfileWizardToDone(tester);
+
+    expect(complete, isTrue);
   });
 
   testWidgets(
-    'an existing-account phone skips DOB and the Name step straight to '
-    'Welcome back',
+    'an existing-account phone skips DOB, Name, and the Profile wizard '
+    'straight to Welcome back',
     (tester) async {
-      await tester.pumpWidget(harness());
+      var complete = false;
+      await tester.pumpWidget(
+        harness(onOnboardingComplete: () => complete = true),
+      );
 
       await tester.tap(find.text('Get started'));
       await tester.pumpAndSettle();
@@ -170,6 +215,11 @@ void main() {
       expect(find.text('Welcome back!'), findsOneWidget);
       expect(find.text("What's your name?"), findsNothing);
       expect(find.text("What's your date of birth?"), findsNothing);
+
+      await tester.tap(find.byKey(const ValueKey('registrationCompleteDone')));
+      await tester.pump();
+
+      expect(complete, isTrue);
     },
   );
 
@@ -182,20 +232,5 @@ void main() {
     await tester.tap(find.text('Explore first'));
 
     expect(tapped, isTrue);
-  });
-
-  testWidgets('Done on the completion screen pops back to the flow root', (
-    tester,
-  ) async {
-    await tester.pumpWidget(harness());
-
-    await walkToDobStep(tester);
-    final adultYear = (DateTime.now().year - 25).toString();
-    await submitDob(tester, day: '15', month: 'June', year: adultYear);
-
-    await tester.tap(find.byKey(const ValueKey('registrationCompleteDone')));
-    await tester.pumpAndSettle();
-
-    expect(find.text('Your career, verified'), findsOneWidget);
   });
 }

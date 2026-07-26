@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../onboarding/onboarding_flow.dart';
 import 'avatar_screen.dart';
+import 'nearby_matches_preview_screen.dart';
 import 'badge_tile_screen.dart';
 import 'buttons_screen.dart';
 import 'card_screen.dart';
@@ -278,14 +279,21 @@ class DebugMenuScreen extends StatelessWidget {
             ).push(MaterialPageRoute(builder: (_) => const ChartShellScreen())),
           ),
           ListTile(
-            title: const Text('Onboarding: Welcome + Registration + OTP'),
+            title: const Text('Onboarding: full pre-tab stack'),
             subtitle: const Text(
-              'E1-01/E1-02 — pager, phone→OTP, name, DOB, guardian gate',
+              'E1-01/02/03 — Welcome→OTP→DOB→guardian gate→profile wizard→'
+              'permissions→warm-up',
             ),
             onTap: () => Navigator.of(context).push(
               MaterialPageRoute(
                 builder: (_) => OnboardingFlow(
                   showDebugSimulateApproval: true,
+                  onOnboardingComplete: () {
+                    Navigator.of(context).pop();
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Onboarding complete')),
+                    );
+                  },
                   onExploreAsGuest: () {
                     Navigator.of(context).pop();
                     ScaffoldMessenger.of(context).showSnackBar(
@@ -302,6 +310,17 @@ class DebugMenuScreen extends StatelessWidget {
                     );
                   },
                 ),
+              ),
+            ),
+          ),
+          ListTile(
+            title: const Text('Nearby matches (QA preview)'),
+            subtitle: const Text(
+              'E1-03 AC — location denial shows the enable-prompt state',
+            ),
+            onTap: () => Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (_) => const NearbyMatchesPreviewScreen(),
               ),
             ),
           ),
