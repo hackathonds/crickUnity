@@ -23,6 +23,8 @@ import '../../teams/selection_board_screen.dart';
 import '../../teams/carpool_screen.dart';
 import '../../teams/duty_roster_screen.dart';
 import '../../teams/kit_inventory_screen.dart';
+import '../../teams/team_documents_screen.dart';
+import '../../teams/team_member_models.dart';
 import 'jersey_board_demo.dart';
 import 'practice_session_demo.dart';
 import 'team_home_demo.dart';
@@ -549,6 +551,34 @@ class DebugMenuScreen extends StatelessWidget {
               MaterialPageRoute(
                 builder: (_) =>
                     const KitInventoryScreen(viewerName: 'Kabir Singh'),
+              ),
+            ),
+          ),
+          ListTile(
+            title: const Text('Documents (Captain)'),
+            subtitle: const Text(
+              'E3-10 (4/4) — role-based upload, Captain can upload',
+            ),
+            onTap: () => Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (_) => const TeamDocumentsScreen(
+                  viewerName: 'Rohan Kapoor',
+                  viewerRole: TeamMemberRole.captain,
+                ),
+              ),
+            ),
+          ),
+          ListTile(
+            title: const Text('Documents (Player)'),
+            subtitle: const Text(
+              'E3-10 (4/4) — role-based upload, Player cannot upload',
+            ),
+            onTap: () => Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (_) => const TeamDocumentsScreen(
+                  viewerName: 'Sana Iyer',
+                  viewerRole: TeamMemberRole.player,
+                ),
               ),
             ),
           ),
