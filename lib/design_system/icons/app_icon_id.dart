@@ -27,6 +27,10 @@ enum AppIconId {
   locked,
   syncedOfflineCloud,
 
+  // Trust & Sportsmanship (DS §11.5 Addendum -- not in the base §2.5
+  // set, but required by the Trust/Sportsmanship band chip)
+  shield,
+
   // Rewards
   coin,
   xpBolt,

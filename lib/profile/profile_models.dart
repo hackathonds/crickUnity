@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import 'trust_sportsmanship_models.dart';
+
 /// PRD §5: "Viewer-relative rendering: the same profile renders
 /// differently for Self, Teammate/Friend, Follower, Public, and Blocked."
 enum ViewerRelation { self, teammate, follower, public, blocked }
@@ -115,6 +117,11 @@ class PlayerProfile {
   final bool isMinor;
   final ProfileVisibility visibility;
 
+  /// PRD §5.15: bands only, never a raw number, and (per DS §11.5) "never
+  /// visible on public profile beyond band" -- callers must only surface
+  /// this for [ViewerRelation.self] (see [ProfileOverviewTab]).
+  final PlayerTrustProfile? trustProfile;
+
   const PlayerProfile({
     required this.name,
     required this.city,
@@ -133,11 +140,12 @@ class PlayerProfile {
     this.weaknesses = const [],
     this.isMinor = false,
     this.visibility = ProfileVisibility.public,
+    this.trustProfile,
   });
 }
 
 /// Mock data for the debug demo and tests -- not a real fetched profile.
-PlayerProfile mockPlayerProfile() => const PlayerProfile(
+PlayerProfile mockPlayerProfile() => PlayerProfile(
   name: 'Rohan Verma',
   city: 'Pune',
   bio: 'Middle-order finisher. Lions CC #7.',
@@ -185,4 +193,5 @@ PlayerProfile mockPlayerProfile() => const PlayerProfile(
       suggestedReason: '47% of dismissals to left-arm spin this season.',
     ),
   ],
+  trustProfile: mockPlayerTrustProfile(),
 );

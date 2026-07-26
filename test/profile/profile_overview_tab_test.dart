@@ -1,8 +1,11 @@
+import 'package:cricunity/design_system/components/app_band_chip.dart';
 import 'package:cricunity/design_system/components/app_button.dart';
 import 'package:cricunity/design_system/theme/app_theme.dart';
+import 'package:cricunity/profile/band_breakdown_screen.dart';
 import 'package:cricunity/profile/profile_models.dart';
 import 'package:cricunity/profile/profile_overview_tab.dart';
 import 'package:cricunity/profile/style_tag_picker_sheet.dart';
+import 'package:cricunity/profile/trust_sportsmanship_models.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -13,6 +16,7 @@ void main() {
     List<WeaknessInsight> weaknesses = const [],
     ValueChanged<List<String>>? onStyleTagsChanged,
     VoidCallback? onOpenActivityCalendar,
+    PlayerTrustProfile? trustProfile,
   }) {
     final base = mockPlayerProfile();
     return MaterialApp(
@@ -37,6 +41,7 @@ void main() {
               endorsements: base.endorsements,
               styleTags: styleTags,
               weaknesses: weaknesses,
+              trustProfile: trustProfile,
             ),
           ),
         ),
@@ -174,5 +179,49 @@ void main() {
       findsOneWidget,
     );
     expect(find.textContaining('Left-arm spin'), findsOneWidget);
+  });
+
+  testWidgets(
+    'AC: Trust/Sportsmanship band chips are structurally absent for every '
+    'relation but self',
+    (tester) async {
+      for (final relation in ViewerRelation.values.where(
+        (r) => r != ViewerRelation.self && r != ViewerRelation.blocked,
+      )) {
+        await tester.pumpWidget(
+          harness(relation: relation, trustProfile: mockPlayerTrustProfile()),
+        );
+
+        expect(
+          find.byKey(const ValueKey('profileTrustSportsmanshipRow')),
+          findsNothing,
+          reason: 'band chips leaked for relation $relation',
+        );
+      }
+    },
+  );
+
+  testWidgets('self sees both band chips and tapping Trust opens its breakdown '
+      'screen', (tester) async {
+    await tester.pumpWidget(
+      harness(
+        relation: ViewerRelation.self,
+        trustProfile: mockPlayerTrustProfile(),
+      ),
+    );
+
+    expect(
+      find.byKey(const ValueKey('profileTrustSportsmanshipRow')),
+      findsOneWidget,
+    );
+    expect(find.byType(AppBandChip), findsNWidgets(2));
+    expect(find.text('Reliable'), findsOneWidget);
+    expect(find.text('Exemplary'), findsOneWidget);
+
+    await tester.tap(find.text('Reliable'));
+    await tester.pumpAndSettle();
+
+    expect(find.byType(BandBreakdownScreen), findsOneWidget);
+    expect(find.text('Showed up when confirmed'), findsOneWidget);
   });
 }
