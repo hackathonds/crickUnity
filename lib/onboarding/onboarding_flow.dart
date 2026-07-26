@@ -16,10 +16,13 @@ import 'warm_up_screen.dart';
 import 'welcome_screen.dart';
 
 /// Chains E1-01 + E1-02 + E1-03's screens together via plain Navigator
-/// pushes. [onExploreAsGuest] is exposed since Guest mode (E1-04) still
-/// doesn't exist -- the main "Get started" path no longer needs it (it
-/// now runs all the way to [onOnboardingComplete] on its own), but
-/// Welcome's "Explore first" button does.
+/// pushes. [onExploreAsGuest] leads to Guest mode (E1-04), Welcome's
+/// "Explore first" alternative to the main "Get started" path.
+///
+/// [pushPhoneEntry] is also called directly by Guest mode's Register
+/// sheet ("[Continue with phone]") and the private-content lock screen's
+/// "Request access" -- DS §11.2 says both skip straight past the Welcome
+/// pager into registration, since the guest already has context.
 class OnboardingFlow extends StatelessWidget {
   final VoidCallback onExploreAsGuest;
   final VoidCallback onContactSupport;
@@ -39,12 +42,12 @@ class OnboardingFlow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return WelcomeScreen(
-      onGetStarted: () => _pushPhoneEntry(context),
+      onGetStarted: () => pushPhoneEntry(context),
       onExploreAsGuest: onExploreAsGuest,
     );
   }
 
-  void _pushPhoneEntry(BuildContext context) {
+  void pushPhoneEntry(BuildContext context) {
     Navigator.of(context).push(
       MaterialPageRoute(
         builder: (pageContext) =>

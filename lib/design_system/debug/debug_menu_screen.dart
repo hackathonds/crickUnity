@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../guest/guest_live_match_preview_screen.dart';
 import '../../onboarding/onboarding_flow.dart';
 import 'avatar_screen.dart';
 import 'nearby_matches_preview_screen.dart';
@@ -296,9 +297,13 @@ class DebugMenuScreen extends StatelessWidget {
                   },
                   onExploreAsGuest: () {
                     Navigator.of(context).pop();
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('Guest mode is E1-04 — not built yet'),
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (context) => GuestLiveMatchPreviewScreen(
+                          onContinueWithPhone: () {
+                            Navigator.of(context).pop();
+                          },
+                        ),
                       ),
                     );
                   },
@@ -309,6 +314,19 @@ class DebugMenuScreen extends StatelessWidget {
                       ),
                     );
                   },
+                ),
+              ),
+            ),
+          ),
+          ListTile(
+            title: const Text('Guest mode preview'),
+            subtitle: const Text(
+              'E1-04 — guest chip, blocked-action sheet, private-link lock',
+            ),
+            onTap: () => Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (context) => GuestLiveMatchPreviewScreen(
+                  onContinueWithPhone: () => Navigator.of(context).pop(),
                 ),
               ),
             ),
