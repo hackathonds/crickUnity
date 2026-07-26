@@ -116,4 +116,19 @@ void main() {
     expect(find.text('Your career, verified'), findsOneWidget);
     expect(find.byType(AppShell), findsNothing);
   });
+
+  testWidgets(
+    'Explore first leads to the guest preview, not the logged-in shell '
+    '(E1-04)',
+    (tester) async {
+      await tester.pumpWidget(const ProviderScope(child: CricUnityApp()));
+      await tester.pump();
+
+      await tester.tap(find.text('Explore first'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Viewing as guest · Sign up'), findsOneWidget);
+      expect(find.byType(AppShell), findsNothing);
+    },
+  );
 }

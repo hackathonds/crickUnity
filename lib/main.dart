@@ -4,6 +4,8 @@ import 'package:go_router/go_router.dart';
 
 import 'design_system/theme/app_theme.dart';
 import 'design_system/tokens/app_typography.dart';
+import 'guest/guest_live_match_preview_screen.dart';
+import 'guest/guest_provider.dart';
 import 'navigation/app_router.dart';
 import 'onboarding/onboarding_flow.dart';
 import 'settings/appearance_settings_provider.dart';
@@ -23,10 +25,14 @@ void main() {
 ///
 /// E1-01/02/03's onboarding flow is now the real pre-tab stack: the app
 /// boots into it and only mounts the tab shell (`MaterialApp.router`)
-/// once it signals completion. [startWithOnboardingComplete] is a test-only
-/// seam (mirrors [router]'s own test-isolation purpose) for tests that
-/// exercise the shell directly rather than walking through onboarding
-/// first.
+/// once it signals completion. Welcome's "Explore first" (E1-04) instead
+/// leads to a guest preview -- the real app shell is a logged-in
+/// experience (Home Dashboard, Wallet, Messages, ... all hidden from
+/// guests per PRD §2.1), so a guest never lands there directly; picking
+/// "Continue with phone" from that preview is what actually reaches it.
+/// [startWithOnboardingComplete] is a test-only seam (mirrors [router]'s
+/// own test-isolation purpose) for tests that exercise the shell directly
+/// rather than walking through onboarding first.
 class CricUnityApp extends ConsumerStatefulWidget {
   static final GoRouter _productionRouter = createAppRouter();
 
@@ -45,7 +51,20 @@ class CricUnityApp extends ConsumerStatefulWidget {
 
 class _CricUnityAppState extends ConsumerState<CricUnityApp> {
   late bool _onboardingComplete = widget.startWithOnboardingComplete;
+  bool _guestPreview = false;
   final _messengerKey = GlobalKey<ScaffoldMessengerState>();
+
+  void _showSupportStub() => _messengerKey.currentState?.showSnackBar(
+    const SnackBar(content: Text('Support is E16-07 — not built yet')),
+  );
+
+  void _completeOnboarding() {
+    ref.read(guestProvider.notifier).becomeRegistered();
+    setState(() {
+      _guestPreview = false;
+      _onboardingComplete = true;
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -72,6 +91,26 @@ class _CricUnityAppState extends ConsumerState<CricUnityApp> {
       );
     }
 
+    if (_guestPreview && !_onboardingComplete) {
+      return MaterialApp(
+        title: 'CricUnity',
+        theme: theme,
+        darkTheme: darkTheme,
+        themeMode: themeMode,
+        scaffoldMessengerKey: _messengerKey,
+        builder: appBuilder,
+        home: Builder(
+          builder: (innerContext) => GuestLiveMatchPreviewScreen(
+            onContinueWithPhone: () => OnboardingFlow(
+              onExploreAsGuest: () {}, // unreachable: already past Welcome
+              onContactSupport: _showSupportStub,
+              onOnboardingComplete: _completeOnboarding,
+            ).pushPhoneEntry(innerContext),
+          ),
+        ),
+      );
+    }
+
     if (!_onboardingComplete) {
       return MaterialApp(
         title: 'CricUnity',
@@ -83,14 +122,8 @@ class _CricUnityAppState extends ConsumerState<CricUnityApp> {
         home: OnboardingFlow(
           onOnboardingComplete: () =>
               setState(() => _onboardingComplete = true),
-          // Guest mode (E1-04) doesn't exist yet -- treating "Explore
-          // first" as onboarding-complete is an interim stand-in so the
-          // button leads somewhere rather than dead-ending; it does not
-          // apply any real guest restrictions yet.
-          onExploreAsGuest: () => setState(() => _onboardingComplete = true),
-          onContactSupport: () => _messengerKey.currentState?.showSnackBar(
-            const SnackBar(content: Text('Support is E16-07 — not built yet')),
-          ),
+          onExploreAsGuest: () => setState(() => _guestPreview = true),
+          onContactSupport: _showSupportStub,
         ),
       );
     }
