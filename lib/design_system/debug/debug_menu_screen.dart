@@ -20,6 +20,7 @@ import 'announcements_demo.dart';
 import 'avatar_screen.dart';
 import 'members_roles_demo.dart';
 import '../../teams/selection_board_screen.dart';
+import 'jersey_board_demo.dart';
 import 'practice_session_demo.dart';
 import 'team_home_demo.dart';
 import 'nearby_matches_preview_screen.dart';
@@ -503,6 +504,15 @@ class DebugMenuScreen extends StatelessWidget {
             onTap: () => Navigator.of(context).push(
               MaterialPageRoute(builder: (_) => const SelectionBoardScreen()),
             ),
+          ),
+          ListTile(
+            title: const Text('Jersey board'),
+            subtitle: const Text(
+              'E3-09 — size sheet, number-conflict resolver, order tracker',
+            ),
+            onTap: () => Navigator.of(
+              context,
+            ).push(MaterialPageRoute(builder: (_) => const JerseyBoardDemo())),
           ),
           ListTile(
             title: const Text('Guest mode preview'),
