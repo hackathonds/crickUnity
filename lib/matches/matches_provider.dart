@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../teams/availability_matrix_models.dart';
@@ -181,7 +183,99 @@ class MatchesNotifier extends Notifier<MatchesState> {
       ),
     );
   }
+
+  /// PRD §7.6: "digital coin flip (either captain taps; animation;
+  /// result recorded)." This is the "result recorded" step -- the
+  /// screen owns the flip animation itself and calls this once it's
+  /// done, so the two stay independent (a slow/dropped frame in the
+  /// animation never blocks the actual coin-toss outcome).
+  String flipCoin(
+    String matchId, {
+    bool Function() pickComposerWon = _defaultCoinPick,
+  }) {
+    final match = state.matches.firstWhere((m) => m.id == matchId);
+    final winner = pickComposerWon()
+        ? match.composerTeamName
+        : match.draft.opponentTeamName;
+    state = state.copyWith(
+      matches: [
+        for (final m in state.matches)
+          if (m.id == matchId) m.copyWith(pendingTossWinner: winner) else m,
+      ],
+    );
+    return winner;
+  }
+
+  void chooseTossDecision(
+    String matchId,
+    TossDecision decision, {
+    DateTime Function() now = DateTime.now,
+  }) {
+    state = state.copyWith(
+      matches: [
+        for (final m in state.matches)
+          if (m.id == matchId && m.pendingTossWinner != null)
+            _recordToss(
+              m,
+              winningTeamName: m.pendingTossWinner!,
+              decision: decision,
+              isManual: false,
+              now: now,
+            )
+          else
+            m,
+      ],
+    );
+  }
+
+  void recordManualToss(
+    String matchId, {
+    required String winningTeamName,
+    required TossDecision decision,
+    DateTime Function() now = DateTime.now,
+  }) {
+    state = state.copyWith(
+      matches: [
+        for (final m in state.matches)
+          if (m.id == matchId)
+            _recordToss(
+              m,
+              winningTeamName: winningTeamName,
+              decision: decision,
+              isManual: true,
+              now: now,
+            )
+          else
+            m,
+      ],
+    );
+  }
+
+  MatchRecord _recordToss(
+    MatchRecord m, {
+    required String winningTeamName,
+    required TossDecision decision,
+    required bool isManual,
+    required DateTime Function() now,
+  }) {
+    return m.copyWith(
+      clearPendingTossWinner: true,
+      tossResult: TossResult(
+        winningTeamName: winningTeamName,
+        decision: decision,
+        isManual: isManual,
+        recordedAt: now(),
+      ),
+      timelineEntries: [
+        ...m.timelineEntries,
+        '$winningTeamName won the toss, chose to '
+            '${tossDecisionLabels[decision]!.toLowerCase()}.',
+      ],
+    );
+  }
 }
+
+bool _defaultCoinPick() => Random().nextBool();
 
 final matchesProvider = NotifierProvider<MatchesNotifier, MatchesState>(
   MatchesNotifier.new,

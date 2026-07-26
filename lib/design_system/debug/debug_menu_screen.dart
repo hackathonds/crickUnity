@@ -8,6 +8,7 @@ import '../../matches/match_models.dart';
 import '../../matches/match_opponent_decision_screen.dart';
 import '../../matches/match_proposal_review_screen.dart';
 import '../../matches/matches_provider.dart';
+import '../../matches/toss_screen.dart';
 import '../../onboarding/onboarding_flow.dart';
 import '../../profile/achievement_models.dart';
 import '../../profile/achievements_wall_screen.dart';
@@ -870,6 +871,32 @@ class DebugMenuScreen extends StatelessWidget {
                   builder: (_) =>
                       MatchDetailScreen(matchId: id, viewerName: 'Kabir Singh'),
                 ),
+              );
+            },
+          ),
+          ListTile(
+            title: const Text('Toss'),
+            subtitle: const Text(
+              'E4-03 — 3D coin flip, Bat/Bowl choice, manual entry fallback',
+            ),
+            onTap: () {
+              final container = ProviderScope.containerOf(
+                context,
+                listen: false,
+              );
+              final id = container
+                  .read(matchesProvider.notifier)
+                  .submitMatch(
+                    draft: MatchDraft(
+                      dateTime: DateTime.now().add(const Duration(hours: 2)),
+                      opponentTeamName: 'Central Warriors',
+                      groundName: 'Riverside Ground',
+                    ),
+                    composerTeamName: 'Riverside Strikers',
+                  );
+              container.read(matchesProvider.notifier).acceptMatch(id);
+              Navigator.of(context).push(
+                MaterialPageRoute(builder: (_) => TossScreen(matchId: id)),
               );
             },
           ),
