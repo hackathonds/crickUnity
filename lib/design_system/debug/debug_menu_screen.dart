@@ -23,6 +23,7 @@ import '../../teams/selection_board_screen.dart';
 import '../../teams/carpool_screen.dart';
 import '../../teams/duty_roster_screen.dart';
 import '../../teams/kit_inventory_screen.dart';
+import '../../teams/recruitment_board_screen.dart';
 import '../../teams/team_documents_screen.dart';
 import '../../teams/team_member_models.dart';
 import 'jersey_board_demo.dart';
@@ -577,6 +578,32 @@ class DebugMenuScreen extends StatelessWidget {
               MaterialPageRoute(
                 builder: (_) => const TeamDocumentsScreen(
                   viewerName: 'Sana Iyer',
+                  viewerRole: TeamMemberRole.player,
+                ),
+              ),
+            ),
+          ),
+          ListTile(
+            title: const Text('Recruitment board (Captain)'),
+            subtitle: const Text(
+              'E3-11 — post listing, kanban pipeline, drag to move stage',
+            ),
+            onTap: () => Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (_) => const RecruitmentBoardScreen(
+                  viewerName: 'Rohan Kapoor',
+                  viewerRole: TeamMemberRole.captain,
+                ),
+              ),
+            ),
+          ),
+          ListTile(
+            title: const Text('Recruitment board (Free agent)'),
+            subtitle: const Text('E3-11 — browse listings, Apply'),
+            onTap: () => Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (_) => const RecruitmentBoardScreen(
+                  viewerName: 'Karan Bhatt',
                   viewerRole: TeamMemberRole.player,
                 ),
               ),
