@@ -5,6 +5,7 @@ import '../../onboarding/onboarding_flow.dart';
 import 'avatar_screen.dart';
 import 'nearby_matches_preview_screen.dart';
 import 'onboarding_checklist_screen.dart';
+import 'profile_screen_demo.dart';
 import 'badge_tile_screen.dart';
 import 'buttons_screen.dart';
 import 'card_screen.dart';
@@ -328,6 +329,15 @@ class DebugMenuScreen extends StatelessWidget {
               MaterialPageRoute(
                 builder: (_) => const OnboardingChecklistScreen(),
               ),
+            ),
+          ),
+          ListTile(
+            title: const Text('Profile screen'),
+            subtitle: const Text(
+              'E2-01 — viewer-relative, private lock, blocked, verified stats',
+            ),
+            onTap: () => Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => const ProfileScreenDemo()),
             ),
           ),
           ListTile(
