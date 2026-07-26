@@ -11,7 +11,7 @@ import '../../matches/field_map_screen.dart';
 import '../../matches/scorecard_screen.dart';
 import '../../matches/scoring_models.dart';
 import '../../matches/live_scoring_console_screen.dart';
-import '../../matches/match_viewer_screen.dart';
+import '../../matches/live_match_view_screen.dart';
 import '../../matches/scoring_provider.dart';
 import '../../matches/matches_provider.dart';
 import '../../matches/toss_screen.dart';
@@ -936,12 +936,12 @@ class DebugMenuScreen extends StatelessWidget {
             },
           ),
           ListTile(
-            title: const Text('Match viewer (spectator)'),
+            title: const Text('Live Match View (spectator)'),
             subtitle: const Text(
-              'E4-08 — read-only score, "Score paused — scorer offline"',
+              'E4-11 — Commentary/Scorecard/Charts/Gallery tabs, jump-to-live',
             ),
             onTap: () => Navigator.of(context).push(
-              MaterialPageRoute(builder: (_) => const MatchViewerScreen()),
+              MaterialPageRoute(builder: (_) => const LiveMatchViewScreen()),
             ),
           ),
           ListTile(

@@ -73,6 +73,32 @@ String deliveryLabel(Delivery delivery) {
       : extraTypeShortLabels[type]!;
 }
 
+/// PRD §7.8: "Auto-generated text per ball ('FOUR! Priya drives through
+/// covers')." A plain template generator -- scorer quick-edit/custom
+/// notes aren't modeled (no rich-commentary-editing UI exists yet).
+String commentaryFor(Delivery delivery, {required String strikerName}) {
+  if (delivery.isManualSwap) return 'Batters cross ends.';
+  if (delivery.isWicket) {
+    return "OUT! $strikerName's innings ends -- "
+        '${dismissalTypeLabels[delivery.dismissalType]}.';
+  }
+  final type = delivery.extraType;
+  if (type != null) {
+    final label = extraTypeLabels[type]!;
+    return delivery.runs > 0
+        ? '$label, ${delivery.runs} run${delivery.runs == 1 ? '' : 's'}.'
+        : '$label.';
+  }
+  return switch (delivery.runs) {
+    0 => '$strikerName defends -- dot ball.',
+    4 => 'FOUR! $strikerName finds the gap.',
+    6 => 'SIX! $strikerName clears the ropes.',
+    _ =>
+      '$strikerName takes ${delivery.runs} '
+          'run${delivery.runs == 1 ? '' : 's'}.',
+  };
+}
+
 /// One recorded ball, replayed in order to derive [InningsState] --
 /// undo is just "drop the last delivery and replay," which is correct
 /// by construction rather than needing hand-written reverse-diff logic.
@@ -623,6 +649,70 @@ class InningsState {
     return result;
   }
 
+  /// DS §3.3: "Manhattan: bar width = (plot/overs)-2 gap, wicket dots 6
+  /// on top." Runs scored in each completed-or-in-progress over, plus
+  /// how many wickets fell in that over (rendered as dots, not a full
+  /// custom bar chart -- see LiveMatchViewScreen's doc comment for why).
+  List<(int runs, int wickets)> get runsPerOver {
+    final result = <(int, int)>[];
+    var overRuns = 0;
+    var overWickets = 0;
+    var legalBalls = 0;
+    for (final d in deliveries) {
+      overRuns += d.runs;
+      if (d.isWicket) overWickets++;
+      if (d.isLegal) {
+        legalBalls++;
+        if (legalBalls % 6 == 0) {
+          result.add((overRuns, overWickets));
+          overRuns = 0;
+          overWickets = 0;
+        }
+      }
+    }
+    if (overRuns > 0 || legalBalls % 6 != 0) {
+      result.add((overRuns, overWickets));
+    }
+    return result;
+  }
+
+  /// DS §3.3: "Worm: 2px lines, chasing overlay dashed for required-
+  /// rate." Cumulative team total after each completed over.
+  List<int> get cumulativeRunsPerOver {
+    var running = 0;
+    final result = <int>[];
+    for (final (runs, _) in runsPerOver) {
+      running += runs;
+      result.add(running);
+    }
+    return result;
+  }
+
+  /// DS §3.3 Partnerships: runs added between consecutive wicket falls
+  /// (plus the current, still-unbroken stand).
+  List<int> get partnershipRuns {
+    final result = <int>[];
+    var previous = 0;
+    for (final fow in fallOfWickets) {
+      result.add(fow.teamRunsAtFall - previous);
+      previous = fow.teamRunsAtFall;
+    }
+    if (totalRuns > previous) result.add(totalRuns - previous);
+    return result;
+  }
+
+  /// DS §3.3 Wagon wheel: per-sector shot counts (a simplified list
+  /// breakdown rather than a radial ground diagram -- see
+  /// LiveMatchViewScreen's doc comment).
+  Map<WagonSector, int> get wagonSectorCounts {
+    final result = <WagonSector, int>{};
+    for (final d in deliveries) {
+      final sector = d.wagonSector;
+      if (sector != null) result[sector] = (result[sector] ?? 0) + 1;
+    }
+    return result;
+  }
+
   /// AC: "Given over ends, Then bowler sheet lists only legal bowlers
   /// with overs-left captions" -- excludes whoever bowled the over that
   /// just ended (no consecutive overs) and anyone who has already
@@ -653,11 +743,17 @@ class InningsState {
   ///   simplification.
   /// - [Delivery.isManualSwap] (the scorer's own swap-strike button)
   ///   always swaps, independent of runs/over-boundary.
-  ({String striker, String nonStriker, Map<String, BatterInnings> stats})
+  ({
+    String striker,
+    String nonStriker,
+    Map<String, BatterInnings> stats,
+    List<String> strikerPerDelivery,
+  })
   get _replay {
     var striker = strikerName;
     var nonStriker = nonStrikerName;
     final stats = <String, BatterInnings>{};
+    final strikerPerDelivery = <String>[];
     var legalBallsInOver = 0;
 
     void swap() {
@@ -667,6 +763,7 @@ class InningsState {
     }
 
     for (final d in deliveries) {
+      strikerPerDelivery.add(striker);
       if (d.isManualSwap) {
         swap();
         continue;
@@ -704,7 +801,12 @@ class InningsState {
         }
       }
     }
-    return (striker: striker, nonStriker: nonStriker, stats: stats);
+    return (
+      striker: striker,
+      nonStriker: nonStriker,
+      stats: stats,
+      strikerPerDelivery: strikerPerDelivery,
+    );
   }
 
   Map<String, BatterInnings> get batters => _replay.stats;
@@ -715,6 +817,12 @@ class InningsState {
   String get currentStriker => _replay.striker;
 
   String get currentNonStriker => _replay.nonStriker;
+
+  /// PRD §7.8: "Auto-generated text per ball." Who was actually facing
+  /// each historical ball -- needed since [Delivery] itself doesn't
+  /// store the striker (only the replay knows who was on strike at any
+  /// given point).
+  List<String> get strikerNamePerDelivery => _replay.strikerPerDelivery;
 
   InningsState copyWith({
     List<Delivery>? deliveries,

@@ -23,7 +23,7 @@ const Map<ConfirmerRole, String> _confirmerRoleLabels = {
 /// confirmation." PRD §7.14/§13: both captains + scorer confirm
 /// (auto-confirm 48h if unchallenged); confirmed feeds the Match
 /// Ripple (PRD Pillar 1) exactly once; a dispute freezes it.
-class ScorecardScreen extends ConsumerWidget {
+class ScorecardScreen extends StatelessWidget {
   /// Which of the three confirming parties the viewer is, if any --
   /// null means a spectator with no confirm/dispute action of their own.
   final ConfirmerRole? viewerRole;
@@ -31,166 +31,180 @@ class ScorecardScreen extends ConsumerWidget {
   const ScorecardScreen({super.key, this.viewerRole});
 
   @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text('Scorecard')),
+      body: ScorecardBody(viewerRole: viewerRole),
+    );
+  }
+}
+
+/// The Scorecard's content, standalone from its own AppBar so it can
+/// also be embedded as a tab in Live Match View (E4-11) without a
+/// duplicate app bar.
+class ScorecardBody extends ConsumerWidget {
+  final ConfirmerRole? viewerRole;
+
+  const ScorecardBody({super.key, this.viewerRole});
+
+  @override
   Widget build(BuildContext context, WidgetRef ref) {
     final colors = Theme.of(context).extension<AppColors>()!;
     final state = ref.watch(inningsProvider);
     final notifier = ref.read(inningsProvider.notifier);
 
-    return Scaffold(
-      appBar: AppBar(title: const Text('Scorecard')),
-      body: ListView(
-        padding: const EdgeInsets.all(AppSpacing.lg),
-        children: [
-          if (state.isDisputed)
-            Container(
-              key: const ValueKey('disputedBanner'),
-              width: double.infinity,
-              padding: const EdgeInsets.all(AppSpacing.md),
-              margin: const EdgeInsets.only(bottom: AppSpacing.lg),
-              decoration: BoxDecoration(
-                color: colors.error.withValues(alpha: 0.12),
-                borderRadius: BorderRadius.circular(14),
-              ),
-              child: Text(
-                'Frozen -- disputed: ${state.disputeReason}',
-                style: AppTypography.body.copyWith(color: colors.error),
-              ),
+    return ListView(
+      padding: const EdgeInsets.all(AppSpacing.lg),
+      children: [
+        if (state.isDisputed)
+          Container(
+            key: const ValueKey('disputedBanner'),
+            width: double.infinity,
+            padding: const EdgeInsets.all(AppSpacing.md),
+            margin: const EdgeInsets.only(bottom: AppSpacing.lg),
+            decoration: BoxDecoration(
+              color: colors.error.withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(14),
             ),
-          if (state.rippleFired) _ConfirmedStamp(rippleLog: state.rippleLog),
-          ExpansionTile(
-            key: const ValueKey('battingAccordion'),
-            title: Text('Batting -- ${state.battingTeamName}'),
-            initiallyExpanded: true,
-            children: [
-              for (final batter in state.batters.values)
-                Padding(
-                  key: ValueKey('battingRow_${batter.name}'),
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: AppSpacing.md,
-                    vertical: AppSpacing.xs,
-                  ),
-                  child: Row(
-                    children: [
-                      Expanded(
-                        flex: 2,
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              batter.name,
-                              style: AppTypography.body.copyWith(
-                                color: colors.textPrimary,
-                              ),
-                            ),
-                            Text(
-                              batter.dismissalText,
-                              style: AppTypography.caption.copyWith(
-                                color: colors.textTertiary,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      Text(
-                        '${batter.runs} (${batter.balls})',
-                        style: AppTypography.stat.copyWith(
-                          color: colors.textPrimary,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-            ],
+            child: Text(
+              'Frozen -- disputed: ${state.disputeReason}',
+              style: AppTypography.body.copyWith(color: colors.error),
+            ),
           ),
-          ExpansionTile(
-            key: const ValueKey('bowlingAccordion'),
-            title: Text('Bowling -- ${state.bowlingTeamName}'),
-            children: [
-              for (final bowler in state.bowlers.values)
-                Padding(
-                  key: ValueKey('bowlingRow_${bowler.name}'),
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: AppSpacing.md,
-                    vertical: AppSpacing.xs,
-                  ),
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: Text(
-                          bowler.name,
-                          style: AppTypography.body.copyWith(
-                            color: colors.textPrimary,
+        if (state.rippleFired) _ConfirmedStamp(rippleLog: state.rippleLog),
+        ExpansionTile(
+          key: const ValueKey('battingAccordion'),
+          title: Text('Batting -- ${state.battingTeamName}'),
+          initiallyExpanded: true,
+          children: [
+            for (final batter in state.batters.values)
+              Padding(
+                key: ValueKey('battingRow_${batter.name}'),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: AppSpacing.md,
+                  vertical: AppSpacing.xs,
+                ),
+                child: Row(
+                  children: [
+                    Expanded(
+                      flex: 2,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            batter.name,
+                            style: AppTypography.body.copyWith(
+                              color: colors.textPrimary,
+                            ),
                           ),
-                        ),
+                          Text(
+                            batter.dismissalText,
+                            style: AppTypography.caption.copyWith(
+                              color: colors.textTertiary,
+                            ),
+                          ),
+                        ],
                       ),
-                      Text(
-                        '${bowler.completedOvers}.${bowler.ballsThisOver}-'
-                        '${bowler.runsConceded}-${bowler.wickets}',
-                        style: AppTypography.stat.copyWith(
+                    ),
+                    Text(
+                      '${batter.runs} (${batter.balls})',
+                      style: AppTypography.stat.copyWith(
+                        color: colors.textPrimary,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+          ],
+        ),
+        ExpansionTile(
+          key: const ValueKey('bowlingAccordion'),
+          title: Text('Bowling -- ${state.bowlingTeamName}'),
+          children: [
+            for (final bowler in state.bowlers.values)
+              Padding(
+                key: ValueKey('bowlingRow_${bowler.name}'),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: AppSpacing.md,
+                  vertical: AppSpacing.xs,
+                ),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        bowler.name,
+                        style: AppTypography.body.copyWith(
                           color: colors.textPrimary,
                         ),
                       ),
-                    ],
-                  ),
-                ),
-            ],
-          ),
-          const SizedBox(height: AppSpacing.xxl),
-          Text(
-            'Fall of wickets',
-            style: AppTypography.label.copyWith(color: colors.textTertiary),
-          ),
-          const SizedBox(height: AppSpacing.xs),
-          for (final fow in state.fallOfWickets)
-            Padding(
-              key: ValueKey('fowRow_${fow.wicketNumber}'),
-              padding: const EdgeInsets.symmetric(vertical: AppSpacing.xs),
-              child: Text(
-                '${fow.wicketNumber}-${fow.teamRunsAtFall} '
-                '(${fow.batterName}, ${fow.oversAtFall}.'
-                '${fow.ballsIntoOverAtFall})',
-                style: AppTypography.body.copyWith(color: colors.textPrimary),
-              ),
-            ),
-          const SizedBox(height: AppSpacing.xxl),
-          Text(
-            'Confirmation',
-            style: AppTypography.label.copyWith(color: colors.textTertiary),
-          ),
-          const SizedBox(height: AppSpacing.sm),
-          for (final role in ConfirmerRole.values)
-            _ConfirmationRow(
-              role: role,
-              confirmed: switch (role) {
-                ConfirmerRole.composerCaptain =>
-                  state.composerCaptainConfirmedScorecard,
-                ConfirmerRole.opponentCaptain =>
-                  state.opponentCaptainConfirmedScorecard,
-                ConfirmerRole.scorer => state.scorerConfirmedScorecard,
-              },
-              isMine: role == viewerRole,
-              disabled: state.isDisputed || state.rippleFired,
-              onConfirm: () => notifier.confirmScorecard(role),
-              onDispute: () => _showDisputeSheet(context),
-            ),
-          if (!state.isDisputed && !state.isFullyConfirmed) ...[
-            const SizedBox(height: AppSpacing.lg),
-            AppButton(
-              key: const ValueKey('debugForceAutoConfirmButton'),
-              variant: AppButtonVariant.tertiary,
-              label: '48h auto-confirm (debug: simulate elapsed time)',
-              fullWidth: true,
-              onPressed: () => notifier.checkAutoConfirm(
-                now: () => DateTime.now().add(
-                  const Duration(
-                    hours: InningsState.scorecardAutoConfirmHours + 1,
-                  ),
+                    ),
+                    Text(
+                      '${bowler.completedOvers}.${bowler.ballsThisOver}-'
+                      '${bowler.runsConceded}-${bowler.wickets}',
+                      style: AppTypography.stat.copyWith(
+                        color: colors.textPrimary,
+                      ),
+                    ),
+                  ],
                 ),
               ),
-            ),
           ],
+        ),
+        const SizedBox(height: AppSpacing.xxl),
+        Text(
+          'Fall of wickets',
+          style: AppTypography.label.copyWith(color: colors.textTertiary),
+        ),
+        const SizedBox(height: AppSpacing.xs),
+        for (final fow in state.fallOfWickets)
+          Padding(
+            key: ValueKey('fowRow_${fow.wicketNumber}'),
+            padding: const EdgeInsets.symmetric(vertical: AppSpacing.xs),
+            child: Text(
+              '${fow.wicketNumber}-${fow.teamRunsAtFall} '
+              '(${fow.batterName}, ${fow.oversAtFall}.'
+              '${fow.ballsIntoOverAtFall})',
+              style: AppTypography.body.copyWith(color: colors.textPrimary),
+            ),
+          ),
+        const SizedBox(height: AppSpacing.xxl),
+        Text(
+          'Confirmation',
+          style: AppTypography.label.copyWith(color: colors.textTertiary),
+        ),
+        const SizedBox(height: AppSpacing.sm),
+        for (final role in ConfirmerRole.values)
+          _ConfirmationRow(
+            role: role,
+            confirmed: switch (role) {
+              ConfirmerRole.composerCaptain =>
+                state.composerCaptainConfirmedScorecard,
+              ConfirmerRole.opponentCaptain =>
+                state.opponentCaptainConfirmedScorecard,
+              ConfirmerRole.scorer => state.scorerConfirmedScorecard,
+            },
+            isMine: role == viewerRole,
+            disabled: state.isDisputed || state.rippleFired,
+            onConfirm: () => notifier.confirmScorecard(role),
+            onDispute: () => _showDisputeSheet(context),
+          ),
+        if (!state.isDisputed && !state.isFullyConfirmed) ...[
+          const SizedBox(height: AppSpacing.lg),
+          AppButton(
+            key: const ValueKey('debugForceAutoConfirmButton'),
+            variant: AppButtonVariant.tertiary,
+            label: '48h auto-confirm (debug: simulate elapsed time)',
+            fullWidth: true,
+            onPressed: () => notifier.checkAutoConfirm(
+              now: () => DateTime.now().add(
+                const Duration(
+                  hours: InningsState.scorecardAutoConfirmHours + 1,
+                ),
+              ),
+            ),
+          ),
         ],
-      ),
+      ],
     );
   }
 
