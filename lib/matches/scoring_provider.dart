@@ -10,13 +10,16 @@ class InningsNotifier extends Notifier<InningsState> {
   @override
   InningsState build() {
     final order = mockBattingOrder();
+    final bowlingRoster = mockBowlingRoster();
     return InningsState(
       battingTeamName: 'Riverside Strikers',
       bowlingTeamName: 'Central Warriors',
       battingOrder: order,
+      bowlingRoster: bowlingRoster,
       strikerName: order[0],
       nonStrikerName: order[1],
-      currentBowlerName: 'Deepak Sharma',
+      currentBowlerName: bowlingRoster[0],
+      totalOversPerSide: 20,
     );
   }
 
@@ -24,7 +27,7 @@ class InningsNotifier extends Notifier<InningsState> {
     state = state.copyWith(
       deliveries: [
         ...state.deliveries,
-        Delivery(runs: runs),
+        Delivery(bowlerName: state.currentBowlerName, runs: runs),
       ],
     );
   }
@@ -38,6 +41,7 @@ class InningsNotifier extends Notifier<InningsState> {
       deliveries: [
         ...state.deliveries,
         Delivery(
+          bowlerName: state.currentBowlerName,
           runs: 0,
           isWicket: true,
           dismissalType: dismissalType,
@@ -56,12 +60,22 @@ class InningsNotifier extends Notifier<InningsState> {
       deliveries: [
         ...state.deliveries,
         Delivery.extra(
+          bowlerName: state.currentBowlerName,
           type: type,
           additionalRuns: additionalRuns,
           subRules: state.subRules,
         ),
       ],
     );
+  }
+
+  /// PRD §7.7: "end-over auto-advance with next-bowler picker (bowler-
+  /// overs limits enforced per format rules)." The screen is
+  /// responsible for prompting at the right moment (over-end) and only
+  /// offering [InningsState.eligibleNextBowlers] -- this just performs
+  /// the switch once a valid choice is made.
+  void selectNextBowler(String bowlerName) {
+    state = state.copyWith(currentBowlerName: bowlerName);
   }
 
   void undo() {

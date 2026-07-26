@@ -1,17 +1,15 @@
 import 'match_models.dart' show ExtraSubRules;
 
-/// PRD §7.7 (Live Scoring / Scorer Console) / DS §7 screen 27. This is
-/// sub-task 1/4 of E4-04's XL split ("pad / extras / bowler-select /
-/// strike-swap" per the backlog): the core ball-by-ball engine, run
-/// buttons, wicket + dismissal sheet, and undo. Sub-task 2/4 (extras)
-/// is layered in below. Still deliberately excluded:
-/// - next-bowler rotation/enforcement -- sub-task 3 (the same bowler
-///   keeps bowling indefinitely here)
+/// PRD §7.7 (Live Scoring / Scorer Console) / DS §7 screen 27. E4-04's
+/// XL split ("pad / extras / bowler-select / strike-swap" per the
+/// backlog): sub-tasks 1-3 are layered in here -- the core ball-by-ball
+/// engine, run buttons, wicket + dismissal sheet, undo (1); extras (2);
+/// next-bowler rotation/enforcement (3). Still deliberately excluded:
 /// - strike rotation on odd runs/over-end -- sub-task 4 (the striker
 ///   never changes here except when a new batter replaces a dismissed
 ///   one)
 /// No Selection Board (E3-08) integration exists between match
-/// creation and an actual XI, so the batting order is a mock lineup.
+/// creation and an actual XI, so the batting/bowling lineups are mock.
 enum DismissalType { bowled, caught, lbw, runOut, stumped, hitWicket }
 
 /// PRD §7.7: "extras (Wd/Nb/B/Lb with run steppers)."
@@ -53,6 +51,7 @@ const Map<DismissalType, String> dismissalTypeLabels = {
 /// ball counts toward the 6-ball over -- wides never count; no-balls
 /// count only if the match's sub-rules turn rebowl off.
 class Delivery {
+  final String bowlerName;
   final int runs;
   final int battingRuns;
   final bool isWicket;
@@ -63,6 +62,7 @@ class Delivery {
   final bool isLegal;
 
   const Delivery({
+    required this.bowlerName,
     required this.runs,
     int? battingRuns,
     this.isWicket = false,
@@ -76,6 +76,7 @@ class Delivery {
   /// PRD §7.7 / AC: "Given format says no-ball = 1 run + rebowl, Then
   /// extras honor the match's sub-rules from E4-01."
   factory Delivery.extra({
+    required String bowlerName,
     required ExtraType type,
     required int additionalRuns,
     required ExtraSubRules subRules,
@@ -83,6 +84,7 @@ class Delivery {
     switch (type) {
       case ExtraType.wide:
         return Delivery(
+          bowlerName: bowlerName,
           runs: subRules.wideRuns + additionalRuns,
           battingRuns: 0,
           extraType: type,
@@ -90,6 +92,7 @@ class Delivery {
         );
       case ExtraType.noBall:
         return Delivery(
+          bowlerName: bowlerName,
           runs: subRules.noBallRuns + additionalRuns,
           battingRuns: additionalRuns,
           extraType: type,
@@ -98,6 +101,7 @@ class Delivery {
       case ExtraType.bye:
       case ExtraType.legBye:
         return Delivery(
+          bowlerName: bowlerName,
           runs: additionalRuns,
           battingRuns: 0,
           extraType: type,
@@ -184,19 +188,23 @@ class InningsState {
   final String battingTeamName;
   final String bowlingTeamName;
   final List<String> battingOrder;
+  final List<String> bowlingRoster;
   final List<Delivery> deliveries;
   final String strikerName;
   final String nonStrikerName;
   final String currentBowlerName;
+  final int totalOversPerSide;
   final ExtraSubRules subRules;
 
   const InningsState({
     required this.battingTeamName,
     required this.bowlingTeamName,
     required this.battingOrder,
+    required this.bowlingRoster,
     required this.strikerName,
     required this.nonStrikerName,
     required this.currentBowlerName,
+    required this.totalOversPerSide,
     this.deliveries = const [],
     this.subRules = const ExtraSubRules(),
   });
@@ -206,6 +214,37 @@ class InningsState {
   int get _legalDeliveryCount => deliveries.where((d) => d.isLegal).length;
   int get legalBallsThisOver => _legalDeliveryCount % 6;
   int get completedOvers => _legalDeliveryCount ~/ 6;
+
+  /// The traditional cap of one-fifth of the innings' overs (ODI 50 ->
+  /// 10, T20 20 -> 4), rounded up for odd-over formats. PRD/DS give no
+  /// other concrete formula, and this ratio is the one real-world rule
+  /// that generalizes across formats.
+  int get maxOversPerBowler => (totalOversPerSide / 5).ceil();
+
+  Map<String, BowlerInnings> get bowlers {
+    final result = <String, BowlerInnings>{};
+    for (final d in deliveries) {
+      final current = result[d.bowlerName] ?? BowlerInnings(name: d.bowlerName);
+      result[d.bowlerName] = current.copyWith(
+        ballsBowled: current.ballsBowled + (d.isLegal ? 1 : 0),
+        runsConceded: current.runsConceded + d.runs,
+        wickets: current.wickets + (d.isWicket ? 1 : 0),
+      );
+    }
+    return result;
+  }
+
+  /// AC: "Given over ends, Then bowler sheet lists only legal bowlers
+  /// with overs-left captions" -- excludes whoever bowled the over that
+  /// just ended (no consecutive overs) and anyone who has already
+  /// bowled their quota.
+  List<String> get eligibleNextBowlers {
+    return bowlingRoster.where((name) {
+      if (name == currentBowlerName) return false;
+      final overs = bowlers[name]?.completedOvers ?? 0;
+      return overs < maxOversPerBowler;
+    }).toList();
+  }
 
   Map<String, BatterInnings> get batters {
     final result = <String, BatterInnings>{};
@@ -229,17 +268,8 @@ class InningsState {
     return result;
   }
 
-  BowlerInnings get currentBowlerInnings {
-    var bowler = BowlerInnings(name: currentBowlerName);
-    for (final d in deliveries) {
-      bowler = bowler.copyWith(
-        ballsBowled: bowler.ballsBowled + (d.isLegal ? 1 : 0),
-        runsConceded: bowler.runsConceded + d.runs,
-        wickets: bowler.wickets + (d.isWicket ? 1 : 0),
-      );
-    }
-    return bowler;
-  }
+  BowlerInnings get currentBowlerInnings =>
+      bowlers[currentBowlerName] ?? BowlerInnings(name: currentBowlerName);
 
   /// The batter currently on strike -- the last new-batter substitution
   /// recorded, or the innings' original striker if nobody has been
@@ -252,16 +282,31 @@ class InningsState {
     return strikerName;
   }
 
-  InningsState copyWith({List<Delivery>? deliveries}) {
+  InningsState copyWith({
+    List<Delivery>? deliveries,
+    String? currentBowlerName,
+  }) {
     return InningsState(
       battingTeamName: battingTeamName,
       bowlingTeamName: bowlingTeamName,
       battingOrder: battingOrder,
+      bowlingRoster: bowlingRoster,
       strikerName: strikerName,
       nonStrikerName: nonStrikerName,
-      currentBowlerName: currentBowlerName,
+      currentBowlerName: currentBowlerName ?? this.currentBowlerName,
+      totalOversPerSide: totalOversPerSide,
       subRules: subRules,
       deliveries: deliveries ?? this.deliveries,
     );
   }
 }
+
+/// Mock bowling-side roster for the debug demo -- no real Selection
+/// Board (E3-08) hookup exists yet either.
+List<String> mockBowlingRoster() => const [
+  'Deepak Sharma',
+  'Rahul Deshmukh',
+  'Sanjay Gupta',
+  'Imran Khan',
+  'Vikas Nair',
+];

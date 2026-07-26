@@ -12,24 +12,35 @@ import 'scoring_provider.dart';
 
 const List<int> _runButtons = [0, 1, 2, 3, 4, 6];
 
-/// DS §7 screen 27 (Live Scoring Console, scorer) -- sub-task 1/4 of
+/// DS §7 screen 27 (Live Scoring Console, scorer) -- sub-tasks 1-3 of
 /// E4-04's XL split ("pad / extras / bowler-select / strike-swap"; see
-/// scoring_models.dart for the exact scope boundaries of this
-/// sub-task). "{Scoreboard 128 pinned} -> current-over beads strip 32
-/// -> batter/bowler stat strips -> pad zone bottom 45%: run grid
-/// (0*1*2*3*4*6 big 64 targets) ... [WICKET] full-width error-outline
-/// 52, [Undo] left 44."
+/// scoring_models.dart for the exact scope boundaries). "{Scoreboard
+/// 128 pinned} -> current-over beads strip 32 -> batter/bowler stat
+/// strips -> pad zone bottom 45%: run grid (0*1*2*3*4*6 big 64 targets)
+/// ... [WICKET] full-width error-outline 52, [Undo] left 44."
 class LiveScoringConsoleScreen extends ConsumerWidget {
   const LiveScoringConsoleScreen({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final colors = Theme.of(context).extension<AppColors>()!;
+
+    ref.listen<InningsState>(inningsProvider, (previous, next) {
+      final overJustEnded =
+          previous != null &&
+          previous.legalBallsThisOver != 0 &&
+          next.legalBallsThisOver == 0 &&
+          next.deliveries.isNotEmpty &&
+          next.completedOvers < next.totalOversPerSide;
+      if (overJustEnded) _showBowlerSelectSheet(context, next);
+    });
+
     final state = ref.watch(inningsProvider);
     final notifier = ref.read(inningsProvider.notifier);
     final striker = state.currentStriker;
     final strikerStats = state.batters[striker];
     final bowler = state.currentBowlerInnings;
+    final needsNewBowler = bowler.completedOvers >= state.maxOversPerBowler;
     final odometerDuration = AppMotion.resolveDuration(
       context,
       AppMotionToken.standard,
@@ -155,6 +166,43 @@ class LiveScoringConsoleScreen extends ConsumerWidget {
             ),
           ),
           const Spacer(),
+          if (needsNewBowler)
+            Padding(
+              padding: const EdgeInsets.symmetric(
+                horizontal: AppSpacing.lg,
+                vertical: AppSpacing.sm,
+              ),
+              child: Container(
+                key: const ValueKey('needsNewBowlerBanner'),
+                width: double.infinity,
+                padding: const EdgeInsets.all(AppSpacing.md),
+                decoration: BoxDecoration(
+                  color: colors.warning.withValues(alpha: 0.15),
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      '${bowler.name} has bowled the maximum '
+                      '${state.maxOversPerBowler} overs -- select the next '
+                      'bowler to continue.',
+                      style: AppTypography.body.copyWith(
+                        color: colors.textPrimary,
+                      ),
+                    ),
+                    const SizedBox(height: AppSpacing.sm),
+                    AppButton(
+                      key: const ValueKey('selectNextBowlerButton'),
+                      variant: AppButtonVariant.primary,
+                      label: 'Select next bowler',
+                      fullWidth: true,
+                      onPressed: () => _showBowlerSelectSheet(context, state),
+                    ),
+                  ],
+                ),
+              ),
+            ),
           Padding(
             padding: const EdgeInsets.all(AppSpacing.lg),
             child: Column(
@@ -174,7 +222,9 @@ class LiveScoringConsoleScreen extends ConsumerWidget {
                             backgroundColor: colors.surfaceAlt,
                             foregroundColor: colors.textPrimary,
                           ),
-                          onPressed: () => notifier.recordRun(runs),
+                          onPressed: needsNewBowler
+                              ? null
+                              : () => notifier.recordRun(runs),
                           child: Text(
                             '$runs',
                             style: AppTypography.stat.copyWith(
@@ -194,7 +244,9 @@ class LiveScoringConsoleScreen extends ConsumerWidget {
                         key: ValueKey('extraButton_${type.name}'),
                         variant: AppButtonVariant.secondary,
                         label: extraTypeShortLabels[type]!,
-                        onPressed: () => _showExtraSheet(context, type),
+                        onPressed: needsNewBowler
+                            ? null
+                            : () => _showExtraSheet(context, type),
                       ),
                   ],
                 ),
@@ -207,7 +259,9 @@ class LiveScoringConsoleScreen extends ConsumerWidget {
                     variant: AppButtonVariant.destructive,
                     label: 'WICKET',
                     fullWidth: true,
-                    onPressed: () => _showDismissalSheet(context, state),
+                    onPressed: needsNewBowler
+                        ? null
+                        : () => _showDismissalSheet(context, state),
                   ),
                 ),
                 const SizedBox(height: AppSpacing.sm),
@@ -285,6 +339,23 @@ class LiveScoringConsoleScreen extends ConsumerWidget {
       ),
     );
   }
+
+  /// PRD §7.7: "end-over auto-advance with next-bowler picker (bowler-
+  /// overs limits enforced per format rules)." AC: "Given over ends,
+  /// Then bowler sheet lists only legal bowlers with overs-left
+  /// captions."
+  void _showBowlerSelectSheet(BuildContext context, InningsState state) {
+    showAppBottomSheet<void>(
+      context: context,
+      title: 'Next bowler',
+      contentBuilder: (context) => _BowlerSelectSheetContent(
+        eligibleBowlers: state.eligibleNextBowlers,
+        oversLeftFor: (name) =>
+            state.maxOversPerBowler -
+            (state.bowlers[name]?.completedOvers ?? 0),
+      ),
+    );
+  }
 }
 
 class _DismissalSheetContent extends ConsumerStatefulWidget {
@@ -352,7 +423,7 @@ class _DismissalSheetContentState
             Wrap(
               spacing: AppSpacing.xs,
               children: [
-                for (final name in mockFielderNames())
+                for (final name in mockBowlingRoster())
                   ChoiceChip(
                     key: ValueKey('fielder_$name'),
                     label: Text(name),
@@ -407,15 +478,6 @@ class _DismissalSheetContentState
   }
 }
 
-/// Mock fielding-side names for the dismissal sheet -- no bowling-team
-/// XI hookup exists yet either.
-List<String> mockFielderNames() => const [
-  'Deepak Sharma',
-  'Rahul Deshmukh',
-  'Sanjay Gupta',
-  'Imran Khan',
-];
-
 const List<int> _extraAdditionalRunOptions = [0, 1, 2, 3, 4];
 
 /// DS/PRD: "extras (Wd/Nb/B/Lb with run steppers)." The base
@@ -461,6 +523,62 @@ class _ExtraRunStepperContent extends ConsumerWidget {
                 ),
             ],
           ),
+          const SizedBox(height: AppSpacing.lg),
+        ],
+      ),
+    );
+  }
+}
+
+class _BowlerSelectSheetContent extends ConsumerWidget {
+  final List<String> eligibleBowlers;
+  final int Function(String name) oversLeftFor;
+
+  const _BowlerSelectSheetContent({
+    required this.eligibleBowlers,
+    required this.oversLeftFor,
+  });
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final colors = Theme.of(context).extension<AppColors>()!;
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          for (final name in eligibleBowlers)
+            GestureDetector(
+              key: ValueKey('bowlerOption_$name'),
+              behavior: HitTestBehavior.opaque,
+              onTap: () {
+                ref.read(inningsProvider.notifier).selectNextBowler(name);
+                Navigator.of(context).pop();
+              },
+              child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        name,
+                        style: AppTypography.body.copyWith(
+                          color: colors.textPrimary,
+                        ),
+                      ),
+                    ),
+                    Text(
+                      '${oversLeftFor(name)} overs left',
+                      style: AppTypography.caption.copyWith(
+                        color: colors.textTertiary,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
           const SizedBox(height: AppSpacing.lg),
         ],
       ),
