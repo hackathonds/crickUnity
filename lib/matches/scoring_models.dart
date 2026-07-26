@@ -36,6 +36,18 @@ const Map<DismissalType, String> dismissalTypeLabels = {
   DismissalType.hitWicket: 'Hit wicket',
 };
 
+/// The compact per-ball label used on both the over-beads strip and the
+/// ball timeline (E4-06) -- kept as one function so the two never drift.
+String deliveryLabel(Delivery delivery) {
+  if (delivery.isManualSwap) return '↔';
+  if (delivery.isWicket) return 'W';
+  final type = delivery.extraType;
+  if (type == null) return '${delivery.runs}';
+  return delivery.runs > 0
+      ? '${extraTypeShortLabels[type]}${delivery.runs}'
+      : extraTypeShortLabels[type]!;
+}
+
 /// One recorded ball, replayed in order to derive [InningsState] --
 /// undo is just "drop the last delivery and replay," which is correct
 /// by construction rather than needing hand-written reverse-diff logic.
@@ -59,6 +71,11 @@ const Map<DismissalType, String> dismissalTypeLabels = {
 /// [dismissedBatterName] (E4-05, "run-out sub-fields"): every other
 /// dismissal type can only ever dismiss whoever's on strike, but a
 /// run-out can dismiss either end -- null defaults to the striker.
+///
+/// [isCorrected] (E4-06): the audit marker a ball carries once its
+/// recorded runs have been corrected after the fact, whether that
+/// correction was free (within the last-2-overs window) or required
+/// both captains' acknowledgment (older).
 class Delivery {
   final String bowlerName;
   final int runs;
@@ -72,6 +89,7 @@ class Delivery {
   final ExtraType? extraType;
   final bool isLegal;
   final bool isManualSwap;
+  final bool isCorrected;
 
   const Delivery({
     required this.bowlerName,
@@ -86,6 +104,7 @@ class Delivery {
     this.extraType,
     this.isLegal = true,
     this.isManualSwap = false,
+    this.isCorrected = false,
   }) : battingRuns = battingRuns ?? runs,
        ranRuns = ranRuns ?? runs;
 
@@ -100,7 +119,31 @@ class Delivery {
       newBatterName = null,
       extraType = null,
       isLegal = false,
-      isManualSwap = true;
+      isManualSwap = true,
+      isCorrected = false;
+
+  /// AC: "corrected balls carry an audit marker in ball timeline" --
+  /// only the runs (and, transitively, battingRuns/ranRuns for a plain
+  /// scoring ball) are correctable; changing a ball's wicket/extra
+  /// nature after the fact isn't in scope here.
+  Delivery correctedTo(int newRuns) {
+    final ranDelta = newRuns - runs;
+    return Delivery(
+      bowlerName: bowlerName,
+      runs: newRuns,
+      battingRuns: isWicket || extraType != null ? battingRuns : newRuns,
+      ranRuns: ranRuns + ranDelta,
+      isWicket: isWicket,
+      dismissalType: dismissalType,
+      fielderName: fielderName,
+      dismissedBatterName: dismissedBatterName,
+      newBatterName: newBatterName,
+      extraType: extraType,
+      isLegal: isLegal,
+      isManualSwap: isManualSwap,
+      isCorrected: true,
+    );
+  }
 
   /// PRD §7.7 / AC: "Given format says no-ball = 1 run + rebowl, Then
   /// extras honor the match's sub-rules from E4-01."
@@ -139,6 +182,42 @@ class Delivery {
           isLegal: true,
         );
     }
+  }
+}
+
+/// PRD §2.6 (Scorer): "edit balls within the correction window (last 2
+/// overs freely; older balls require both captains' acknowledgment)."
+/// A pending correction for a ball outside that free window -- it only
+/// takes effect once both [composerCaptainAcked] and
+/// [opponentCaptainAcked] are true.
+class CorrectionRequest {
+  final int deliveryIndex;
+  final int proposedRuns;
+  final String reason;
+  final bool composerCaptainAcked;
+  final bool opponentCaptainAcked;
+
+  const CorrectionRequest({
+    required this.deliveryIndex,
+    required this.proposedRuns,
+    required this.reason,
+    this.composerCaptainAcked = false,
+    this.opponentCaptainAcked = false,
+  });
+
+  bool get isFullyAcked => composerCaptainAcked && opponentCaptainAcked;
+
+  CorrectionRequest copyWith({
+    bool? composerCaptainAcked,
+    bool? opponentCaptainAcked,
+  }) {
+    return CorrectionRequest(
+      deliveryIndex: deliveryIndex,
+      proposedRuns: proposedRuns,
+      reason: reason,
+      composerCaptainAcked: composerCaptainAcked ?? this.composerCaptainAcked,
+      opponentCaptainAcked: opponentCaptainAcked ?? this.opponentCaptainAcked,
+    );
   }
 }
 
@@ -226,6 +305,7 @@ class InningsState {
   final String currentBowlerName;
   final int totalOversPerSide;
   final ExtraSubRules subRules;
+  final List<CorrectionRequest> pendingCorrections;
 
   const InningsState({
     required this.battingTeamName,
@@ -238,6 +318,7 @@ class InningsState {
     required this.totalOversPerSide,
     this.deliveries = const [],
     this.subRules = const ExtraSubRules(),
+    this.pendingCorrections = const [],
   });
 
   int get totalRuns => deliveries.fold(0, (sum, d) => sum + d.runs);
@@ -245,6 +326,56 @@ class InningsState {
   int get _legalDeliveryCount => deliveries.where((d) => d.isLegal).length;
   int get legalBallsThisOver => _legalDeliveryCount % 6;
   int get completedOvers => _legalDeliveryCount ~/ 6;
+
+  /// PRD §2.6: "last 2 overs freely" -- the over each delivery belongs
+  /// to (illegal/manual-swap balls share whichever over was in progress
+  /// when they happened), so corrections can tell whether a ball is
+  /// still inside the free window.
+  List<int> get _overIndexPerDelivery {
+    final result = <int>[];
+    var legalCount = 0;
+    for (final d in deliveries) {
+      result.add(legalCount ~/ 6);
+      if (d.isLegal) legalCount++;
+    }
+    return result;
+  }
+
+  static const int freeCorrectionWindowOvers = 2;
+
+  bool isWithinFreeCorrectionWindow(int deliveryIndex) {
+    final overIndices = _overIndexPerDelivery;
+    if (deliveryIndex < 0 || deliveryIndex >= overIndices.length) return false;
+    return completedOvers - overIndices[deliveryIndex] <
+        freeCorrectionWindowOvers;
+  }
+
+  /// Every ball (legal or not) since the last completed-over boundary --
+  /// what the plain Undo stack is allowed to reach into, and what the
+  /// over-beads strip renders. Manual swap-strike markers aren't balls
+  /// at all and never appear here.
+  List<Delivery> get currentOverDeliveries {
+    final target = legalBallsThisOver;
+    final result = <Delivery>[];
+    var legalCounted = 0;
+    for (var i = deliveries.length - 1; i >= 0; i--) {
+      final d = deliveries[i];
+      if (d.isManualSwap) continue;
+      if (d.isLegal) {
+        if (legalCounted >= target) break;
+        legalCounted++;
+      }
+      result.insert(0, d);
+    }
+    return result;
+  }
+
+  /// AC (backlog): "Unlimited undo within current over" -- the plain
+  /// Undo button only ever pops the last delivery, so it's "free" iff
+  /// that delivery is still part of the in-progress over. Reaching into
+  /// an already-completed over needs the ball-timeline correction flow
+  /// instead (PRD §2.6).
+  bool get canUndoFreely => currentOverDeliveries.isNotEmpty;
 
   /// The traditional cap of one-fifth of the innings' overs (ODI 50 ->
   /// 10, T20 20 -> 4), rounded up for odd-over formats. PRD/DS give no
@@ -359,6 +490,7 @@ class InningsState {
   InningsState copyWith({
     List<Delivery>? deliveries,
     String? currentBowlerName,
+    List<CorrectionRequest>? pendingCorrections,
   }) {
     return InningsState(
       battingTeamName: battingTeamName,
@@ -371,6 +503,7 @@ class InningsState {
       totalOversPerSide: totalOversPerSide,
       subRules: subRules,
       deliveries: deliveries ?? this.deliveries,
+      pendingCorrections: pendingCorrections ?? this.pendingCorrections,
     );
   }
 }
