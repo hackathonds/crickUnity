@@ -7,6 +7,7 @@ import '../design_system/tokens/app_colors.dart';
 import '../design_system/tokens/app_motion.dart';
 import '../design_system/tokens/app_spacing.dart';
 import '../design_system/tokens/app_typography.dart';
+import 'ball_timeline_screen.dart';
 import 'scoring_models.dart';
 import 'scoring_provider.dart';
 
@@ -51,7 +52,19 @@ class LiveScoringConsoleScreen extends ConsumerWidget {
     );
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Live scoring')),
+      appBar: AppBar(
+        title: const Text('Live scoring'),
+        actions: [
+          IconButton(
+            key: const ValueKey('ballTimelineButton'),
+            icon: const Icon(Icons.history),
+            tooltip: 'Ball timeline',
+            onPressed: () => Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => const BallTimelineScreen()),
+            ),
+          ),
+        ],
+      ),
       body: Column(
         children: [
           Container(
@@ -134,7 +147,7 @@ class LiveScoringConsoleScreen extends ConsumerWidget {
             alignment: Alignment.centerLeft,
             child: Row(
               children: [
-                for (final delivery in _currentOverDeliveries(state))
+                for (final delivery in state.currentOverDeliveries)
                   Padding(
                     padding: const EdgeInsets.only(right: AppSpacing.xs),
                     child: Container(
@@ -148,7 +161,7 @@ class LiveScoringConsoleScreen extends ConsumerWidget {
                             : colors.surfaceAlt,
                       ),
                       child: Text(
-                        _beadLabel(delivery),
+                        deliveryLabel(delivery),
                         style: AppTypography.caption.copyWith(
                           color: delivery.isWicket
                               ? colors.error
@@ -300,9 +313,7 @@ class LiveScoringConsoleScreen extends ConsumerWidget {
                       child: IconButton(
                         key: const ValueKey('undoButton'),
                         icon: const Icon(Icons.undo),
-                        onPressed: state.deliveries.isEmpty
-                            ? null
-                            : notifier.undo,
+                        onPressed: state.canUndoFreely ? notifier.undo : null,
                       ),
                     ),
                     const SizedBox(width: AppSpacing.sm),
@@ -322,35 +333,6 @@ class LiveScoringConsoleScreen extends ConsumerWidget {
         ],
       ),
     );
-  }
-
-  /// Every ball (legal or not) since the last completed-over boundary --
-  /// illegal balls (wides, rebowled no-balls) still show up as beads
-  /// even though they don't advance the over count. Manual swap-strike
-  /// markers aren't balls at all and never appear here.
-  List<Delivery> _currentOverDeliveries(InningsState state) {
-    final target = state.legalBallsThisOver;
-    final result = <Delivery>[];
-    var legalCounted = 0;
-    for (var i = state.deliveries.length - 1; i >= 0; i--) {
-      final d = state.deliveries[i];
-      if (d.isManualSwap) continue;
-      if (d.isLegal) {
-        if (legalCounted >= target) break;
-        legalCounted++;
-      }
-      result.insert(0, d);
-    }
-    return result;
-  }
-
-  String _beadLabel(Delivery delivery) {
-    if (delivery.isWicket) return 'W';
-    final type = delivery.extraType;
-    if (type == null) return '${delivery.runs}';
-    return delivery.runs > 0
-        ? '${extraTypeShortLabels[type]}${delivery.runs}'
-        : extraTypeShortLabels[type]!;
   }
 
   void _showExtraSheet(BuildContext context, ExtraType type) {

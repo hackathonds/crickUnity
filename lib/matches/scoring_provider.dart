@@ -3,10 +3,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'scoring_models.dart';
 
 /// PRD §7.7 / DS §7-27 -- E4-04's full 4-way split (see
-/// scoring_models.dart for the exact scope of each sub-task).
-/// `deliveries` is the only mutable state; every score/stat is a
-/// derived getter on [InningsState], so undo is simply "drop the last
-/// delivery."
+/// scoring_models.dart for the exact scope of each sub-task), plus
+/// E4-06's undo/correction-window rules layered on top. `deliveries`
+/// and `pendingCorrections` are the only mutable state; every score/
+/// stat is a derived getter on [InningsState].
 class InningsNotifier extends Notifier<InningsState> {
   @override
   InningsState build() {
@@ -94,10 +94,73 @@ class InningsNotifier extends Notifier<InningsState> {
     );
   }
 
+  /// PRD §2.6: "Unlimited undo within current over" -- refuses once the
+  /// last delivery belongs to an already-completed over; a correction
+  /// for that needs [requestCorrection] instead.
   void undo() {
-    if (state.deliveries.isEmpty) return;
+    if (!state.canUndoFreely) return;
     state = state.copyWith(
       deliveries: state.deliveries.sublist(0, state.deliveries.length - 1),
+    );
+  }
+
+  /// PRD §2.6: "edit balls within the correction window (last 2 overs
+  /// freely; older balls require both captains' acknowledgment)." A
+  /// ball still inside the free window corrects immediately; an older
+  /// one opens a pending [CorrectionRequest] that only takes effect
+  /// once both captains acknowledge it.
+  void requestCorrection({
+    required int deliveryIndex,
+    required int proposedRuns,
+    required String reason,
+  }) {
+    if (state.isWithinFreeCorrectionWindow(deliveryIndex)) {
+      _applyCorrection(deliveryIndex, proposedRuns);
+      return;
+    }
+    state = state.copyWith(
+      pendingCorrections: [
+        ...state.pendingCorrections,
+        CorrectionRequest(
+          deliveryIndex: deliveryIndex,
+          proposedRuns: proposedRuns,
+          reason: reason,
+        ),
+      ],
+    );
+  }
+
+  void acknowledgeCorrection(
+    int deliveryIndex, {
+    required bool asComposerCaptain,
+  }) {
+    final requests = <CorrectionRequest>[];
+    for (final request in state.pendingCorrections) {
+      if (request.deliveryIndex != deliveryIndex) {
+        requests.add(request);
+        continue;
+      }
+      final updated = asComposerCaptain
+          ? request.copyWith(composerCaptainAcked: true)
+          : request.copyWith(opponentCaptainAcked: true);
+      if (updated.isFullyAcked) {
+        _applyCorrection(updated.deliveryIndex, updated.proposedRuns);
+      } else {
+        requests.add(updated);
+      }
+    }
+    state = state.copyWith(pendingCorrections: requests);
+  }
+
+  void _applyCorrection(int deliveryIndex, int proposedRuns) {
+    state = state.copyWith(
+      deliveries: [
+        for (var i = 0; i < state.deliveries.length; i++)
+          if (i == deliveryIndex)
+            state.deliveries[i].correctedTo(proposedRuns)
+          else
+            state.deliveries[i],
+      ],
     );
   }
 }
