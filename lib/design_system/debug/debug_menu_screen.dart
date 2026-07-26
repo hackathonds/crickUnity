@@ -13,6 +13,7 @@ import 'leaderboard_screen.dart';
 import 'match_cards_screen.dart';
 import 'money_cards_screen.dart';
 import 'player_stat_cards_screen.dart';
+import 'reaction_picker_screen.dart';
 import 'stepper_screen.dart';
 import 'timeline_screen.dart';
 import 'icon_gallery_screen.dart';
@@ -224,6 +225,15 @@ class DebugMenuScreen extends StatelessWidget {
             ),
             onTap: () => Navigator.of(context).push(
               MaterialPageRoute(builder: (_) => const CommentWidgetScreen()),
+            ),
+          ),
+          ListTile(
+            title: const Text('Reaction arc-picker'),
+            subtitle: const Text(
+              'E0-08 (8/12) — quick-tap clap, long-press radial picker',
+            ),
+            onTap: () => Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => const ReactionPickerScreen()),
             ),
           ),
         ],
