@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../expenses/add_edit_expense_screen.dart';
+import '../../expenses/auto_split_review_screen.dart';
 import '../../expenses/expense_models.dart';
 import '../../expenses/expenses_home_screen.dart';
 import '../../expenses/expenses_provider.dart';
@@ -1099,6 +1100,44 @@ class DebugMenuScreen extends StatelessWidget {
                 ),
               ),
             ),
+          ),
+          ListTile(
+            title: const Text('Auto-split bundle (captain review)'),
+            subtitle: const Text(
+              'E5-03 — draft/finalize vs final squad, MVP-exempt, void-if-fake',
+            ),
+            onTap: () {
+              final container = ProviderScope.containerOf(
+                context,
+                listen: false,
+              );
+              final matchesNotifier = container.read(matchesProvider.notifier);
+              final id = matchesNotifier.submitMatch(
+                draft: MatchDraft(
+                  dateTime: DateTime.now().add(const Duration(days: 3)),
+                  opponentTeamName: 'Central Warriors',
+                  groundName: 'Riverside Ground',
+                  scorerAssignment: ScorerAssignment.member,
+                  scorerMemberName: 'Kabir Singh',
+                ),
+                composerTeamName: 'Riverside Strikers',
+              );
+              matchesNotifier.acceptMatch(id);
+              matchesNotifier.respondAvailability(
+                id,
+                'Sana Iyer',
+                AvailabilityResponse.no,
+              );
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (_) => AutoSplitReviewScreen(
+                    matchId: id,
+                    viewerName: 'Kabir Singh',
+                    viewerIsCaptain: true,
+                  ),
+                ),
+              );
+            },
           ),
           ListTile(
             title: const Text('Post-match summary'),
