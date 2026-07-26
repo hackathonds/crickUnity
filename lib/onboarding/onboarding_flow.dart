@@ -1,24 +1,29 @@
 import 'package:flutter/material.dart';
 
+import 'city_step_screen.dart';
 import 'dob_step_screen.dart';
 import 'guardian_contact_screen.dart';
 import 'guardian_explainer_screen.dart';
 import 'guardian_waiting_screen.dart';
 import 'name_entry_screen.dart';
 import 'otp_screen.dart';
+import 'permissions_primer_screen.dart';
 import 'phone_entry_screen.dart';
+import 'photo_step_screen.dart';
+import 'playing_info_step_screen.dart';
 import 'registration_complete_screen.dart';
+import 'warm_up_screen.dart';
 import 'welcome_screen.dart';
 
-/// Chains E1-01 + E1-02's screens together via plain Navigator pushes. Not
-/// wired into go_router as the app's real entry point yet -- Profile
-/// wizard (E1-03) and Guest mode (E1-04) need to exist first, or
-/// completing this flow would dead-end (see the story's PR notes).
-/// [onExploreAsGuest]/[onContactSupport] are exposed so the caller can
-/// wire those once they exist; today's caller (the debug menu) stubs them.
+/// Chains E1-01 + E1-02 + E1-03's screens together via plain Navigator
+/// pushes. [onExploreAsGuest] is exposed since Guest mode (E1-04) still
+/// doesn't exist -- the main "Get started" path no longer needs it (it
+/// now runs all the way to [onOnboardingComplete] on its own), but
+/// Welcome's "Explore first" button does.
 class OnboardingFlow extends StatelessWidget {
   final VoidCallback onExploreAsGuest;
   final VoidCallback onContactSupport;
+  final VoidCallback onOnboardingComplete;
 
   /// QA-only: see [GuardianWaitingScreen.showDebugSimulateApproval].
   final bool showDebugSimulateApproval;
@@ -27,6 +32,7 @@ class OnboardingFlow extends StatelessWidget {
     super.key,
     required this.onExploreAsGuest,
     required this.onContactSupport,
+    required this.onOnboardingComplete,
     this.showDebugSimulateApproval = false,
   });
 
@@ -54,7 +60,7 @@ class OnboardingFlow extends StatelessWidget {
           onContactSupport: onContactSupport,
           onVerified: (isExistingAccount) {
             if (isExistingAccount) {
-              _pushComplete(pageContext, isExistingAccount: true, name: null);
+              _pushWelcomeBack(pageContext);
             } else {
               _pushNameEntry(pageContext);
             }
@@ -64,25 +70,33 @@ class OnboardingFlow extends StatelessWidget {
     );
   }
 
-  void _pushNameEntry(BuildContext context) {
+  void _pushWelcomeBack(BuildContext context) {
     Navigator.of(context).push(
       MaterialPageRoute(
-        builder: (pageContext) => NameEntryScreen(
-          onContinue: (name) => _pushDobStep(pageContext, name: name),
-        ),
+        builder: (pageContext) =>
+            RegistrationCompleteScreen(onDone: onOnboardingComplete),
       ),
     );
   }
 
-  void _pushDobStep(BuildContext context, {required String name}) {
+  void _pushNameEntry(BuildContext context) {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (pageContext) =>
+            NameEntryScreen(onContinue: (_) => _pushDobStep(pageContext)),
+      ),
+    );
+  }
+
+  void _pushDobStep(BuildContext context) {
     Navigator.of(context).push(
       MaterialPageRoute(
         builder: (pageContext) => DobStepScreen(
           onContinue: (isMinor) {
             if (isMinor) {
-              _pushGuardianExplainer(pageContext, name: name);
+              _pushGuardianExplainer(pageContext);
             } else {
-              _pushComplete(pageContext, isExistingAccount: false, name: name);
+              _pushPhotoStep(pageContext);
             }
           },
         ),
@@ -90,57 +104,78 @@ class OnboardingFlow extends StatelessWidget {
     );
   }
 
-  void _pushGuardianExplainer(BuildContext context, {required String name}) {
+  void _pushGuardianExplainer(BuildContext context) {
     Navigator.of(context).push(
       MaterialPageRoute(
         builder: (pageContext) => GuardianExplainerScreen(
-          onContinue: () => _pushGuardianContact(pageContext, name: name),
+          onContinue: () => _pushGuardianContact(pageContext),
         ),
       ),
     );
   }
 
-  void _pushGuardianContact(BuildContext context, {required String name}) {
+  void _pushGuardianContact(BuildContext context) {
     Navigator.of(context).push(
       MaterialPageRoute(
         builder: (pageContext) => GuardianContactScreen(
-          onSent: () => _pushGuardianWaiting(pageContext, name: name),
+          onSent: () => _pushGuardianWaiting(pageContext),
         ),
       ),
     );
   }
 
-  void _pushGuardianWaiting(BuildContext context, {required String name}) {
+  void _pushGuardianWaiting(BuildContext context) {
     Navigator.of(context).push(
       MaterialPageRoute(
         builder: (pageContext) => GuardianWaitingScreen(
           showDebugSimulateApproval: showDebugSimulateApproval,
-          onConsentGranted: () => _pushComplete(
-            pageContext,
-            isExistingAccount: false,
-            name: name,
-            appliedMinorDefaults: true,
-          ),
+          onConsentGranted: () => _pushPhotoStep(pageContext),
         ),
       ),
     );
   }
 
-  void _pushComplete(
-    BuildContext context, {
-    required bool isExistingAccount,
-    required String? name,
-    bool appliedMinorDefaults = false,
-  }) {
+  void _pushPhotoStep(BuildContext context) {
     Navigator.of(context).push(
       MaterialPageRoute(
-        builder: (pageContext) => RegistrationCompleteScreen(
-          isExistingAccount: isExistingAccount,
-          name: name,
-          appliedMinorDefaults: appliedMinorDefaults,
-          onDone: () =>
-              Navigator.of(pageContext).popUntil((route) => route.isFirst),
+        builder: (pageContext) =>
+            PhotoStepScreen(onContinue: () => _pushCityStep(pageContext)),
+      ),
+    );
+  }
+
+  void _pushCityStep(BuildContext context) {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (pageContext) =>
+            CityStepScreen(onContinue: () => _pushPlayingInfoStep(pageContext)),
+      ),
+    );
+  }
+
+  void _pushPlayingInfoStep(BuildContext context) {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (pageContext) => PlayingInfoStepScreen(
+          onContinue: () => _pushPermissionsPrimer(pageContext),
         ),
+      ),
+    );
+  }
+
+  void _pushPermissionsPrimer(BuildContext context) {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (pageContext) =>
+            PermissionsPrimerScreen(onContinue: () => _pushWarmUp(pageContext)),
+      ),
+    );
+  }
+
+  void _pushWarmUp(BuildContext context) {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (pageContext) => WarmUpScreen(onDone: onOnboardingComplete),
       ),
     );
   }

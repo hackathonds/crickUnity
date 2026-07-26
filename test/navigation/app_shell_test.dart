@@ -30,7 +30,12 @@ void main() {
     'all 4 tabs show their placeholder content; FAB is centerDocked',
     (tester) async {
       await tester.pumpWidget(
-        ProviderScope(child: CricUnityApp(router: createAppRouter())),
+        ProviderScope(
+          child: CricUnityApp(
+            router: createAppRouter(),
+            startWithOnboardingComplete: true,
+          ),
+        ),
       );
       await tester.pumpAndSettle();
 
@@ -60,7 +65,12 @@ void main() {
     're-tapping the active tab scrolls to top; tapping again while at top refreshes',
     (tester) async {
       await tester.pumpWidget(
-        ProviderScope(child: CricUnityApp(router: createAppRouter())),
+        ProviderScope(
+          child: CricUnityApp(
+            router: createAppRouter(),
+            startWithOnboardingComplete: true,
+          ),
+        ),
       );
       await tester.pumpAndSettle();
 
@@ -86,7 +96,12 @@ void main() {
     'long-press Matches with no pinned match shows the empty message',
     (tester) async {
       await tester.pumpWidget(
-        ProviderScope(child: CricUnityApp(router: createAppRouter())),
+        ProviderScope(
+          child: CricUnityApp(
+            router: createAppRouter(),
+            startWithOnboardingComplete: true,
+          ),
+        ),
       );
       await tester.pumpAndSettle();
 
@@ -109,7 +124,10 @@ void main() {
             () => _FixedPinnedLiveMatch('Titans vs Strikers'),
           ),
         ],
-        child: CricUnityApp(router: createAppRouter()),
+        child: CricUnityApp(
+          router: createAppRouter(),
+          startWithOnboardingComplete: true,
+        ),
       ),
     );
     await tester.pumpAndSettle();
@@ -124,7 +142,12 @@ void main() {
     "drawer's Consoles section is empty by default and appears once a console role activates",
     (tester) async {
       await tester.pumpWidget(
-        ProviderScope(child: CricUnityApp(router: createAppRouter())),
+        ProviderScope(
+          child: CricUnityApp(
+            router: createAppRouter(),
+            startWithOnboardingComplete: true,
+          ),
+        ),
       );
       await tester.pumpAndSettle();
 
@@ -154,7 +177,10 @@ void main() {
             () => _FixedRoles({UserRole.captain}),
           ),
         ],
-        child: CricUnityApp(router: createAppRouter()),
+        child: CricUnityApp(
+          router: createAppRouter(),
+          startWithOnboardingComplete: true,
+        ),
       ),
     );
     await tester.pumpAndSettle();
@@ -171,7 +197,12 @@ void main() {
     tester,
   ) async {
     await tester.pumpWidget(
-      ProviderScope(child: CricUnityApp(router: createAppRouter())),
+      ProviderScope(
+        child: CricUnityApp(
+          router: createAppRouter(),
+          startWithOnboardingComplete: true,
+        ),
+      ),
     );
     await tester.pumpAndSettle();
 
