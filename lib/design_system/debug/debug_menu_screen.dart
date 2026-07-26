@@ -4,6 +4,7 @@ import '../../guest/guest_live_match_preview_screen.dart';
 import '../../onboarding/onboarding_flow.dart';
 import 'avatar_screen.dart';
 import 'nearby_matches_preview_screen.dart';
+import 'onboarding_checklist_screen.dart';
 import 'badge_tile_screen.dart';
 import 'buttons_screen.dart';
 import 'card_screen.dart';
@@ -315,6 +316,17 @@ class DebugMenuScreen extends StatelessWidget {
                     );
                   },
                 ),
+              ),
+            ),
+          ),
+          ListTile(
+            title: const Text('Onboarding checklist widget'),
+            subtitle: const Text(
+              'E1-05 — 4-item checklist, coin float, auto-hides at 2 done',
+            ),
+            onTap: () => Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (_) => const OnboardingChecklistScreen(),
               ),
             ),
           ),

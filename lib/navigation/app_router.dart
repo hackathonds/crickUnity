@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import '../design_system/debug/debug_menu_screen.dart';
 import '../design_system/tokens/app_motion.dart';
 import '../design_system/tokens/app_spacing.dart';
+import '../home/onboarding_checklist_widget.dart';
 import '../settings/appearance_settings_screen.dart';
 import '../widgets/placeholder_screen.dart';
 import '../widgets/tab_root_screen.dart';
@@ -105,6 +106,7 @@ GoRouter createAppRouter() => GoRouter(
               rootTitle: 'Home',
               branchIndex: 0,
               showDrawerAvatar: true,
+              extra: const OnboardingChecklistWidget(),
             ),
           ],
         ),
