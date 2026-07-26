@@ -5,6 +5,7 @@ import 'buttons_screen.dart';
 import 'card_screen.dart';
 import 'comment_widget_screen.dart';
 import 'chips_screen.dart';
+import 'coin_xp_screen.dart';
 import 'calendar_screen.dart';
 import 'dropdown_screen.dart';
 import 'forms_kit_screen.dart';
@@ -235,6 +236,15 @@ class DebugMenuScreen extends StatelessWidget {
             onTap: () => Navigator.of(context).push(
               MaterialPageRoute(builder: (_) => const ReactionPickerScreen()),
             ),
+          ),
+          ListTile(
+            title: const Text('Coin & XP widgets'),
+            subtitle: const Text(
+              'E0-08 (9/12) — coin chip earn animation, XP ring sweep + toast',
+            ),
+            onTap: () => Navigator.of(
+              context,
+            ).push(MaterialPageRoute(builder: (_) => const CoinXpScreen())),
           ),
         ],
       ),
