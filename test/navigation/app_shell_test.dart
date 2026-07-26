@@ -214,4 +214,20 @@ void main() {
     expect(find.text('Open next'), findsNothing);
     expect(find.textContaining('Depth cap reached'), findsOneWidget);
   });
+
+  testWidgets('Home shows the onboarding checklist widget for a brand-new user '
+      '(E1-05)', (tester) async {
+    await tester.pumpWidget(
+      ProviderScope(
+        child: CricUnityApp(
+          router: createAppRouter(),
+          startWithOnboardingComplete: true,
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('Get started'), findsOneWidget);
+    expect(find.text('Complete your profile'), findsOneWidget);
+  });
 }
