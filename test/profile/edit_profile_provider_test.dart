@@ -119,4 +119,43 @@ void main() {
       isNot(contains('Hindi')),
     );
   });
+
+  test('equipTitle() commits immediately and never marks the form dirty', () {
+    final container = ProviderContainer();
+    addTearDown(container.dispose);
+    final notifier = container.read(editProfileProvider.notifier);
+
+    notifier.equipTitle('Iron Player');
+
+    final state = container.read(editProfileProvider);
+    expect(state.equippedTitle, 'Iron Player');
+    expect(state.baseline.equippedTitle, 'Iron Player');
+    expect(state.isDirty, isFalse);
+  });
+
+  test('discarding an unrelated dirty edit does not revert an already-'
+      'equipped title', () {
+    final container = ProviderContainer();
+    addTearDown(container.dispose);
+    final notifier = container.read(editProfileProvider.notifier);
+
+    notifier.equipTitle('Iron Player');
+    notifier.setCity('Mumbai');
+    notifier.discard();
+
+    final state = container.read(editProfileProvider);
+    expect(state.equippedTitle, 'Iron Player');
+    expect(state.isDirty, isFalse);
+  });
+
+  test('equipTitle(null) clears the equipped title', () {
+    final container = ProviderContainer();
+    addTearDown(container.dispose);
+    final notifier = container.read(editProfileProvider.notifier);
+    notifier.equipTitle('Iron Player');
+
+    notifier.equipTitle(null);
+
+    expect(container.read(editProfileProvider).equippedTitle, isNull);
+  });
 }

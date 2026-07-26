@@ -24,6 +24,7 @@ class EditProfileBaseline {
   final bool showAgeBand;
   final Set<String> languages;
   final String bio;
+  final String? equippedTitle;
 
   const EditProfileBaseline({
     required this.name,
@@ -32,6 +33,7 @@ class EditProfileBaseline {
     this.showAgeBand = true,
     this.languages = const {},
     this.bio = '',
+    this.equippedTitle,
   });
 }
 
@@ -47,6 +49,12 @@ class EditProfileState {
   final List<NameChangeLogEntry> nameChangeLog;
   final bool saved;
 
+  /// Equipping a title commits immediately (DS §11.18: a radio sheet with
+  /// a live preview, not a field gated behind the outer Save button) --
+  /// always mirrors [baseline.equippedTitle], so it never contributes to
+  /// [isDirty].
+  final String? equippedTitle;
+
   const EditProfileState({
     required this.baseline,
     required this.name,
@@ -58,6 +66,7 @@ class EditProfileState {
     this.nameChangesUsedThisYear = 0,
     this.nameChangeLog = const [],
     this.saved = false,
+    this.equippedTitle,
   });
 
   bool get nameChanged => name != baseline.name;
@@ -91,6 +100,8 @@ class EditProfileState {
     int? nameChangesUsedThisYear,
     List<NameChangeLogEntry>? nameChangeLog,
     bool? saved,
+    String? equippedTitle,
+    bool clearEquippedTitle = false,
   }) {
     return EditProfileState(
       baseline: baseline,
@@ -104,6 +115,9 @@ class EditProfileState {
           nameChangesUsedThisYear ?? this.nameChangesUsedThisYear,
       nameChangeLog: nameChangeLog ?? this.nameChangeLog,
       saved: saved ?? this.saved,
+      equippedTitle: clearEquippedTitle
+          ? null
+          : (equippedTitle ?? this.equippedTitle),
     );
   }
 }
@@ -123,6 +137,7 @@ class EditProfileNotifier extends Notifier<EditProfileState> {
       showAgeBand: baseline.showAgeBand,
       languages: baseline.languages,
       bio: baseline.bio,
+      equippedTitle: baseline.equippedTitle,
     );
   }
 
@@ -136,6 +151,32 @@ class EditProfileNotifier extends Notifier<EditProfileState> {
     final languages = {...state.languages};
     if (!languages.remove(language)) languages.add(language);
     state = state.copyWith(languages: languages);
+  }
+
+  /// Commits immediately -- updates the baseline too, so this never shows
+  /// up as a dirty/unsaved change (see [EditProfileState.equippedTitle]).
+  void equipTitle(String? title) {
+    final newBaseline = EditProfileBaseline(
+      name: state.baseline.name,
+      nickname: state.baseline.nickname,
+      city: state.baseline.city,
+      showAgeBand: state.baseline.showAgeBand,
+      languages: state.baseline.languages,
+      bio: state.baseline.bio,
+      equippedTitle: title,
+    );
+    state = EditProfileState(
+      baseline: newBaseline,
+      name: state.name,
+      nickname: state.nickname,
+      city: state.city,
+      showAgeBand: state.showAgeBand,
+      languages: state.languages,
+      bio: state.bio,
+      nameChangesUsedThisYear: state.nameChangesUsedThisYear,
+      nameChangeLog: state.nameChangeLog,
+      equippedTitle: title,
+    );
   }
 
   /// Returns false (without saving anything) if the name change would
@@ -166,6 +207,7 @@ class EditProfileNotifier extends Notifier<EditProfileState> {
         showAgeBand: state.showAgeBand,
         languages: state.languages,
         bio: state.bio,
+        equippedTitle: state.equippedTitle,
       ),
       name: state.name,
       nickname: state.nickname,
@@ -176,6 +218,7 @@ class EditProfileNotifier extends Notifier<EditProfileState> {
       nameChangesUsedThisYear: nameChangesUsedThisYear,
       nameChangeLog: nameChangeLog,
       saved: true,
+      equippedTitle: state.equippedTitle,
     );
     return true;
   }
@@ -194,6 +237,7 @@ class EditProfileNotifier extends Notifier<EditProfileState> {
       bio: baseline.bio,
       nameChangesUsedThisYear: state.nameChangesUsedThisYear,
       nameChangeLog: state.nameChangeLog,
+      equippedTitle: baseline.equippedTitle,
     );
   }
 }

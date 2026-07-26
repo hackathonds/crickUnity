@@ -8,6 +8,8 @@ import '../design_system/tokens/app_colors.dart';
 import '../design_system/tokens/app_spacing.dart';
 import '../design_system/tokens/app_typography.dart';
 import 'edit_profile_provider.dart';
+import 'title_picker_sheet.dart';
+import 'titles_models.dart';
 
 const List<String> _availableLanguages = [
   'English',
@@ -149,6 +151,33 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                         ),
                         value: state.showAgeBand,
                         onChanged: notifier.setShowAgeBand,
+                      ),
+                      sectionLabel('Titles'),
+                      GestureDetector(
+                        key: const ValueKey('editProfileTitlesRow'),
+                        onTap: () => showTitlePickerSheet(
+                          context: context,
+                          name: state.name,
+                          titles: mockEarnedTitles(),
+                          currentEquipped: state.equippedTitle,
+                          onEquip: notifier.equipTitle,
+                        ),
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: Text(
+                                state.equippedTitle ?? 'None equipped',
+                                style: AppTypography.body.copyWith(
+                                  color: colors.textPrimary,
+                                ),
+                              ),
+                            ),
+                            Icon(
+                              Icons.chevron_right,
+                              color: colors.textTertiary,
+                            ),
+                          ],
+                        ),
                       ),
                       sectionLabel('Languages'),
                       Wrap(
