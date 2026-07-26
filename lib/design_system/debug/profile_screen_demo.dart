@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../profile/edit_profile_screen.dart';
 import '../../profile/profile_models.dart';
 import '../../profile/profile_screen.dart';
 import '../components/app_dropdown_field.dart';
@@ -60,6 +61,9 @@ class _ProfileScreenDemoState extends State<ProfileScreenDemo> {
         relation: _relation,
         isFollowing: _isFollowing,
         onFollow: () => setState(() => _isFollowing = !_isFollowing),
+        onEdit: () => Navigator.of(
+          context,
+        ).push(MaterialPageRoute(builder: (_) => const EditProfileScreen())),
       ),
     );
   }
