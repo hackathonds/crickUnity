@@ -5,6 +5,7 @@ import 'app_icon_glyphs_rewards.dart';
 import 'app_icon_glyphs_social.dart';
 import 'app_icon_glyphs_sports.dart';
 import 'app_icon_glyphs_status.dart';
+import 'app_icon_glyphs_trust.dart';
 import 'app_icon_glyphs_utility.dart';
 import 'app_icon_id.dart';
 
@@ -14,6 +15,7 @@ final Map<AppIconId, AppIconGlyph> appIconGlyphs = {
   ...navigationIconGlyphs,
   ...sportsIconGlyphs,
   ...statusIconGlyphs,
+  ...trustIconGlyphs,
   ...rewardsIconGlyphs,
   ...expenseIconGlyphs,
   ...socialIconGlyphs,
@@ -47,6 +49,7 @@ final Map<String, List<AppIconId>> appIconFamilies = {
     AppIconId.locked,
     AppIconId.syncedOfflineCloud,
   ],
+  'Trust & Sportsmanship': [AppIconId.shield],
   'Rewards': [
     AppIconId.coin,
     AppIconId.xpBolt,

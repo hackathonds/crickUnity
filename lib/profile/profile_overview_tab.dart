@@ -1,12 +1,15 @@
 import 'package:flutter/material.dart';
 
+import '../design_system/components/app_band_chip.dart';
 import '../design_system/components/app_button.dart';
 import '../design_system/tokens/app_colors.dart';
 import '../design_system/tokens/app_spacing.dart';
 import '../design_system/tokens/app_typography.dart';
+import 'band_breakdown_screen.dart';
 import 'endorser_sheet.dart';
 import 'profile_models.dart';
 import 'style_tag_picker_sheet.dart';
+import 'trust_sportsmanship_models.dart';
 
 /// DS §7 screen 4-5, Overview tab: "Recent-form string, favorites
 /// shelves, endorsement chips." Extended by E2-04 with style tags and a
@@ -138,6 +141,63 @@ class ProfileOverviewTab extends StatelessWidget {
                       endorsement: endorsement,
                     ),
                   ),
+              ],
+            ),
+          ],
+          // PRD §5.15 / DS §11.5: bands are "never visible on public
+          // profile beyond band" and even the band chip itself is only
+          // ever placed on Self's own profile (elsewhere it's join-
+          // request/gig cards, both future stories) -- same structural
+          // guard as Weaknesses below, not a visual hide.
+          if (isSelf && profile.trustProfile != null) ...[
+            const SizedBox(height: AppSpacing.xxl),
+            sectionLabel('Trust & Sportsmanship'),
+            Row(
+              key: const ValueKey('profileTrustSportsmanshipRow'),
+              children: [
+                AppBandChip(
+                  kind: BandKind.trust,
+                  label: trustBandLabels[profile.trustProfile!.trustBand]!,
+                  onTap: () => Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (_) => BandBreakdownScreen(
+                        kind: BandKind.trust,
+                        bandLabel:
+                            trustBandLabels[profile.trustProfile!.trustBand]!,
+                        factors: profile.trustProfile!.trustFactors,
+                        cleanDaysCount:
+                            profile.trustProfile!.trustCleanDaysCount,
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: AppSpacing.sm),
+                AppBandChip(
+                  kind: BandKind.sportsmanship,
+                  label:
+                      sportsmanshipBandLabels[profile
+                          .trustProfile!
+                          .sportsmanshipBand]!,
+                  isUnderReview:
+                      profile.trustProfile!.sportsmanshipBand ==
+                      SportsmanshipBand.underReview,
+                  onTap: () => Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (_) => BandBreakdownScreen(
+                        kind: BandKind.sportsmanship,
+                        bandLabel:
+                            sportsmanshipBandLabels[profile
+                                .trustProfile!
+                                .sportsmanshipBand]!,
+                        isUnderReview:
+                            profile.trustProfile!.sportsmanshipBand ==
+                            SportsmanshipBand.underReview,
+                        factors: profile.trustProfile!.sportsmanshipFactors,
+                        appealable: true,
+                      ),
+                    ),
+                  ),
+                ),
               ],
             ),
           ],
