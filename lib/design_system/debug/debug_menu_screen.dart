@@ -13,6 +13,7 @@ import 'match_cards_screen.dart';
 import 'money_cards_screen.dart';
 import 'player_stat_cards_screen.dart';
 import 'stepper_screen.dart';
+import 'timeline_screen.dart';
 import 'icon_gallery_screen.dart';
 import 'sheet_dialog_snackbar_screen.dart';
 import 'search_bar_screen.dart';
@@ -205,6 +206,15 @@ class DebugMenuScreen extends StatelessWidget {
             onTap: () => Navigator.of(context).push(
               MaterialPageRoute(builder: (_) => const LeaderboardScreen()),
             ),
+          ),
+          ListTile(
+            title: const Text('Timeline & ball-scrub'),
+            subtitle: const Text(
+              'E0-08 (6/12) — sticky date separators, drag-to-scrub',
+            ),
+            onTap: () => Navigator.of(
+              context,
+            ).push(MaterialPageRoute(builder: (_) => const TimelineScreen())),
           ),
         ],
       ),
