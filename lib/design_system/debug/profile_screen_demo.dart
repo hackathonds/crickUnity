@@ -21,6 +21,7 @@ class _ProfileScreenDemoState extends State<ProfileScreenDemo> {
   bool _isMinor = false;
   bool _isFollowing = false;
   bool _statsVerified = true;
+  late List<String> _styleTags = mockPlayerProfile().styleTags;
 
   @override
   Widget build(BuildContext context) {
@@ -41,6 +42,8 @@ class _ProfileScreenDemoState extends State<ProfileScreenDemo> {
       recentForm: base.recentForm,
       favoriteTeams: base.favoriteTeams,
       endorsements: base.endorsements,
+      styleTags: _styleTags,
+      weaknesses: base.weaknesses,
       isMinor: _isMinor,
       visibility: _visibility,
     );
@@ -61,6 +64,7 @@ class _ProfileScreenDemoState extends State<ProfileScreenDemo> {
         relation: _relation,
         isFollowing: _isFollowing,
         onFollow: () => setState(() => _isFollowing = !_isFollowing),
+        onStyleTagsChanged: (tags) => setState(() => _styleTags = tags),
         onEdit: () => Navigator.of(
           context,
         ).push(MaterialPageRoute(builder: (_) => const EditProfileScreen())),
