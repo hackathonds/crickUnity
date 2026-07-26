@@ -7,6 +7,7 @@ import '../../profile/achievements_wall_screen.dart';
 import '../../profile/activity_calendar_models.dart';
 import '../../profile/activity_calendar_screen.dart';
 import '../../profile/edit_profile_screen.dart';
+import '../../profile/free_agent_screen.dart';
 import '../../profile/profile_models.dart';
 import '../../teams/create_team_flow.dart';
 import '../../teams/edit_team_screen.dart';
@@ -687,6 +688,17 @@ class DebugMenuScreen extends StatelessWidget {
               MaterialPageRoute(
                 builder: (_) =>
                     const SuccessionScreen(viewerName: 'Kabir Singh'),
+              ),
+            ),
+          ),
+          ListTile(
+            title: const Text('Find a Game (free agent)'),
+            subtitle: const Text(
+              'E3-16 — free-agent toggle, browse needs, auction pools',
+            ),
+            onTap: () => Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (_) => const FreeAgentScreen(playerName: 'Neha Rao'),
               ),
             ),
           ),
