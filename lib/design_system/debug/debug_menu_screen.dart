@@ -850,6 +850,39 @@ class DebugMenuScreen extends StatelessWidget {
             },
           ),
           ListTile(
+            title: const Text('Match detail (private, approval queue)'),
+            subtitle: const Text(
+              'E4-16 — share sheet, privacy row, viewer approval queue',
+            ),
+            onTap: () {
+              final container = ProviderScope.containerOf(
+                context,
+                listen: false,
+              );
+              final notifier = container.read(matchesProvider.notifier);
+              final id = notifier.submitMatch(
+                draft: MatchDraft(
+                  dateTime: DateTime.now().add(const Duration(days: 3)),
+                  opponentTeamName: 'Central Warriors',
+                  groundName: 'Riverside Ground',
+                  visibility: MatchVisibility.private,
+                ),
+                composerTeamName: 'Riverside Strikers',
+              );
+              notifier.acceptMatch(id);
+              notifier.requestViewerAccess(id, 'Guest Viewer');
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (_) => MatchDetailScreen(
+                    matchId: id,
+                    viewerName: 'Rohan Kapoor',
+                    isCaptain: true,
+                  ),
+                ),
+              );
+            },
+          ),
+          ListTile(
             title: const Text('Match detail (rescheduled)'),
             subtitle: const Text('E4-02 — banner + cleared responses'),
             onTap: () {

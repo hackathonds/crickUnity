@@ -248,6 +248,8 @@ class MatchRecord {
   final String? pendingTossWinner;
   final TossResult? tossResult;
   final List<String> timelineEntries;
+  final List<String> pendingViewerRequests;
+  final List<String> approvedViewerNames;
 
   const MatchRecord({
     required this.id,
@@ -265,6 +267,8 @@ class MatchRecord {
     this.pendingTossWinner,
     this.tossResult,
     this.timelineEntries = const [],
+    this.pendingViewerRequests = const [],
+    this.approvedViewerNames = const [],
   });
 
   MatchRecord copyWith({
@@ -284,6 +288,8 @@ class MatchRecord {
     bool clearPendingTossWinner = false,
     TossResult? tossResult,
     List<String>? timelineEntries,
+    List<String>? pendingViewerRequests,
+    List<String>? approvedViewerNames,
   }) {
     return MatchRecord(
       id: id,
@@ -310,6 +316,9 @@ class MatchRecord {
           : (pendingTossWinner ?? this.pendingTossWinner),
       tossResult: tossResult ?? this.tossResult,
       timelineEntries: timelineEntries ?? this.timelineEntries,
+      pendingViewerRequests:
+          pendingViewerRequests ?? this.pendingViewerRequests,
+      approvedViewerNames: approvedViewerNames ?? this.approvedViewerNames,
     );
   }
 }

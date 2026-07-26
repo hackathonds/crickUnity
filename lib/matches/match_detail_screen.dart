@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../design_system/components/app_avatar.dart';
@@ -43,7 +44,17 @@ class MatchDetailScreen extends ConsumerWidget {
     final cancelled = match.status == MatchStatus.cancelled;
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Match detail')),
+      appBar: AppBar(
+        title: const Text('Match detail'),
+        actions: [
+          IconButton(
+            key: const ValueKey('shareMatchButton'),
+            icon: const Icon(Icons.share_outlined),
+            tooltip: 'Share',
+            onPressed: () => _showShareSheet(context, draft.visibility),
+          ),
+        ],
+      ),
       body: Column(
         children: [
           Expanded(
@@ -98,6 +109,83 @@ class MatchDetailScreen extends ConsumerWidget {
                         ),
                       ),
                     ),
+                  const SizedBox(height: AppSpacing.xxl),
+                  Row(
+                    key: const ValueKey('privacyRow'),
+                    children: [
+                      Icon(
+                        draft.visibility == MatchVisibility.private
+                            ? Icons.lock_outline
+                            : Icons.public,
+                        size: 16,
+                        color: colors.textTertiary,
+                      ),
+                      const SizedBox(width: AppSpacing.xs),
+                      Text(
+                        matchVisibilityLabels[draft.visibility]!,
+                        style: AppTypography.caption.copyWith(
+                          color: colors.textTertiary,
+                        ),
+                      ),
+                    ],
+                  ),
+                  if (draft.visibility == MatchVisibility.private) ...[
+                    const SizedBox(height: AppSpacing.xs),
+                    Text(
+                      'Private match -- link-holders must be approved '
+                      'before they can view it.',
+                      style: AppTypography.caption.copyWith(
+                        color: colors.textTertiary,
+                      ),
+                    ),
+                    if (isCaptain &&
+                        match.pendingViewerRequests.isNotEmpty) ...[
+                      const SizedBox(height: AppSpacing.md),
+                      Text(
+                        'Access requests',
+                        style: AppTypography.label.copyWith(
+                          color: colors.textTertiary,
+                        ),
+                      ),
+                      const SizedBox(height: AppSpacing.xs),
+                      for (final name in match.pendingViewerRequests)
+                        Padding(
+                          key: ValueKey('viewerRequestRow_$name'),
+                          padding: const EdgeInsets.symmetric(
+                            vertical: AppSpacing.xs,
+                          ),
+                          child: Row(
+                            children: [
+                              Expanded(
+                                child: Text(
+                                  name,
+                                  style: AppTypography.body.copyWith(
+                                    color: colors.textPrimary,
+                                  ),
+                                ),
+                              ),
+                              AppButton(
+                                key: ValueKey('approveViewer_$name'),
+                                variant: AppButtonVariant.secondary,
+                                label: 'Approve',
+                                onPressed: () => ref
+                                    .read(matchesProvider.notifier)
+                                    .approveViewerAccess(matchId, name),
+                              ),
+                              const SizedBox(width: AppSpacing.sm),
+                              AppButton(
+                                key: ValueKey('denyViewer_$name'),
+                                variant: AppButtonVariant.destructive,
+                                label: 'Deny',
+                                onPressed: () => ref
+                                    .read(matchesProvider.notifier)
+                                    .denyViewerAccess(matchId, name),
+                              ),
+                            ],
+                          ),
+                        ),
+                    ],
+                  ],
                   const SizedBox(height: AppSpacing.xxl),
                   Text(
                     'Ground',
@@ -288,10 +376,97 @@ class MatchDetailScreen extends ConsumerWidget {
     );
   }
 
+  /// PRD §7.24: "Share sheet: live link, scorecard image, performance
+  /// cards per player." No real link/image-generation backend exists
+  /// yet -- link copy is a real Clipboard write (same convention as
+  /// [PostMatchSummaryScreen]'s Share button); scorecard image and
+  /// performance cards are flagged mock rows since no rendering
+  /// pipeline exists for either.
+  void _showShareSheet(BuildContext context, MatchVisibility visibility) {
+    showAppBottomSheet<void>(
+      context: context,
+      title: 'Share match',
+      contentBuilder: (context) =>
+          _ShareSheetContent(matchId: matchId, visibility: visibility),
+    );
+  }
+
   String _formatDateTime(DateTime dt) =>
       '${dt.day}/${dt.month}/${dt.year} '
       '${dt.hour.toString().padLeft(2, '0')}:'
       '${dt.minute.toString().padLeft(2, '0')}';
+}
+
+class _ShareSheetContent extends StatelessWidget {
+  final String matchId;
+  final MatchVisibility visibility;
+
+  const _ShareSheetContent({required this.matchId, required this.visibility});
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = Theme.of(context).extension<AppColors>()!;
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          if (visibility == MatchVisibility.private)
+            Text(
+              'Private -- anyone opening this link will need your '
+              'approval before they can view the match.',
+              style: AppTypography.caption.copyWith(color: colors.textTertiary),
+            ),
+          const SizedBox(height: AppSpacing.md),
+          AppButton(
+            key: const ValueKey('copyMatchLinkButton'),
+            variant: AppButtonVariant.primary,
+            label: 'Copy live link',
+            fullWidth: true,
+            onPressed: () {
+              Clipboard.setData(
+                ClipboardData(text: 'https://cricunity.app/match/$matchId'),
+              );
+              ScaffoldMessenger.of(
+                context,
+              ).showSnackBar(const SnackBar(content: Text('Link copied')));
+            },
+          ),
+          const SizedBox(height: AppSpacing.sm),
+          AppButton(
+            key: const ValueKey('shareScorecardImageButton'),
+            variant: AppButtonVariant.secondary,
+            label: 'Share scorecard image',
+            fullWidth: true,
+            onPressed: () => ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text(
+                  'No image-rendering pipeline in this codebase yet',
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(height: AppSpacing.sm),
+          AppButton(
+            key: const ValueKey('sharePerformanceCardsButton'),
+            variant: AppButtonVariant.secondary,
+            label: 'Share performance cards',
+            fullWidth: true,
+            onPressed: () => ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text(
+                  'No image-rendering pipeline in this codebase yet',
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(height: AppSpacing.lg),
+        ],
+      ),
+    );
+  }
 }
 
 class _InfoRow extends StatelessWidget {
