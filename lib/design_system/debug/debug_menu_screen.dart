@@ -8,6 +8,8 @@ import '../../matches/match_models.dart';
 import '../../matches/match_opponent_decision_screen.dart';
 import '../../matches/match_proposal_review_screen.dart';
 import '../../matches/field_map_screen.dart';
+import '../../matches/scorecard_screen.dart';
+import '../../matches/scoring_models.dart';
 import '../../matches/live_scoring_console_screen.dart';
 import '../../matches/match_viewer_screen.dart';
 import '../../matches/scoring_provider.dart';
@@ -950,6 +952,25 @@ class DebugMenuScreen extends StatelessWidget {
             onTap: () => Navigator.of(
               context,
             ).push(MaterialPageRoute(builder: (_) => const FieldMapScreen())),
+          ),
+          ListTile(
+            title: const Text('Scorecard (as scorer)'),
+            subtitle: const Text(
+              'E4-10 — batting/bowling accordions, FoW ladder, confirm/dispute',
+            ),
+            onTap: () => Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (_) =>
+                    const ScorecardScreen(viewerRole: ConfirmerRole.scorer),
+              ),
+            ),
+          ),
+          ListTile(
+            title: const Text('Scorecard (spectator)'),
+            subtitle: const Text('E4-10 — read-only confirmation panel'),
+            onTap: () => Navigator.of(
+              context,
+            ).push(MaterialPageRoute(builder: (_) => const ScorecardScreen())),
           ),
           ListTile(
             title: const Text('Guest mode preview'),

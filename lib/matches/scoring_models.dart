@@ -282,6 +282,8 @@ class BatterInnings {
   final int balls;
   final bool isOut;
   final DismissalType? dismissalType;
+  final String? dismissingBowlerName;
+  final String? dismissingFielderName;
 
   const BatterInnings({
     required this.name,
@@ -289,13 +291,36 @@ class BatterInnings {
     this.balls = 0,
     this.isOut = false,
     this.dismissalType,
+    this.dismissingBowlerName,
+    this.dismissingFielderName,
   });
+
+  /// DS §7 screen 29: "batting table: dismissal text 13 wraps."
+  String get dismissalText {
+    if (!isOut) return 'not out';
+    switch (dismissalType!) {
+      case DismissalType.bowled:
+        return 'b $dismissingBowlerName';
+      case DismissalType.caught:
+        return 'c $dismissingFielderName b $dismissingBowlerName';
+      case DismissalType.lbw:
+        return 'lbw b $dismissingBowlerName';
+      case DismissalType.runOut:
+        return 'run out ($dismissingFielderName)';
+      case DismissalType.stumped:
+        return 'st $dismissingFielderName b $dismissingBowlerName';
+      case DismissalType.hitWicket:
+        return 'hit wicket b $dismissingBowlerName';
+    }
+  }
 
   BatterInnings copyWith({
     int? runs,
     int? balls,
     bool? isOut,
     DismissalType? dismissalType,
+    String? dismissingBowlerName,
+    String? dismissingFielderName,
   }) {
     return BatterInnings(
       name: name,
@@ -303,9 +328,34 @@ class BatterInnings {
       balls: balls ?? this.balls,
       isOut: isOut ?? this.isOut,
       dismissalType: dismissalType ?? this.dismissalType,
+      dismissingBowlerName: dismissingBowlerName ?? this.dismissingBowlerName,
+      dismissingFielderName:
+          dismissingFielderName ?? this.dismissingFielderName,
     );
   }
 }
+
+/// DS §7 screen 29: "FoW ladder."
+class FallOfWicket {
+  final int wicketNumber;
+  final int teamRunsAtFall;
+  final String batterName;
+  final int oversAtFall;
+  final int ballsIntoOverAtFall;
+
+  const FallOfWicket({
+    required this.wicketNumber,
+    required this.teamRunsAtFall,
+    required this.batterName,
+    required this.oversAtFall,
+    required this.ballsIntoOverAtFall,
+  });
+}
+
+/// PRD §7.14: "both captains + scorer confirm." Distinguishes the three
+/// confirming parties without conflating with [TeamMemberRole] (this is
+/// specifically about who signs off on a single match's scorecard).
+enum ConfirmerRole { composerCaptain, opponentCaptain, scorer }
 
 class BowlerInnings {
   final String name;
@@ -373,6 +423,14 @@ class InningsState {
   final bool composerCaptainApprovedHandover;
   final bool opponentCaptainApprovedHandover;
   final List<String> timelineEntries;
+  final bool composerCaptainConfirmedScorecard;
+  final bool opponentCaptainConfirmedScorecard;
+  final bool scorerConfirmedScorecard;
+  final bool isDisputed;
+  final String? disputeReason;
+  final bool rippleFired;
+  final List<String> rippleLog;
+  final DateTime scorecardPostedAt;
 
   const InningsState({
     required this.battingTeamName,
@@ -384,6 +442,7 @@ class InningsState {
     required this.currentBowlerName,
     required this.totalOversPerSide,
     required this.scorerName,
+    required this.scorecardPostedAt,
     this.deliveries = const [],
     this.subRules = const ExtraSubRules(),
     this.pendingCorrections = const [],
@@ -398,7 +457,27 @@ class InningsState {
     this.composerCaptainApprovedHandover = false,
     this.opponentCaptainApprovedHandover = false,
     this.timelineEntries = const [],
+    this.composerCaptainConfirmedScorecard = false,
+    this.opponentCaptainConfirmedScorecard = false,
+    this.scorerConfirmedScorecard = false,
+    this.isDisputed = false,
+    this.disputeReason,
+    this.rippleFired = false,
+    this.rippleLog = const [],
   });
+
+  bool get isFullyConfirmed =>
+      composerCaptainConfirmedScorecard &&
+      opponentCaptainConfirmedScorecard &&
+      scorerConfirmedScorecard;
+
+  /// PRD §7.14: "auto-confirm 48h if unchallenged."
+  static const int scorecardAutoConfirmHours = 48;
+
+  bool canAutoConfirm({DateTime Function() now = DateTime.now}) =>
+      !isDisputed &&
+      !isFullyConfirmed &&
+      now().difference(scorecardPostedAt).inHours >= scorecardAutoConfirmHours;
 
   int get totalRuns => deliveries.fold(0, (sum, d) => sum + d.runs);
   int get wicketsLost => deliveries.where((d) => d.isWicket).length;
@@ -519,6 +598,31 @@ class InningsState {
     return result;
   }
 
+  /// DS §7 screen 29: "FoW ladder." A second small replay -- kept
+  /// separate from [_replay] since it tracks team-running-total/over
+  /// position rather than per-batter stats or strike.
+  List<FallOfWicket> get fallOfWickets {
+    final result = <FallOfWicket>[];
+    var runningRuns = 0;
+    var legalBalls = 0;
+    for (final d in deliveries) {
+      runningRuns += d.runs;
+      if (d.isWicket) {
+        result.add(
+          FallOfWicket(
+            wicketNumber: result.length + 1,
+            teamRunsAtFall: runningRuns,
+            batterName: d.dismissedBatterName ?? currentStriker,
+            oversAtFall: legalBalls ~/ 6,
+            ballsIntoOverAtFall: legalBalls % 6,
+          ),
+        );
+      }
+      if (d.isLegal) legalBalls++;
+    }
+    return result;
+  }
+
   /// AC: "Given over ends, Then bowler sheet lists only legal bowlers
   /// with overs-left captions" -- excludes whoever bowled the over that
   /// just ended (no consecutive overs) and anyone who has already
@@ -579,6 +683,8 @@ class InningsState {
         stats[dismissed] = dismissedCurrent.copyWith(
           isOut: true,
           dismissalType: d.dismissalType,
+          dismissingBowlerName: d.bowlerName,
+          dismissingFielderName: d.fielderName,
         );
         if (d.newBatterName != null) {
           if (dismissed == striker) {
@@ -628,6 +734,13 @@ class InningsState {
     bool? composerCaptainApprovedHandover,
     bool? opponentCaptainApprovedHandover,
     List<String>? timelineEntries,
+    bool? composerCaptainConfirmedScorecard,
+    bool? opponentCaptainConfirmedScorecard,
+    bool? scorerConfirmedScorecard,
+    bool? isDisputed,
+    String? disputeReason,
+    bool? rippleFired,
+    List<String>? rippleLog,
   }) {
     return InningsState(
       battingTeamName: battingTeamName,
@@ -639,6 +752,7 @@ class InningsState {
       currentBowlerName: currentBowlerName ?? this.currentBowlerName,
       totalOversPerSide: totalOversPerSide,
       scorerName: scorerName ?? this.scorerName,
+      scorecardPostedAt: scorecardPostedAt,
       subRules: subRules,
       deliveries: deliveries ?? this.deliveries,
       pendingCorrections: pendingCorrections ?? this.pendingCorrections,
@@ -663,6 +777,18 @@ class InningsState {
           opponentCaptainApprovedHandover ??
           this.opponentCaptainApprovedHandover,
       timelineEntries: timelineEntries ?? this.timelineEntries,
+      composerCaptainConfirmedScorecard:
+          composerCaptainConfirmedScorecard ??
+          this.composerCaptainConfirmedScorecard,
+      opponentCaptainConfirmedScorecard:
+          opponentCaptainConfirmedScorecard ??
+          this.opponentCaptainConfirmedScorecard,
+      scorerConfirmedScorecard:
+          scorerConfirmedScorecard ?? this.scorerConfirmedScorecard,
+      isDisputed: isDisputed ?? this.isDisputed,
+      disputeReason: disputeReason ?? this.disputeReason,
+      rippleFired: rippleFired ?? this.rippleFired,
+      rippleLog: rippleLog ?? this.rippleLog,
     );
   }
 }
