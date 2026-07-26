@@ -8,6 +8,8 @@ import '../../profile/activity_calendar_models.dart';
 import '../../profile/activity_calendar_screen.dart';
 import '../../profile/edit_profile_screen.dart';
 import '../../profile/profile_models.dart';
+import '../../teams/create_team_flow.dart';
+import '../../teams/edit_team_screen.dart';
 import 'avatar_screen.dart';
 import 'nearby_matches_preview_screen.dart';
 import 'onboarding_checklist_screen.dart';
@@ -380,6 +382,26 @@ class DebugMenuScreen extends StatelessWidget {
                 ),
               ),
             ),
+          ),
+          ListTile(
+            title: const Text('Create team'),
+            subtitle: const Text(
+              'E3-01 — name/logo/location/format/access/colors wizard',
+            ),
+            onTap: () => Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (_) => CreateTeamFlow(onTeamCreated: (_) {}),
+              ),
+            ),
+          ),
+          ListTile(
+            title: const Text('Edit team'),
+            subtitle: const Text(
+              'E3-01 — identity vs logistics fields, "formerly known as"',
+            ),
+            onTap: () => Navigator.of(
+              context,
+            ).push(MaterialPageRoute(builder: (_) => const EditTeamScreen())),
           ),
           ListTile(
             title: const Text('Guest mode preview'),
