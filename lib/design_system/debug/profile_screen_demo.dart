@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 
 import '../../profile/achievement_models.dart';
 import '../../profile/achievements_wall_screen.dart';
+import '../../profile/activity_calendar_models.dart';
+import '../../profile/activity_calendar_screen.dart';
 import '../../profile/edit_profile_screen.dart';
 import '../../profile/profile_models.dart';
 import '../../profile/profile_screen.dart';
@@ -74,6 +76,14 @@ class _ProfileScreenDemoState extends State<ProfileScreenDemo> {
           MaterialPageRoute(
             builder: (_) =>
                 AchievementsWallScreen(badges: mockAchievementBadges()),
+          ),
+        ),
+        onOpenActivityCalendar: () => Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (_) => ActivityCalendarScreen(
+              entries: mockActivityEntries(),
+              relation: _relation,
+            ),
           ),
         ),
       ),

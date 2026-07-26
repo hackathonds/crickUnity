@@ -50,6 +50,7 @@ class ProfileScreen extends StatefulWidget {
   final VoidCallback? onOpenMenu;
   final ValueChanged<List<String>>? onStyleTagsChanged;
   final VoidCallback? onOpenAchievements;
+  final VoidCallback? onOpenActivityCalendar;
 
   const ProfileScreen({
     super.key,
@@ -65,6 +66,7 @@ class ProfileScreen extends StatefulWidget {
     this.onOpenMenu,
     this.onStyleTagsChanged,
     this.onOpenAchievements,
+    this.onOpenActivityCalendar,
   });
 
   @override
@@ -225,6 +227,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         profile: profile,
         relation: widget.relation,
         onStyleTagsChanged: widget.onStyleTagsChanged,
+        onOpenActivityCalendar: widget.onOpenActivityCalendar,
       ),
       1 => const _ProfileTabPlaceholder(
         text: 'Format-split stat cards and charts are E2-03.',

@@ -12,29 +12,54 @@ void main() {
     List<String> styleTags = const [],
     List<WeaknessInsight> weaknesses = const [],
     ValueChanged<List<String>>? onStyleTagsChanged,
+    VoidCallback? onOpenActivityCalendar,
   }) {
     final base = mockPlayerProfile();
     return MaterialApp(
       theme: AppTheme.themes[AppTheme.defaultLight],
       home: Scaffold(
-        body: ProfileOverviewTab(
-          relation: relation,
-          onStyleTagsChanged: onStyleTagsChanged,
-          profile: PlayerProfile(
-            name: base.name,
-            city: base.city,
-            bio: base.bio,
-            roleChips: base.roleChips,
-            headerStats: base.headerStats,
-            recentForm: base.recentForm,
-            endorsements: base.endorsements,
-            styleTags: styleTags,
-            weaknesses: weaknesses,
+        // Real usage (profile_screen.dart) always embeds this tab inside
+        // a CustomScrollView -- match that here instead of a bare
+        // Scaffold body, which has no scrollable ancestor and overflows
+        // once enough sections/chips are present.
+        body: SingleChildScrollView(
+          child: ProfileOverviewTab(
+            relation: relation,
+            onStyleTagsChanged: onStyleTagsChanged,
+            onOpenActivityCalendar: onOpenActivityCalendar,
+            profile: PlayerProfile(
+              name: base.name,
+              city: base.city,
+              bio: base.bio,
+              roleChips: base.roleChips,
+              headerStats: base.headerStats,
+              recentForm: base.recentForm,
+              endorsements: base.endorsements,
+              styleTags: styleTags,
+              weaknesses: weaknesses,
+            ),
           ),
         ),
       ),
     );
   }
+
+  testWidgets('tapping "View activity calendar" invokes the callback', (
+    tester,
+  ) async {
+    var opened = false;
+    await tester.pumpWidget(
+      harness(
+        relation: ViewerRelation.self,
+        onOpenActivityCalendar: () => opened = true,
+      ),
+    );
+
+    await tester.tap(find.byKey(const ValueKey('profileViewActivityCalendar')));
+    await tester.pump();
+
+    expect(opened, isTrue);
+  });
 
   testWidgets('tapping an endorsement chip opens the endorser sheet, with a '
       'whistle for coach endorsers', (tester) async {
