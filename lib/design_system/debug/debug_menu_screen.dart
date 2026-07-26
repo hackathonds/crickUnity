@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'avatar_screen.dart';
+import 'badge_tile_screen.dart';
 import 'buttons_screen.dart';
 import 'card_screen.dart';
 import 'comment_widget_screen.dart';
@@ -245,6 +246,15 @@ class DebugMenuScreen extends StatelessWidget {
             onTap: () => Navigator.of(
               context,
             ).push(MaterialPageRoute(builder: (_) => const CoinXpScreen())),
+          ),
+          ListTile(
+            title: const Text('Badge tile'),
+            subtitle: const Text(
+              'E0-08 (10/12) — hex-soft tile, earned/locked, detail sheet',
+            ),
+            onTap: () => Navigator.of(
+              context,
+            ).push(MaterialPageRoute(builder: (_) => const BadgeTileScreen())),
           ),
         ],
       ),
