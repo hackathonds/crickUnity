@@ -383,6 +383,17 @@ class FallOfWicket {
 /// specifically about who signs off on a single match's scorecard).
 enum ConfirmerRole { composerCaptain, opponentCaptain, scorer }
 
+/// PRD §7.16: "MVP auto-suggested ... Additional: Best Batter/Bowler/
+/// Fielder optional."
+enum AwardType { mvp, bestBatter, bestBowler, bestFielder }
+
+const Map<AwardType, String> awardTypeLabels = {
+  AwardType.mvp: 'MVP',
+  AwardType.bestBatter: 'Best Batter',
+  AwardType.bestBowler: 'Best Bowler',
+  AwardType.bestFielder: 'Best Fielder',
+};
+
 class BowlerInnings {
   final String name;
   final int ballsBowled;
@@ -457,6 +468,9 @@ class InningsState {
   final bool rippleFired;
   final List<String> rippleLog;
   final DateTime scorecardPostedAt;
+  final String? mvpCaptainPick;
+  final bool awardsMinted;
+  final List<String> awardsLog;
 
   const InningsState({
     required this.battingTeamName,
@@ -490,6 +504,9 @@ class InningsState {
     this.disputeReason,
     this.rippleFired = false,
     this.rippleLog = const [],
+    this.mvpCaptainPick,
+    this.awardsMinted = false,
+    this.awardsLog = const [],
   });
 
   bool get isFullyConfirmed =>
@@ -849,6 +866,9 @@ class InningsState {
     String? disputeReason,
     bool? rippleFired,
     List<String>? rippleLog,
+    String? mvpCaptainPick,
+    bool? awardsMinted,
+    List<String>? awardsLog,
   }) {
     return InningsState(
       battingTeamName: battingTeamName,
@@ -897,7 +917,72 @@ class InningsState {
       disputeReason: disputeReason ?? this.disputeReason,
       rippleFired: rippleFired ?? this.rippleFired,
       rippleLog: rippleLog ?? this.rippleLog,
+      mvpCaptainPick: mvpCaptainPick ?? this.mvpCaptainPick,
+      awardsMinted: awardsMinted ?? this.awardsMinted,
+      awardsLog: awardsLog ?? this.awardsLog,
     );
+  }
+
+  /// PRD §7.16: "MVP auto-suggested (performance-index)". A simple
+  /// runs/wickets heuristic -- no real performance-index model exists.
+  String get suggestedMvp {
+    String? best;
+    var bestScore = -1;
+    for (final batter in batters.values) {
+      final wickets = bowlers[batter.name]?.wickets ?? 0;
+      final score = batter.runs + wickets * 20;
+      if (score > bestScore) {
+        bestScore = score;
+        best = batter.name;
+      }
+    }
+    for (final bowler in bowlers.values) {
+      if (batters.containsKey(bowler.name)) continue;
+      final score = bowler.wickets * 20;
+      if (score > bestScore) {
+        bestScore = score;
+        best = bowler.name;
+      }
+    }
+    return best ?? '-';
+  }
+
+  /// "decided by: opposing captain pick (preferred, prompts them) or
+  /// auto" -- PRD gives no timeout for the captain's decision window
+  /// (unlike the scorecard's literal 48h), so rather than inventing one,
+  /// the auto-suggestion stands immediately and simply gets overridden
+  /// whenever the opposing captain acts.
+  String get finalMvp => mvpCaptainPick ?? suggestedMvp;
+
+  bool get mvpIsCaptainPick => mvpCaptainPick != null;
+
+  String? get bestBatterName {
+    if (batters.isEmpty) return null;
+    final sorted = batters.values.toList()
+      ..sort((a, b) => b.runs.compareTo(a.runs));
+    return sorted.first.runs > 0 ? sorted.first.name : null;
+  }
+
+  String? get bestBowlerName {
+    final withWickets = bowlers.values.where((b) => b.wickets > 0).toList();
+    if (withWickets.isEmpty) return null;
+    withWickets.sort((a, b) {
+      final byWickets = b.wickets.compareTo(a.wickets);
+      if (byWickets != 0) return byWickets;
+      return a.runsConceded.compareTo(b.runsConceded);
+    });
+    return withWickets.first.name;
+  }
+
+  String? get bestFielderName {
+    final counts = <String, int>{};
+    for (final d in deliveries) {
+      if (d.isWicket && d.fielderName != null) {
+        counts[d.fielderName!] = (counts[d.fielderName!] ?? 0) + 1;
+      }
+    }
+    if (counts.isEmpty) return null;
+    return counts.entries.reduce((a, b) => b.value > a.value ? b : a).key;
   }
 }
 

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../guest/guest_live_match_preview_screen.dart';
+import '../../matches/awards_screen.dart';
 import '../../matches/create_match_flow.dart';
 import '../../matches/match_detail_screen.dart';
 import '../../matches/match_models.dart';
@@ -995,6 +996,36 @@ class DebugMenuScreen extends StatelessWidget {
             onTap: () => Navigator.of(
               context,
             ).push(MaterialPageRoute(builder: (_) => const ScorecardScreen())),
+          ),
+          ListTile(
+            title: const Text('Awards (opposing captain)'),
+            subtitle: const Text(
+              'E4-13 — MVP pick, Best Batter/Bowler/Fielder, mint awards',
+            ),
+            onTap: () {
+              final container = ProviderScope.containerOf(
+                context,
+                listen: false,
+              );
+              final notifier = container.read(inningsProvider.notifier);
+              notifier.confirmScorecard(ConfirmerRole.composerCaptain);
+              notifier.confirmScorecard(ConfirmerRole.opponentCaptain);
+              notifier.confirmScorecard(ConfirmerRole.scorer);
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (_) => const AwardsScreen(isOpposingCaptain: true),
+                ),
+              );
+            },
+          ),
+          ListTile(
+            title: const Text('Awards (spectator)'),
+            subtitle: const Text('E4-13 — read-only awards view'),
+            onTap: () => Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (_) => const AwardsScreen(isOpposingCaptain: false),
+              ),
+            ),
           ),
           ListTile(
             title: const Text('Guest mode preview'),
