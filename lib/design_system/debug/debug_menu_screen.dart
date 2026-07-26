@@ -15,6 +15,7 @@ import '../../teams/team_invite_decision_screen.dart';
 import '../../teams/team_invite_models.dart';
 import '../../teams/team_invite_sheet.dart';
 import '../../teams/team_models.dart';
+import '../../teams/availability_matrix_screen.dart';
 import 'announcements_demo.dart';
 import 'avatar_screen.dart';
 import 'members_roles_demo.dart';
@@ -470,6 +471,17 @@ class DebugMenuScreen extends StatelessWidget {
             ),
             onTap: () => Navigator.of(context).push(
               MaterialPageRoute(builder: (_) => const AnnouncementsDemo()),
+            ),
+          ),
+          ListTile(
+            title: const Text('Availability matrix'),
+            subtitle: const Text(
+              'E3-06 — tri-state grid, sticky names, 1 nudge/12h/event, footer summary',
+            ),
+            onTap: () => Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (_) => const AvailabilityMatrixScreen(),
+              ),
             ),
           ),
           ListTile(
