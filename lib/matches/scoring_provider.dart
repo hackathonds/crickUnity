@@ -1,13 +1,17 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../offline/queued_action.dart';
 import 'scoring_models.dart';
 
 /// PRD §7.7 / DS §7-27 -- E4-04's full 4-way split (see
 /// scoring_models.dart for the exact scope of each sub-task), plus
-/// E4-06's undo/correction-window rules layered on top. `deliveries`
-/// and `pendingCorrections` are the only mutable state; every score/
-/// stat is a derived getter on [InningsState].
+/// E4-06's undo/correction-window rules and E4-08's offline-sync
+/// queueing layered on top. `deliveries` and `pendingCorrections` are
+/// the only mutable state; every score/stat is a derived getter on
+/// [InningsState].
 class InningsNotifier extends Notifier<InningsState> {
+  int _ballCount = 0;
+
   @override
   InningsState build() {
     final order = mockBattingOrder();
@@ -31,6 +35,7 @@ class InningsNotifier extends Notifier<InningsState> {
         Delivery(bowlerName: state.currentBowlerName, runs: runs),
       ],
     );
+    _queueSync('$runs run${runs == 1 ? '' : 's'}');
   }
 
   /// [dismissedBatterName] (E4-05, "run-out sub-fields"): defaults to
@@ -55,6 +60,7 @@ class InningsNotifier extends Notifier<InningsState> {
         ),
       ],
     );
+    _queueSync('Wicket (${dismissalTypeLabels[dismissalType]})');
   }
 
   /// PRD §7.7 / AC: "Given format says no-ball = 1 run + rebowl, Then
@@ -72,6 +78,7 @@ class InningsNotifier extends Notifier<InningsState> {
         ),
       ],
     );
+    _queueSync(extraTypeLabels[type]!);
   }
 
   /// PRD §7.7: "end-over auto-advance with next-bowler picker (bowler-
@@ -189,6 +196,27 @@ class InningsNotifier extends Notifier<InningsState> {
   /// flow, just enough to make requiredRunRate demonstrable.
   void setTarget(int target) {
     state = state.copyWith(targetRuns: target);
+  }
+
+  /// PRD §7.7 offline UX: "scoring continues seamlessly ... banner
+  /// 'Saving locally -- will sync'." The ball is already applied to
+  /// local state above regardless of connectivity -- this just enqueues
+  /// the mock "sync to server" side of it through the existing E0-06
+  /// offline-queue infra, which already auto-flushes every pending
+  /// action the moment [isOnlineProvider] flips back to true. No real
+  /// backend exists to actually sync to, so the "sync" is a short
+  /// simulated delay that always succeeds.
+  void _queueSync(String label) {
+    _ballCount++;
+    ref
+        .read(queuedActionsProvider.notifier)
+        .submit(
+          label: 'Ball $_ballCount: $label',
+          isMoneyAction: false,
+          perform: () async {
+            await Future.delayed(const Duration(milliseconds: 300));
+          },
+        );
   }
 }
 

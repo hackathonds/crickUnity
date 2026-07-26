@@ -7,6 +7,8 @@ import '../design_system/tokens/app_colors.dart';
 import '../design_system/tokens/app_motion.dart';
 import '../design_system/tokens/app_spacing.dart';
 import '../design_system/tokens/app_typography.dart';
+import '../offline/is_online_provider.dart';
+import '../offline/queued_action.dart';
 import 'ball_timeline_screen.dart';
 import 'scoring_models.dart';
 import 'scoring_provider.dart';
@@ -38,6 +40,11 @@ class LiveScoringConsoleScreen extends ConsumerWidget {
 
     final state = ref.watch(inningsProvider);
     final notifier = ref.read(inningsProvider.notifier);
+    final isOnline = ref.watch(isOnlineProvider);
+    final pendingSyncCount = ref
+        .watch(queuedActionsProvider)
+        .where((a) => a.status != QueuedActionStatus.success)
+        .length;
     final striker = state.currentStriker;
     final strikerStats = state.batters[striker];
     final nonStriker = state.currentNonStriker;
@@ -56,6 +63,13 @@ class LiveScoringConsoleScreen extends ConsumerWidget {
       appBar: AppBar(
         title: const Text('Live scoring'),
         actions: [
+          IconButton(
+            key: const ValueKey('offlineToggleButton'),
+            icon: Icon(isOnline ? Icons.wifi : Icons.wifi_off),
+            tooltip: isOnline ? 'Go offline (debug)' : 'Go online (debug)',
+            onPressed: () =>
+                ref.read(isOnlineProvider.notifier).state = !isOnline,
+          ),
           IconButton(
             key: const ValueKey('ballTimelineButton'),
             icon: const Icon(Icons.history),
@@ -150,6 +164,20 @@ class LiveScoringConsoleScreen extends ConsumerWidget {
               ],
             ),
           ),
+          if (!isOnline)
+            Container(
+              key: const ValueKey('savingLocallyChip'),
+              width: double.infinity,
+              alignment: Alignment.center,
+              padding: const EdgeInsets.symmetric(vertical: AppSpacing.xs),
+              color: colors.warning.withValues(alpha: 0.15),
+              child: Text(
+                pendingSyncCount > 0
+                    ? 'Saving locally -- will sync ($pendingSyncCount)'
+                    : 'Saving locally -- will sync',
+                style: AppTypography.caption.copyWith(color: colors.warning),
+              ),
+            ),
           Container(
             key: const ValueKey('overBeadsStrip'),
             height: 32,
