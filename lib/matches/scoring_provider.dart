@@ -2,10 +2,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'scoring_models.dart';
 
-/// PRD §7.7 / DS §7-27 -- sub-task 1/4 of E4-04 (see scoring_models.dart
-/// for the exact split boundaries). `deliveries` is the only mutable
-/// state; every score/stat is a derived getter on [InningsState], so
-/// undo is simply "drop the last delivery."
+/// PRD §7.7 / DS §7-27 -- E4-04's full 4-way split (see
+/// scoring_models.dart for the exact scope of each sub-task).
+/// `deliveries` is the only mutable state; every score/stat is a
+/// derived getter on [InningsState], so undo is simply "drop the last
+/// delivery."
 class InningsNotifier extends Notifier<InningsState> {
   @override
   InningsState build() {
@@ -76,6 +77,17 @@ class InningsNotifier extends Notifier<InningsState> {
   /// the switch once a valid choice is made.
   void selectNextBowler(String bowlerName) {
     state = state.copyWith(currentBowlerName: bowlerName);
+  }
+
+  /// PRD §7.7: "swap-strike" -- a manual override the scorer can tap
+  /// any time, independent of the automatic odd-runs/over-end rotation.
+  void manualSwapStrike() {
+    state = state.copyWith(
+      deliveries: [
+        ...state.deliveries,
+        Delivery.manualSwap(bowlerName: state.currentBowlerName),
+      ],
+    );
   }
 
   void undo() {
