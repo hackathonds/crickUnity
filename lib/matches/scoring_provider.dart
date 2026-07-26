@@ -391,6 +391,34 @@ class InningsNotifier extends Notifier<InningsState> {
     }
     state = state.copyWith(awardsMinted: true, awardsLog: entries);
   }
+
+  /// PRD §7.8: "scorer quick-edit" of the auto-generated commentary
+  /// line for a specific ball -- a prose edit, not a scoring-fact
+  /// correction, so no correction-window gating applies.
+  void editCommentary(int deliveryIndex, String text) {
+    state = state.copyWith(
+      deliveries: [
+        for (var i = 0; i < state.deliveries.length; i++)
+          if (i == deliveryIndex)
+            state.deliveries[i].withCommentaryOverride(text)
+          else
+            state.deliveries[i],
+      ],
+    );
+  }
+
+  /// PRD §7.8: "scorer can add custom notes."
+  void addCustomNote(String text) {
+    state = state.copyWith(
+      customNotes: [
+        ...state.customNotes,
+        CommentaryNote(
+          afterDeliveryIndex: state.deliveries.length - 1,
+          text: text,
+        ),
+      ],
+    );
+  }
 }
 
 final inningsProvider = NotifierProvider<InningsNotifier, InningsState>(

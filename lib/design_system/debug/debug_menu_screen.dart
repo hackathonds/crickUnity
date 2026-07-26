@@ -1017,6 +1017,17 @@ class DebugMenuScreen extends StatelessWidget {
             ),
           ),
           ListTile(
+            title: const Text('Live Match View (scorer commentary edit)'),
+            subtitle: const Text(
+              'E4-18 — quick-edit commentary, add notes, key-moment highlight',
+            ),
+            onTap: () => Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (_) => const LiveMatchViewScreen(isScorer: true),
+              ),
+            ),
+          ),
+          ListTile(
             title: const Text('Post-match summary'),
             subtitle: const Text(
               'E4-12 — result hero, MVP, XP/coins, expense, ratings, insights',
