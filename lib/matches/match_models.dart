@@ -193,6 +193,30 @@ List<String> mockSquadNames() => const [
   'Sana Iyer',
 ];
 
+/// PRD §7.6: "Toss screen at match start: digital coin flip (either
+/// captain taps; animation; result recorded) or manual entry ('Real
+/// coin used: Titans won, chose to bat')."
+enum TossDecision { bat, bowl }
+
+const Map<TossDecision, String> tossDecisionLabels = {
+  TossDecision.bat: 'Bat',
+  TossDecision.bowl: 'Bowl',
+};
+
+class TossResult {
+  final String winningTeamName;
+  final TossDecision decision;
+  final bool isManual;
+  final DateTime recordedAt;
+
+  const TossResult({
+    required this.winningTeamName,
+    required this.decision,
+    required this.isManual,
+    required this.recordedAt,
+  });
+}
+
 /// PRD §7.1: "Creating notifies opponent captain -> Accept/Propose
 /// changes (diff view)/Decline. Match is Draft until both accept."
 /// PRD §7.2's Ground Selection and Ground&Time step name are the two
@@ -221,6 +245,9 @@ class MatchRecord {
   final String? rescheduleReason;
   final List<String> squadNames;
   final Map<String, AvailabilityResponse> availabilityResponses;
+  final String? pendingTossWinner;
+  final TossResult? tossResult;
+  final List<String> timelineEntries;
 
   const MatchRecord({
     required this.id,
@@ -235,6 +262,9 @@ class MatchRecord {
     this.rescheduleReason,
     this.squadNames = const [],
     this.availabilityResponses = const {},
+    this.pendingTossWinner,
+    this.tossResult,
+    this.timelineEntries = const [],
   });
 
   MatchRecord copyWith({
@@ -250,6 +280,10 @@ class MatchRecord {
     String? rescheduleReason,
     bool clearRescheduleReason = false,
     Map<String, AvailabilityResponse>? availabilityResponses,
+    String? pendingTossWinner,
+    bool clearPendingTossWinner = false,
+    TossResult? tossResult,
+    List<String>? timelineEntries,
   }) {
     return MatchRecord(
       id: id,
@@ -271,6 +305,11 @@ class MatchRecord {
       squadNames: squadNames,
       availabilityResponses:
           availabilityResponses ?? this.availabilityResponses,
+      pendingTossWinner: clearPendingTossWinner
+          ? null
+          : (pendingTossWinner ?? this.pendingTossWinner),
+      tossResult: tossResult ?? this.tossResult,
+      timelineEntries: timelineEntries ?? this.timelineEntries,
     );
   }
 }
