@@ -31,6 +31,7 @@ void main() {
       recentForm: base.recentForm,
       favoriteTeams: base.favoriteTeams,
       endorsements: base.endorsements,
+      weaknesses: base.weaknesses,
       isMinor: isMinor,
       visibility: visibility,
     );
@@ -242,5 +243,26 @@ void main() {
 
     expect(find.byKey(const ValueKey('profileRecentFormRow')), findsNothing);
     expect(find.textContaining('E2-03'), findsOneWidget);
+  });
+
+  testWidgets('AC: a follower viewing the full profile screen never sees the '
+      'weaknesses surface', (tester) async {
+    tester.view.physicalSize = const Size(400, 2000);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.reset);
+
+    await tester.pumpWidget(
+      harness(
+        ProfileScreen(
+          profile: profileWith(),
+          relation: ViewerRelation.follower,
+        ),
+      ),
+    );
+
+    expect(
+      find.byKey(const ValueKey('profileWeaknessesSection')),
+      findsNothing,
+    );
   });
 }

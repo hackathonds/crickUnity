@@ -48,6 +48,7 @@ class ProfileScreen extends StatefulWidget {
   final VoidCallback? onMessage;
   final VoidCallback? onRequestFollow;
   final VoidCallback? onOpenMenu;
+  final ValueChanged<List<String>>? onStyleTagsChanged;
 
   const ProfileScreen({
     super.key,
@@ -61,6 +62,7 @@ class ProfileScreen extends StatefulWidget {
     this.onMessage,
     this.onRequestFollow,
     this.onOpenMenu,
+    this.onStyleTagsChanged,
   });
 
   @override
@@ -206,7 +208,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   Widget _buildTabContent(PlayerProfile profile) {
     return switch (_tabIndex) {
-      0 => ProfileOverviewTab(profile: profile),
+      0 => ProfileOverviewTab(
+        profile: profile,
+        relation: widget.relation,
+        onStyleTagsChanged: widget.onStyleTagsChanged,
+      ),
       1 => const _ProfileTabPlaceholder(
         text: 'Format-split stat cards and charts are E2-03.',
       ),

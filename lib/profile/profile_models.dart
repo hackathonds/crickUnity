@@ -20,11 +20,38 @@ class FavoriteItem {
   const FavoriteItem(this.label);
 }
 
-class EndorsementTag {
-  final String label;
-  final int count;
+/// PRD §5.8 Strengths: "endorsement-driven -- teammates/captains/coaches
+/// endorse skills; count shown; endorser avatars on tap; coach
+/// endorsements weighted with a whistle icon."
+class EndorserInfo {
+  final String name;
+  final bool isCoach;
 
-  const EndorsementTag({required this.label, required this.count});
+  const EndorserInfo({required this.name, this.isCoach = false});
+}
+
+class Endorsement {
+  final String skill;
+  final List<EndorserInfo> endorsers;
+
+  const Endorsement({required this.skill, required this.endorsers});
+
+  int get count => endorsers.length;
+}
+
+/// PRD §5.8 Weaknesses: "private by default; visible to Self + explicitly
+/// shared coaches only ... auto-suggested from data ... with 'keep
+/// private / share with coach' choice. Never publicly displayed."
+class WeaknessInsight {
+  final String label;
+  final String suggestedReason;
+  final bool sharedWithCoach;
+
+  const WeaknessInsight({
+    required this.label,
+    required this.suggestedReason,
+    this.sharedWithCoach = false,
+  });
 }
 
 /// PRD §5.14 Recent Form: "Last-5 string ... with W/L color underline."
@@ -74,7 +101,17 @@ class PlayerProfile {
   final ProfileHeaderStats headerStats;
   final List<RecentFormEntry> recentForm;
   final List<FavoriteItem> favoriteTeams;
-  final List<EndorsementTag> endorsements;
+  final List<Endorsement> endorsements;
+
+  /// PRD §5.8: "self-selected (max 5)." The 5-item cap is enforced where
+  /// tags are *added* (the style tag picker sheet), not here -- this is
+  /// just a data holder.
+  final List<String> styleTags;
+
+  /// Never populate this for any [ViewerRelation] but self -- see
+  /// [ProfileOverviewTab]'s own doc comment for why this is a structural
+  /// guarantee, not a visual one.
+  final List<WeaknessInsight> weaknesses;
   final bool isMinor;
   final ProfileVisibility visibility;
 
@@ -92,6 +129,8 @@ class PlayerProfile {
     this.recentForm = const [],
     this.favoriteTeams = const [],
     this.endorsements = const [],
+    this.styleTags = const [],
+    this.weaknesses = const [],
     this.isMinor = false,
     this.visibility = ProfileVisibility.public,
   });
@@ -123,7 +162,27 @@ PlayerProfile mockPlayerProfile() => const PlayerProfile(
   ],
   favoriteTeams: [FavoriteItem('Lions CC'), FavoriteItem('Mumbai Indians')],
   endorsements: [
-    EndorsementTag(label: 'Fielding', count: 12),
-    EndorsementTag(label: 'Death overs', count: 7),
+    Endorsement(
+      skill: 'Fielding',
+      endorsers: [
+        EndorserInfo(name: 'Arjun Rao'),
+        EndorserInfo(name: 'Priya Nair'),
+        EndorserInfo(name: 'Coach Mehta', isCoach: true),
+      ],
+    ),
+    Endorsement(
+      skill: 'Death overs',
+      endorsers: [
+        EndorserInfo(name: 'Kabir Singh'),
+        EndorserInfo(name: 'Ananya Iyer'),
+      ],
+    ),
+  ],
+  styleTags: ['Anchor', 'Death-over hitter'],
+  weaknesses: [
+    WeaknessInsight(
+      label: 'Left-arm spin',
+      suggestedReason: '47% of dismissals to left-arm spin this season.',
+    ),
   ],
 );
