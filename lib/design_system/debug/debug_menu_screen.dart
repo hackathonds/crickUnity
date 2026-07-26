@@ -8,6 +8,7 @@ import '../../matches/match_models.dart';
 import '../../matches/match_opponent_decision_screen.dart';
 import '../../matches/match_proposal_review_screen.dart';
 import '../../matches/live_scoring_console_screen.dart';
+import '../../matches/match_viewer_screen.dart';
 import '../../matches/scoring_provider.dart';
 import '../../matches/matches_provider.dart';
 import '../../matches/toss_screen.dart';
@@ -930,6 +931,15 @@ class DebugMenuScreen extends StatelessWidget {
                 ),
               );
             },
+          ),
+          ListTile(
+            title: const Text('Match viewer (spectator)'),
+            subtitle: const Text(
+              'E4-08 — read-only score, "Score paused — scorer offline"',
+            ),
+            onTap: () => Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => const MatchViewerScreen()),
+            ),
           ),
           ListTile(
             title: const Text('Guest mode preview'),
