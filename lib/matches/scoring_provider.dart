@@ -25,15 +25,17 @@ class InningsNotifier extends Notifier<InningsState> {
       nonStrikerName: order[1],
       currentBowlerName: bowlingRoster[0],
       totalOversPerSide: 20,
+      scorerName: 'Deepak Sharma',
     );
   }
 
   void recordRun(int runs) {
+    final delivery = Delivery(bowlerName: state.currentBowlerName, runs: runs);
     state = state.copyWith(
-      deliveries: [
-        ...state.deliveries,
-        Delivery(bowlerName: state.currentBowlerName, runs: runs),
-      ],
+      deliveries: [...state.deliveries, delivery],
+      eligibleShotCounter: delivery.isEligibleForWagonInput
+          ? state.eligibleShotCounter + 1
+          : state.eligibleShotCounter,
     );
     _queueSync('$runs run${runs == 1 ? '' : 's'}');
   }
@@ -217,6 +219,76 @@ class InningsNotifier extends Notifier<InningsState> {
             await Future.delayed(const Duration(milliseconds: 300));
           },
         );
+  }
+
+  /// DS §11.7: "tap sector to log" -- also counts as re-engaging, so the
+  /// prompt returns to full frequency (AC's throttle is specifically for
+  /// a scorer who keeps *ignoring* it).
+  void logWagonSector(int deliveryIndex, WagonSector sector) {
+    state = state.copyWith(
+      deliveries: [
+        for (var i = 0; i < state.deliveries.length; i++)
+          if (i == deliveryIndex)
+            state.deliveries[i].withWagonSector(sector)
+          else
+            state.deliveries[i],
+      ],
+      consecutiveIgnoredWagonPrompts: 0,
+      wagonPromptDivisor: 1,
+    );
+  }
+
+  static const int _wagonIgnoreThreshold = 10;
+  static const int _wagonThrottledDivisor = 4;
+
+  /// AC: "ignoring the ghost 10 times in a row auto-reduces its prompt
+  /// frequency (respect the scorer)."
+  void ignoreWagonPrompt() {
+    final ignoredCount = state.consecutiveIgnoredWagonPrompts + 1;
+    if (ignoredCount >= _wagonIgnoreThreshold) {
+      state = state.copyWith(
+        consecutiveIgnoredWagonPrompts: 0,
+        wagonPromptDivisor: _wagonThrottledDivisor,
+      );
+    } else {
+      state = state.copyWith(consecutiveIgnoredWagonPrompts: ignoredCount);
+    }
+  }
+
+  /// DS §11.7: "Scorer handover: Console overflow -> Handover -> picker
+  /// (present members) -> both-captains approve sheet ... console
+  /// transfers with toast; audit line in match timeline."
+  void requestHandover(String newScorerName) {
+    state = state.copyWith(
+      pendingHandoverToName: newScorerName,
+      composerCaptainApprovedHandover: false,
+      opponentCaptainApprovedHandover: false,
+    );
+  }
+
+  void approveHandover({required bool asComposerCaptain}) {
+    final composerApproved =
+        asComposerCaptain || state.composerCaptainApprovedHandover;
+    final opponentApproved =
+        !asComposerCaptain || state.opponentCaptainApprovedHandover;
+    if (composerApproved && opponentApproved) {
+      final newScorer = state.pendingHandoverToName!;
+      state = state.copyWith(
+        scorerName: newScorer,
+        clearPendingHandoverToName: true,
+        composerCaptainApprovedHandover: false,
+        opponentCaptainApprovedHandover: false,
+        timelineEntries: [
+          ...state.timelineEntries,
+          'Scoring handed over from ${state.scorerName} to $newScorer.',
+        ],
+      );
+    } else {
+      state = state.copyWith(
+        composerCaptainApprovedHandover: composerApproved,
+        opponentCaptainApprovedHandover: opponentApproved,
+      );
+    }
   }
 }
 

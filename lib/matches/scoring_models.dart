@@ -36,6 +36,31 @@ const Map<DismissalType, String> dismissalTypeLabels = {
   DismissalType.hitWicket: 'Hit wicket',
 };
 
+/// DS §11.7: "Wagon direction input: after any scoring shot, optional
+/// ghost overlay of ground sectors fades in for 1.5s ... tap sector to
+/// log." 8 sectors is the standard cricket wagon-wheel breakdown.
+enum WagonSector {
+  fineLeg,
+  square,
+  midwicket,
+  longOn,
+  longOff,
+  cover,
+  point,
+  thirdMan,
+}
+
+const Map<WagonSector, String> wagonSectorLabels = {
+  WagonSector.fineLeg: 'Fine leg',
+  WagonSector.square: 'Square leg',
+  WagonSector.midwicket: 'Midwicket',
+  WagonSector.longOn: 'Long on',
+  WagonSector.longOff: 'Long off',
+  WagonSector.cover: 'Cover',
+  WagonSector.point: 'Point',
+  WagonSector.thirdMan: 'Third man',
+};
+
 /// The compact per-ball label used on both the over-beads strip and the
 /// ball timeline (E4-06) -- kept as one function so the two never drift.
 String deliveryLabel(Delivery delivery) {
@@ -90,6 +115,7 @@ class Delivery {
   final bool isLegal;
   final bool isManualSwap;
   final bool isCorrected;
+  final WagonSector? wagonSector;
 
   const Delivery({
     required this.bowlerName,
@@ -105,6 +131,7 @@ class Delivery {
     this.isLegal = true,
     this.isManualSwap = false,
     this.isCorrected = false,
+    this.wagonSector,
   }) : battingRuns = battingRuns ?? runs,
        ranRuns = ranRuns ?? runs;
 
@@ -120,7 +147,8 @@ class Delivery {
       extraType = null,
       isLegal = false,
       isManualSwap = true,
-      isCorrected = false;
+      isCorrected = false,
+      wagonSector = null;
 
   /// AC: "corrected balls carry an audit marker in ball timeline" --
   /// only the runs (and, transitively, battingRuns/ranRuns for a plain
@@ -142,8 +170,35 @@ class Delivery {
       isLegal: isLegal,
       isManualSwap: isManualSwap,
       isCorrected: true,
+      wagonSector: wagonSector,
     );
   }
+
+  /// DS §11.7: "tap sector to log" -- logged after the fact, once the
+  /// scorer taps a sector on the transient ghost overlay.
+  Delivery withWagonSector(WagonSector sector) {
+    return Delivery(
+      bowlerName: bowlerName,
+      runs: runs,
+      battingRuns: battingRuns,
+      ranRuns: ranRuns,
+      isWicket: isWicket,
+      dismissalType: dismissalType,
+      fielderName: fielderName,
+      dismissedBatterName: dismissedBatterName,
+      newBatterName: newBatterName,
+      extraType: extraType,
+      isLegal: isLegal,
+      isManualSwap: isManualSwap,
+      isCorrected: isCorrected,
+      wagonSector: sector,
+    );
+  }
+
+  /// DS §11.7: "after any scoring shot" -- a genuine shot off the bat
+  /// that scored runs (not a wicket ball, not an extra).
+  bool get isEligibleForWagonInput =>
+      !isWicket && extraType == null && battingRuns > 0;
 
   /// PRD §7.7 / AC: "Given format says no-ball = 1 run + rebowl, Then
   /// extras honor the match's sub-rules from E4-01."
@@ -310,6 +365,14 @@ class InningsState {
   final String? interruptionReason;
   final int? revisedOversForInnings;
   final int? targetRuns;
+  final int consecutiveIgnoredWagonPrompts;
+  final int wagonPromptDivisor;
+  final int eligibleShotCounter;
+  final String scorerName;
+  final String? pendingHandoverToName;
+  final bool composerCaptainApprovedHandover;
+  final bool opponentCaptainApprovedHandover;
+  final List<String> timelineEntries;
 
   const InningsState({
     required this.battingTeamName,
@@ -320,6 +383,7 @@ class InningsState {
     required this.nonStrikerName,
     required this.currentBowlerName,
     required this.totalOversPerSide,
+    required this.scorerName,
     this.deliveries = const [],
     this.subRules = const ExtraSubRules(),
     this.pendingCorrections = const [],
@@ -327,6 +391,13 @@ class InningsState {
     this.interruptionReason,
     this.revisedOversForInnings,
     this.targetRuns,
+    this.consecutiveIgnoredWagonPrompts = 0,
+    this.wagonPromptDivisor = 1,
+    this.eligibleShotCounter = 0,
+    this.pendingHandoverToName,
+    this.composerCaptainApprovedHandover = false,
+    this.opponentCaptainApprovedHandover = false,
+    this.timelineEntries = const [],
   });
 
   int get totalRuns => deliveries.fold(0, (sum, d) => sum + d.runs);
@@ -361,6 +432,23 @@ class InningsState {
     if (oversRemaining <= 0) return double.infinity;
     return (target - totalRuns) / oversRemaining;
   }
+
+  /// DS §11.7: "completeness % lives in Charts tab" -- Charts itself is
+  /// E4-11 scope, but the underlying figure is computed here so this
+  /// console can surface it inline in the meantime.
+  double get wagonCompletionPercent {
+    final eligible = deliveries.where((d) => d.isEligibleForWagonInput);
+    if (eligible.isEmpty) return 0;
+    final logged = eligible.where((d) => d.wagonSector != null).length;
+    return 100 * logged / eligible.length;
+  }
+
+  /// AC: "ignoring the ghost 10 times in a row auto-reduces its prompt
+  /// frequency" -- [wagonPromptDivisor] (1 normally) throttles how often
+  /// an eligible shot actually prompts, once the scorer has shown 10
+  /// consecutive times running that they don't want to be asked.
+  bool get shouldPromptWagonThisShot =>
+      eligibleShotCounter % wagonPromptDivisor == 0;
 
   /// PRD §2.6: "last 2 overs freely" -- the over each delivery belongs
   /// to (illegal/manual-swap balls share whichever over was in progress
@@ -531,6 +619,15 @@ class InningsState {
     bool clearInterruptionReason = false,
     int? revisedOversForInnings,
     int? targetRuns,
+    int? consecutiveIgnoredWagonPrompts,
+    int? wagonPromptDivisor,
+    int? eligibleShotCounter,
+    String? scorerName,
+    String? pendingHandoverToName,
+    bool clearPendingHandoverToName = false,
+    bool? composerCaptainApprovedHandover,
+    bool? opponentCaptainApprovedHandover,
+    List<String>? timelineEntries,
   }) {
     return InningsState(
       battingTeamName: battingTeamName,
@@ -541,6 +638,7 @@ class InningsState {
       nonStrikerName: nonStrikerName,
       currentBowlerName: currentBowlerName ?? this.currentBowlerName,
       totalOversPerSide: totalOversPerSide,
+      scorerName: scorerName ?? this.scorerName,
       subRules: subRules,
       deliveries: deliveries ?? this.deliveries,
       pendingCorrections: pendingCorrections ?? this.pendingCorrections,
@@ -551,6 +649,20 @@ class InningsState {
       revisedOversForInnings:
           revisedOversForInnings ?? this.revisedOversForInnings,
       targetRuns: targetRuns ?? this.targetRuns,
+      consecutiveIgnoredWagonPrompts:
+          consecutiveIgnoredWagonPrompts ?? this.consecutiveIgnoredWagonPrompts,
+      wagonPromptDivisor: wagonPromptDivisor ?? this.wagonPromptDivisor,
+      eligibleShotCounter: eligibleShotCounter ?? this.eligibleShotCounter,
+      pendingHandoverToName: clearPendingHandoverToName
+          ? null
+          : (pendingHandoverToName ?? this.pendingHandoverToName),
+      composerCaptainApprovedHandover:
+          composerCaptainApprovedHandover ??
+          this.composerCaptainApprovedHandover,
+      opponentCaptainApprovedHandover:
+          opponentCaptainApprovedHandover ??
+          this.opponentCaptainApprovedHandover,
+      timelineEntries: timelineEntries ?? this.timelineEntries,
     );
   }
 }
@@ -563,4 +675,12 @@ List<String> mockBowlingRoster() => const [
   'Sanjay Gupta',
   'Imran Khan',
   'Vikas Nair',
+];
+
+/// DS §11.7: "Handover -> picker (present members)." Mock stand-in for
+/// a real match-day attendance/check-in list, which doesn't exist yet.
+List<String> mockPresentMembers() => const [
+  'Deepak Sharma',
+  'Rahul Deshmukh',
+  'Sanjay Gupta',
 ];

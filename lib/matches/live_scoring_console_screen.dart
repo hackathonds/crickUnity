@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -77,6 +79,17 @@ class LiveScoringConsoleScreen extends ConsumerWidget {
             onPressed: () => Navigator.of(context).push(
               MaterialPageRoute(builder: (_) => const BallTimelineScreen()),
             ),
+          ),
+          PopupMenuButton<String>(
+            key: const ValueKey('consoleOverflowMenu'),
+            onSelected: (_) => _showHandoverSheet(context, state.scorerName),
+            itemBuilder: (context) => [
+              const PopupMenuItem(
+                key: ValueKey('handoverMenuItem'),
+                value: 'handover',
+                child: Text('Handover'),
+              ),
+            ],
           ),
         ],
       ),
@@ -176,6 +189,67 @@ class LiveScoringConsoleScreen extends ConsumerWidget {
                     ? 'Saving locally -- will sync ($pendingSyncCount)'
                     : 'Saving locally -- will sync',
                 style: AppTypography.caption.copyWith(color: colors.warning),
+              ),
+            ),
+          if (state.pendingHandoverToName != null)
+            Container(
+              key: const ValueKey('pendingHandoverBanner'),
+              width: double.infinity,
+              padding: const EdgeInsets.all(AppSpacing.md),
+              color: colors.surfaceAlt,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Handover to ${state.pendingHandoverToName} -- '
+                    'needs both captains to approve.',
+                    style: AppTypography.body.copyWith(
+                      color: colors.textPrimary,
+                    ),
+                  ),
+                  const SizedBox(height: AppSpacing.sm),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: AppButton(
+                          key: const ValueKey('handoverAckComposerButton'),
+                          variant: state.composerCaptainApprovedHandover
+                              ? AppButtonVariant.secondary
+                              : AppButtonVariant.primary,
+                          label: state.composerCaptainApprovedHandover
+                              ? 'Composer acked'
+                              : 'Composer captain ack',
+                          onPressed: state.composerCaptainApprovedHandover
+                              ? null
+                              : () => _approveHandover(
+                                  context,
+                                  ref,
+                                  asComposerCaptain: true,
+                                ),
+                        ),
+                      ),
+                      const SizedBox(width: AppSpacing.sm),
+                      Expanded(
+                        child: AppButton(
+                          key: const ValueKey('handoverAckOpponentButton'),
+                          variant: state.opponentCaptainApprovedHandover
+                              ? AppButtonVariant.secondary
+                              : AppButtonVariant.primary,
+                          label: state.opponentCaptainApprovedHandover
+                              ? 'Opponent acked'
+                              : 'Opponent captain ack',
+                          onPressed: state.opponentCaptainApprovedHandover
+                              ? null
+                              : () => _approveHandover(
+                                  context,
+                                  ref,
+                                  asComposerCaptain: false,
+                                ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
               ),
             ),
           Container(
@@ -321,6 +395,7 @@ class LiveScoringConsoleScreen extends ConsumerWidget {
             padding: const EdgeInsets.all(AppSpacing.lg),
             child: Column(
               children: [
+                const _WagonGhostOverlay(),
                 Wrap(
                   spacing: AppSpacing.sm,
                   runSpacing: AppSpacing.sm,
@@ -477,6 +552,35 @@ class LiveScoringConsoleScreen extends ConsumerWidget {
       title: state.isPaused ? 'Resume match' : 'Interrupt match',
       contentBuilder: (context) => _InterruptSheetContent(state: state),
     );
+  }
+
+  /// DS §11.7: "Handover -> picker (present members)."
+  void _showHandoverSheet(BuildContext context, String currentScorerName) {
+    showAppBottomSheet<void>(
+      context: context,
+      title: 'Handover scoring',
+      contentBuilder: (context) => _HandoverPickerContent(
+        candidates: mockPresentMembers()
+            .where((name) => name != currentScorerName)
+            .toList(),
+      ),
+    );
+  }
+
+  void _approveHandover(
+    BuildContext context,
+    WidgetRef ref, {
+    required bool asComposerCaptain,
+  }) {
+    ref
+        .read(inningsProvider.notifier)
+        .approveHandover(asComposerCaptain: asComposerCaptain);
+    final updated = ref.read(inningsProvider);
+    if (updated.pendingHandoverToName == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Scoring handed over to ${updated.scorerName}')),
+      );
+    }
   }
 }
 
@@ -823,6 +927,44 @@ class _BowlerSelectSheetContent extends ConsumerWidget {
   }
 }
 
+class _HandoverPickerContent extends ConsumerWidget {
+  final List<String> candidates;
+
+  const _HandoverPickerContent({required this.candidates});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final colors = Theme.of(context).extension<AppColors>()!;
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          for (final name in candidates)
+            GestureDetector(
+              key: ValueKey('handoverCandidate_$name'),
+              behavior: HitTestBehavior.opaque,
+              onTap: () {
+                ref.read(inningsProvider.notifier).requestHandover(name);
+                Navigator.of(context).pop();
+              },
+              child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
+                child: Text(
+                  name,
+                  style: AppTypography.body.copyWith(color: colors.textPrimary),
+                ),
+              ),
+            ),
+          const SizedBox(height: AppSpacing.lg),
+        ],
+      ),
+    );
+  }
+}
+
 class _InterruptSheetContent extends ConsumerStatefulWidget {
   final InningsState state;
 
@@ -986,4 +1128,90 @@ Map<int, int> _proportionalParTable(int target, int overs) {
     for (var over = 1; over <= overs; over++)
       over: (target * over / overs).round(),
   };
+}
+
+/// DS §11.7: "Wagon direction input: after any scoring shot, optional
+/// ghost overlay of ground sectors fades in for 1.5s at pad top -- tap
+/// sector to log, ignore to skip (never blocks next ball)." Positioned
+/// above the run grid (not overlapping it), so the run buttons stay
+/// tappable the whole time regardless of whether this is showing.
+class _WagonGhostOverlay extends ConsumerStatefulWidget {
+  const _WagonGhostOverlay();
+
+  @override
+  ConsumerState<_WagonGhostOverlay> createState() => _WagonGhostOverlayState();
+}
+
+class _WagonGhostOverlayState extends ConsumerState<_WagonGhostOverlay> {
+  bool _visible = false;
+  int? _deliveryIndex;
+  Timer? _timer;
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    super.dispose();
+  }
+
+  void _dismissAsIgnored() {
+    if (!_visible) return;
+    setState(() => _visible = false);
+    ref.read(inningsProvider.notifier).ignoreWagonPrompt();
+  }
+
+  void _logSector(WagonSector sector) {
+    _timer?.cancel();
+    final index = _deliveryIndex;
+    setState(() => _visible = false);
+    if (index != null) {
+      ref.read(inningsProvider.notifier).logWagonSector(index, sector);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = Theme.of(context).extension<AppColors>()!;
+
+    ref.listen<InningsState>(inningsProvider, (previous, next) {
+      if (next.deliveries.isEmpty) return;
+      final isNewDelivery =
+          previous == null ||
+          previous.deliveries.length != next.deliveries.length;
+      final last = next.deliveries.last;
+      if (isNewDelivery &&
+          last.isEligibleForWagonInput &&
+          next.shouldPromptWagonThisShot) {
+        _timer?.cancel();
+        setState(() {
+          _visible = true;
+          _deliveryIndex = next.deliveries.length - 1;
+        });
+        _timer = Timer(const Duration(milliseconds: 1500), _dismissAsIgnored);
+      }
+    });
+
+    if (!_visible) return const SizedBox.shrink();
+
+    return AnimatedOpacity(
+      key: const ValueKey('wagonGhostOverlay'),
+      opacity: _visible ? 1 : 0,
+      duration: const Duration(milliseconds: 200),
+      child: Padding(
+        padding: const EdgeInsets.only(bottom: AppSpacing.sm),
+        child: Wrap(
+          spacing: AppSpacing.xs,
+          runSpacing: AppSpacing.xs,
+          children: [
+            for (final sector in WagonSector.values)
+              ActionChip(
+                key: ValueKey('wagonSector_${sector.name}'),
+                label: Text(wagonSectorLabels[sector]!),
+                backgroundColor: colors.surfaceAlt.withValues(alpha: 0.6),
+                onPressed: () => _logSector(sector),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
 }
