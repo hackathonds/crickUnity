@@ -1,3 +1,5 @@
+import '../teams/availability_matrix_models.dart';
+
 /// PRD §7.1: "Types: Friendly (my team vs opponent team / vs ad-hoc
 /// 'guest team' created inline), Challenge (send/accept a challenge
 /// card), Tournament fixture (organizer-generated; captains cannot
@@ -179,7 +181,17 @@ enum MatchStatus {
   changesProposedToComposer,
   accepted,
   declined,
+  cancelled,
 }
+
+/// Mock squad for the debug demo -- no real team-roster lookup is wired
+/// into match creation yet.
+List<String> mockSquadNames() => const [
+  'Kabir Singh',
+  'Priya Nair',
+  'Arjun Mehta',
+  'Sana Iyer',
+];
 
 /// PRD §7.1: "Creating notifies opponent captain -> Accept/Propose
 /// changes (diff view)/Decline. Match is Draft until both accept."
@@ -187,6 +199,15 @@ enum MatchStatus {
 /// fields opponents realistically negotiate, so [proposedGroundName]/
 /// [proposedDateTime] are the only diffable fields modeled -- not every
 /// draft field, keeping the diff view meaningful rather than exhaustive.
+///
+/// DS §7 screen 25's "Cancelled: struck header + reason banner +
+/// re-RSVP if rescheduled" is read as two distinct actions rather than
+/// one combined construct (PRD's notification table also lists
+/// "cancelled/rescheduled" as two triggers sharing one outcome: "View
+/// reason, Re-RSVP"): [cancelledReason] is a terminal cancellation with
+/// no further action; [rescheduleReason] keeps the match otherwise live
+/// but resets [availabilityResponses], forcing a fresh RSVP round for
+/// the new time.
 class MatchRecord {
   final String id;
   final String composerTeamName;
@@ -196,6 +217,10 @@ class MatchRecord {
   final DateTime? proposedDateTime;
   final bool availabilityPollSent;
   final DateTime? availabilityDeadline;
+  final String? cancelledReason;
+  final String? rescheduleReason;
+  final List<String> squadNames;
+  final Map<String, AvailabilityResponse> availabilityResponses;
 
   const MatchRecord({
     required this.id,
@@ -206,6 +231,10 @@ class MatchRecord {
     this.proposedDateTime,
     this.availabilityPollSent = false,
     this.availabilityDeadline,
+    this.cancelledReason,
+    this.rescheduleReason,
+    this.squadNames = const [],
+    this.availabilityResponses = const {},
   });
 
   MatchRecord copyWith({
@@ -217,6 +246,10 @@ class MatchRecord {
     bool clearProposedDateTime = false,
     bool? availabilityPollSent,
     DateTime? availabilityDeadline,
+    String? cancelledReason,
+    String? rescheduleReason,
+    bool clearRescheduleReason = false,
+    Map<String, AvailabilityResponse>? availabilityResponses,
   }) {
     return MatchRecord(
       id: id,
@@ -231,6 +264,13 @@ class MatchRecord {
           : (proposedDateTime ?? this.proposedDateTime),
       availabilityPollSent: availabilityPollSent ?? this.availabilityPollSent,
       availabilityDeadline: availabilityDeadline ?? this.availabilityDeadline,
+      cancelledReason: cancelledReason ?? this.cancelledReason,
+      rescheduleReason: clearRescheduleReason
+          ? null
+          : (rescheduleReason ?? this.rescheduleReason),
+      squadNames: squadNames,
+      availabilityResponses:
+          availabilityResponses ?? this.availabilityResponses,
     );
   }
 }

@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../guest/guest_live_match_preview_screen.dart';
 import '../../matches/create_match_flow.dart';
+import '../../matches/match_detail_screen.dart';
 import '../../matches/match_models.dart';
 import '../../matches/match_opponent_decision_screen.dart';
 import '../../matches/match_proposal_review_screen.dart';
@@ -22,6 +23,7 @@ import '../../teams/team_invite_decision_screen.dart';
 import '../../teams/team_invite_models.dart';
 import '../../teams/team_invite_sheet.dart';
 import '../../teams/team_models.dart';
+import '../../teams/availability_matrix_models.dart';
 import '../../teams/availability_matrix_screen.dart';
 import 'announcements_demo.dart';
 import 'avatar_screen.dart';
@@ -772,6 +774,101 @@ class DebugMenuScreen extends StatelessWidget {
               Navigator.of(context).push(
                 MaterialPageRoute(
                   builder: (_) => MatchProposalReviewScreen(matchId: id),
+                ),
+              );
+            },
+          ),
+          ListTile(
+            title: const Text('Match detail (captain, upcoming)'),
+            subtitle: const Text(
+              'E4-02 — info rows, squad grid, expense preview, sticky RSVP',
+            ),
+            onTap: () {
+              final container = ProviderScope.containerOf(
+                context,
+                listen: false,
+              );
+              final id = container
+                  .read(matchesProvider.notifier)
+                  .submitMatch(
+                    draft: MatchDraft(
+                      dateTime: DateTime.now().add(const Duration(days: 3)),
+                      opponentTeamName: 'Central Warriors',
+                      groundName: 'Riverside Ground',
+                    ),
+                    composerTeamName: 'Riverside Strikers',
+                  );
+              container.read(matchesProvider.notifier).acceptMatch(id);
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (_) => MatchDetailScreen(
+                    matchId: id,
+                    viewerName: 'Rohan Kapoor',
+                    isCaptain: true,
+                  ),
+                ),
+              );
+            },
+          ),
+          ListTile(
+            title: const Text('Match detail (cancelled)'),
+            subtitle: const Text('E4-02 — struck header + reason banner'),
+            onTap: () {
+              final container = ProviderScope.containerOf(
+                context,
+                listen: false,
+              );
+              final notifier = container.read(matchesProvider.notifier);
+              final id = notifier.submitMatch(
+                draft: MatchDraft(
+                  dateTime: DateTime.now().add(const Duration(days: 3)),
+                  opponentTeamName: 'Central Warriors',
+                  groundName: 'Riverside Ground',
+                ),
+                composerTeamName: 'Riverside Strikers',
+              );
+              notifier.acceptMatch(id);
+              notifier.cancelMatch(id, 'Ground waterlogged after rain');
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (_) =>
+                      MatchDetailScreen(matchId: id, viewerName: 'Kabir Singh'),
+                ),
+              );
+            },
+          ),
+          ListTile(
+            title: const Text('Match detail (rescheduled)'),
+            subtitle: const Text('E4-02 — banner + cleared responses'),
+            onTap: () {
+              final container = ProviderScope.containerOf(
+                context,
+                listen: false,
+              );
+              final notifier = container.read(matchesProvider.notifier);
+              final id = notifier.submitMatch(
+                draft: MatchDraft(
+                  dateTime: DateTime.now().add(const Duration(days: 3)),
+                  opponentTeamName: 'Central Warriors',
+                  groundName: 'Riverside Ground',
+                ),
+                composerTeamName: 'Riverside Strikers',
+              );
+              notifier.acceptMatch(id);
+              notifier.respondAvailability(
+                id,
+                'Kabir Singh',
+                AvailabilityResponse.yes,
+              );
+              notifier.rescheduleMatch(
+                id,
+                newDateTime: DateTime.now().add(const Duration(days: 5)),
+                reason: 'Ground unavailable on original date',
+              );
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (_) =>
+                      MatchDetailScreen(matchId: id, viewerName: 'Kabir Singh'),
                 ),
               );
             },
