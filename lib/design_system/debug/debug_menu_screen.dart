@@ -280,11 +280,12 @@ class DebugMenuScreen extends StatelessWidget {
           ListTile(
             title: const Text('Onboarding: Welcome + Registration + OTP'),
             subtitle: const Text(
-              'E1-01 — 3-slide pager, phone→OTP 6-cell, name',
+              'E1-01/E1-02 — pager, phone→OTP, name, DOB, guardian gate',
             ),
             onTap: () => Navigator.of(context).push(
               MaterialPageRoute(
                 builder: (_) => OnboardingFlow(
+                  showDebugSimulateApproval: true,
                   onExploreAsGuest: () {
                     Navigator.of(context).pop();
                     ScaffoldMessenger.of(context).showSnackBar(
