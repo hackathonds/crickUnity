@@ -46,6 +46,8 @@ class Team {
   final Color secondaryColor;
   final bool isArchived;
   final List<TeamIdentityChangeLogEntry> changeLog;
+  final int followerCount;
+  final int memberCount;
 
   /// PRD §6.2: "'Formerly known as…' for 90 days on public profile."
   final String? formerName;
@@ -61,6 +63,8 @@ class Team {
     this.secondaryColor = const Color(0xFFE0A82E),
     this.isArchived = false,
     this.changeLog = const [],
+    this.followerCount = 0,
+    this.memberCount = 0,
     this.formerName,
     this.formerNameExpiresAt,
   });
@@ -88,6 +92,8 @@ Team mockTeam() => Team(
   homeGround: 'Deccan Gymkhana',
   formatFocus: const [TeamFormat.t20, TeamFormat.thirtyOver],
   joinPolicy: TeamJoinPolicy.request,
+  followerCount: 340,
+  memberCount: 18,
   primaryColor: const Color(0xFF123B2A),
   secondaryColor: const Color(0xFFE0A82E),
 );
