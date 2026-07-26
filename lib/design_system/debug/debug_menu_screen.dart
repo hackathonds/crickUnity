@@ -15,6 +15,7 @@ import '../../teams/team_invite_decision_screen.dart';
 import '../../teams/team_invite_models.dart';
 import '../../teams/team_invite_sheet.dart';
 import '../../teams/team_models.dart';
+import 'announcements_demo.dart';
 import 'avatar_screen.dart';
 import 'members_roles_demo.dart';
 import 'team_home_demo.dart';
@@ -461,6 +462,15 @@ class DebugMenuScreen extends StatelessWidget {
             onTap: () => Navigator.of(
               context,
             ).push(MaterialPageRoute(builder: (_) => const MembersRolesDemo())),
+          ),
+          ListTile(
+            title: const Text('Announcements'),
+            subtitle: const Text(
+              'E3-05 — push-priority (1/6h), seen-by (author-only), comment toggle',
+            ),
+            onTap: () => Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => const AnnouncementsDemo()),
+            ),
           ),
           ListTile(
             title: const Text('Guest mode preview'),
