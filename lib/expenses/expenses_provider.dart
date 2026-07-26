@@ -37,6 +37,7 @@ class ExpensesNotifier extends Notifier<ExpensesState> {
     String? notes,
     required String createdByName,
     required bool createdByIsCaptain,
+    bool isIncome = false,
     DateTime Function() now = DateTime.now,
   }) {
     final id = 'expense-${now().millisecondsSinceEpoch}-${_nextId++}';
@@ -63,6 +64,7 @@ class ExpensesNotifier extends Notifier<ExpensesState> {
             for (final share in splitAmong)
               share.name: AppExpenseRowState.pending,
           },
+          isIncome: isIncome,
         ),
         ...state.expenses,
       ],

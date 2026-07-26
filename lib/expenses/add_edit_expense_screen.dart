@@ -12,6 +12,7 @@ import '../design_system/tokens/app_spacing.dart';
 import '../design_system/tokens/app_typography.dart';
 import '../matches/match_models.dart';
 import '../matches/matches_provider.dart';
+import '../teams/jersey_board_provider.dart';
 import 'expense_models.dart';
 import 'expenses_provider.dart';
 
@@ -19,6 +20,14 @@ class _ItemEntry {
   String label = '';
   int amount = 0;
   String? assignedTo;
+}
+
+/// Mutable editing counterpart to [VehicleGroup] -- PRD §11.2 Travel.
+class _VehicleGroupInput {
+  String? driverName;
+  Set<String> riders = {};
+  int fuelCost = 0;
+  bool driverExempt = false;
 }
 
 /// DS §7-49 (Add/Edit Expense): "category grid (glyphs) first (drives
@@ -61,6 +70,19 @@ class _AddEditExpenseScreenState extends ConsumerState<AddEditExpenseScreen> {
   String? _contextMatchId;
   String? _saveError;
 
+  // PRD §11.2 category behaviors (E5-02).
+  bool _teamWalletPays = false; // Ground Fees / Tournament Entry
+  int _ballQuantity = 2; // Ball Purchase
+  bool _losingTeamPays = false; // Ball Purchase
+  bool _halfWithOpponent = false; // Umpire/Scorer Fees
+  bool _amortizeAcrossSeason = false; // Equipment/Jersey
+  int _amortizeMonths = 12; // Equipment/Jersey
+  bool _proRataForJoiners = false; // Equipment/Jersey
+  final List<_VehicleGroupInput> _vehicleGroups = []; // Travel
+  FineChartEntry? _selectedFineReason; // Penalty/Fine
+  String? _fineeName; // Penalty/Fine
+  PrizeDistributionMethod _prizeDistribution = PrizeDistributionMethod.equal;
+
   @override
   void dispose() {
     _titleController.dispose();
@@ -70,6 +92,16 @@ class _AddEditExpenseScreenState extends ConsumerState<AddEditExpenseScreen> {
 
   int get _amount =>
       int.tryParse(_amountController.text.replaceAll(',', '')) ?? 0;
+
+  /// PRD §11.2 Umpire/Scorer Fees: "both teams half-half is the
+  /// cross-team default." [_amount] stays the full agreed fee entered
+  /// by the scorer; this is what our team is actually tracking.
+  int get _effectiveAmount =>
+      (_category == ExpenseCategory.umpireScorerFees && _halfWithOpponent)
+      ? (_amount / 2).round()
+      : _amount;
+
+  int get _travelTotal => _vehicleGroups.fold(0, (s, g) => s + g.fuelCost);
 
   List<String> get _participants {
     if (_contextMatchId != null) {
@@ -89,18 +121,18 @@ class _AddEditExpenseScreenState extends ConsumerState<AddEditExpenseScreen> {
     switch (_splitMethod) {
       case SplitMethod.equal:
       case SplitMethod.attendanceBased:
-        return equalSplit(_amount, people, payerName: _payerName);
+        return equalSplit(_effectiveAmount, people, payerName: _payerName);
       case SplitMethod.custom:
         return [
           for (final p in people)
             SplitShare(name: p, amount: _customAmounts[p] ?? 0),
         ];
       case SplitMethod.shares:
-        return weightedSplit(_amount, {
+        return weightedSplit(_effectiveAmount, {
           for (final p in people) p: _shareWeights[p] ?? 1,
         }, payerName: _payerName);
       case SplitMethod.percentages:
-        return weightedSplit(_amount, {
+        return weightedSplit(_effectiveAmount, {
           for (final p in people) p: _percentages[p] ?? 0,
         }, payerName: _payerName);
       case SplitMethod.itemized:
@@ -116,23 +148,54 @@ class _AddEditExpenseScreenState extends ConsumerState<AddEditExpenseScreen> {
     }
   }
 
+  /// PRD §11.2 Prize Money: distribution recipients, expressed as
+  /// [PaidByEntry] rather than [SplitShare] since income flips the
+  /// usual paid/owed direction -- recipients are credited, not billed.
+  List<PaidByEntry> _computePrizeRecipients() {
+    switch (_prizeDistribution) {
+      case PrizeDistributionMethod.equal:
+        return [
+          for (final s in equalSplit(_effectiveAmount, _selected.toList()))
+            PaidByEntry(name: s.name, amount: s.amount),
+        ];
+      case PrizeDistributionMethod.shares:
+        return [
+          for (final s in weightedSplit(_effectiveAmount, {
+            for (final p in _selected) p: _shareWeights[p] ?? 1,
+          }))
+            PaidByEntry(name: s.name, amount: s.amount),
+        ];
+      case PrizeDistributionMethod.toWallet:
+        return [
+          PaidByEntry(name: teamWalletPayerName, amount: _effectiveAmount),
+        ];
+    }
+  }
+
   bool get _isSplitValid {
-    if (_selected.isEmpty || _amount <= 0) return false;
+    if (_category == ExpenseCategory.prizeMoney) {
+      return _prizeDistribution == PrizeDistributionMethod.toWallet ||
+          _selected.isNotEmpty;
+    }
+    if (_selected.isEmpty || _effectiveAmount <= 0) return false;
     switch (_splitMethod) {
       case SplitMethod.equal:
       case SplitMethod.attendanceBased:
       case SplitMethod.shares:
         return true;
       case SplitMethod.custom:
-        return _amount - _computeSplit().fold(0, (s, e) => s + e.amount) == 0;
+        return _effectiveAmount -
+                _computeSplit().fold(0, (s, e) => s + e.amount) ==
+            0;
       case SplitMethod.percentages:
         final total = _selected.fold(0, (s, p) => s + (_percentages[p] ?? 0));
         return total == 100;
       case SplitMethod.itemized:
-        if (_items.isEmpty || _items.any((i) => i.assignedTo == null))
+        if (_items.isEmpty || _items.any((i) => i.assignedTo == null)) {
           return false;
+        }
         final itemTotal = _items.fold(0, (s, i) => s + i.amount);
-        return _amount - itemTotal == 0;
+        return _effectiveAmount - itemTotal == 0;
     }
   }
 
@@ -145,7 +208,7 @@ class _AddEditExpenseScreenState extends ConsumerState<AddEditExpenseScreen> {
       case SplitMethod.custom:
       case SplitMethod.itemized:
         final remainder =
-            _amount - _computeSplit().fold(0, (s, e) => s + e.amount);
+            _effectiveAmount - _computeSplit().fold(0, (s, e) => s + e.amount);
         return remainder == 0
             ? 'Splits match the total.'
             : '₹$remainder remaining -> assign it to close the split.';
@@ -162,40 +225,131 @@ class _AddEditExpenseScreenState extends ConsumerState<AddEditExpenseScreen> {
     for (final v in _extraPayerAmounts.values) {
       extraSum += v;
     }
-    final raw = _amount - extraSum;
+    final raw = _effectiveAmount - extraSum;
     return raw < 0 ? 0 : raw;
   }
 
-  bool get _needsApproval => _amount > expenseApprovalThresholdRupees;
+  bool get _needsApproval => _effectiveAmount > expenseApprovalThresholdRupees;
 
   void _save() {
-    if (_category == null ||
-        _titleController.text.trim().isEmpty ||
-        !_isSplitValid) {
+    if (_category == null || _titleController.text.trim().isEmpty) {
+      setState(() => _saveError = 'Fill in a title and category first.');
+      return;
+    }
+
+    if (_category == ExpenseCategory.penaltyFine) {
+      if (_selectedFineReason == null || _fineeName == null) {
+        setState(() => _saveError = 'Pick a fine-chart reason and the finee.');
+        return;
+      }
+      ref
+          .read(expensesProvider.notifier)
+          .addExpense(
+            title: _selectedFineReason!.reason,
+            category: _category!,
+            amount: _selectedFineReason!.amount,
+            paidBy: [
+              PaidByEntry(
+                name: teamWalletPayerName,
+                amount: _selectedFineReason!.amount,
+              ),
+            ],
+            splitMethod: SplitMethod.custom,
+            splitAmong: [
+              SplitShare(
+                name: _fineeName!,
+                amount: _selectedFineReason!.amount,
+              ),
+            ],
+            contextMatchId: _contextMatchId,
+            hasProof: _hasProof,
+            createdByName: widget.viewerName,
+            createdByIsCaptain: widget.viewerIsCaptain,
+          );
+      Navigator.of(context).pop();
+      return;
+    }
+
+    if (_category == ExpenseCategory.travel) {
+      final groups = [
+        for (final g in _vehicleGroups)
+          if (g.driverName != null && g.fuelCost > 0)
+            VehicleGroup(
+              driverName: g.driverName!,
+              riders: g.riders.toList(),
+              fuelCost: g.fuelCost,
+              driverExempt: g.driverExempt,
+            ),
+      ];
+      if (groups.isEmpty) {
+        setState(
+          () => _saveError = 'Add at least one vehicle with a fuel cost.',
+        );
+        return;
+      }
+      final total = _travelTotal;
+      ref
+          .read(expensesProvider.notifier)
+          .addExpense(
+            title: _titleController.text.trim(),
+            category: _category!,
+            amount: total,
+            paidBy: [PaidByEntry(name: widget.viewerName, amount: total)],
+            splitMethod: SplitMethod.custom,
+            splitAmong: travelSplit(groups),
+            contextMatchId: _contextMatchId,
+            hasProof: _hasProof,
+            createdByName: widget.viewerName,
+            createdByIsCaptain: widget.viewerIsCaptain,
+          );
+      Navigator.of(context).pop();
+      return;
+    }
+
+    if (!_isSplitValid) {
       setState(
         () => _saveError =
             'Fix the split before saving -- see the remainder line above.',
       );
       return;
     }
+
+    final isPrize = _category == ExpenseCategory.prizeMoney;
+    final usesWallet =
+        _teamWalletPays &&
+        (_category == ExpenseCategory.groundFees ||
+            _category == ExpenseCategory.tournamentEntry);
+
     ref
         .read(expensesProvider.notifier)
         .addExpense(
           title: _titleController.text.trim(),
           category: _category!,
-          amount: _amount,
-          paidBy: [
-            PaidByEntry(name: _payerName, amount: _primaryPayerAmount),
-            for (final entry in _extraPayerAmounts.entries)
-              PaidByEntry(name: entry.key, amount: entry.value),
-          ],
+          amount: _effectiveAmount,
+          paidBy: isPrize
+              ? _computePrizeRecipients()
+              : usesWallet
+              ? [
+                  PaidByEntry(
+                    name: teamWalletPayerName,
+                    amount: _effectiveAmount,
+                  ),
+                ]
+              : [
+                  PaidByEntry(name: _payerName, amount: _primaryPayerAmount),
+                  for (final entry in _extraPayerAmounts.entries)
+                    PaidByEntry(name: entry.key, amount: entry.value),
+                ],
           splitMethod: _splitMethod,
-          splitAmong: _computeSplit(),
+          splitAmong: isPrize
+              ? [SplitShare(name: 'Prize pool', amount: _effectiveAmount)]
+              : _computeSplit(),
           contextMatchId: _contextMatchId,
           hasProof: _hasProof,
           notes: null,
           createdByName: widget.viewerName,
           createdByIsCaptain: widget.viewerIsCaptain,
+          isIncome: isPrize,
         );
     Navigator.of(context).pop();
   }
@@ -227,7 +381,17 @@ class _AddEditExpenseScreenState extends ConsumerState<AddEditExpenseScreen> {
               for (final category in ExpenseCategory.values)
                 GestureDetector(
                   key: ValueKey('categoryTile_${category.name}'),
-                  onTap: () => setState(() => _category = category),
+                  onTap: () => setState(() {
+                    _category = category;
+                    // PRD §11.2 Food: "attendees only auto-list from
+                    // check-ins" -- no real match check-in feed exists,
+                    // so Attendance-based (the manual participant
+                    // toggle already built for E5-01) stands in as the
+                    // sensible default for this category specifically.
+                    if (category == ExpenseCategory.food) {
+                      _splitMethod = SplitMethod.attendanceBased;
+                    }
+                  }),
                   child: Container(
                     decoration: BoxDecoration(
                       color: _category == category
@@ -261,95 +425,7 @@ class _AddEditExpenseScreenState extends ConsumerState<AddEditExpenseScreen> {
           ),
           if (_category != null) ...[
             const SizedBox(height: AppSpacing.xxl),
-            AppTextField(
-              key: const ValueKey('expenseTitleField'),
-              label: 'Title',
-              controller: _titleController,
-            ),
-            const SizedBox(height: AppSpacing.sm),
-            AppCurrencyField(
-              key: const ValueKey('expenseAmountField'),
-              label: 'Amount',
-              controller: _amountController,
-              onChanged: (_) => setState(() {}),
-            ),
-            const SizedBox(height: AppSpacing.lg),
-            Text(
-              'Paid by',
-              style: AppTypography.label.copyWith(color: colors.textTertiary),
-            ),
-            const SizedBox(height: AppSpacing.xs),
-            Wrap(
-              spacing: AppSpacing.xs,
-              children: [
-                for (final name in participants)
-                  ChoiceChip(
-                    key: ValueKey('payerChip_$name'),
-                    label: Text(name),
-                    selected: _payerName == name,
-                    onSelected: (_) => setState(() => _payerName = name),
-                  ),
-              ],
-            ),
-            if (_extraPayerAmounts.isNotEmpty)
-              for (final entry in _extraPayerAmounts.entries)
-                Padding(
-                  padding: const EdgeInsets.only(top: AppSpacing.xs),
-                  child: Text(
-                    '${entry.key}: ₹${entry.value}',
-                    style: AppTypography.caption.copyWith(
-                      color: colors.textSecondary,
-                    ),
-                  ),
-                ),
-            AppButton(
-              key: const ValueKey('addAnotherPayerButton'),
-              variant: AppButtonVariant.tertiary,
-              label: 'Add another payer',
-              onPressed: () => _showAddPayerSheet(participants),
-            ),
-            const SizedBox(height: AppSpacing.lg),
-            Text(
-              'Split',
-              style: AppTypography.label.copyWith(color: colors.textTertiary),
-            ),
-            const SizedBox(height: AppSpacing.xs),
-            AppSegmentedControl<SplitMethod>(
-              key: const ValueKey('splitMethodControl'),
-              options: SplitMethod.values,
-              value: _splitMethod,
-              onChanged: (v) => setState(() => _splitMethod = v),
-              labelBuilder: (v) => splitMethodLabels[v]!,
-            ),
-            const SizedBox(height: AppSpacing.sm),
-            Wrap(
-              spacing: AppSpacing.xs,
-              children: [
-                for (final name in participants)
-                  FilterChip(
-                    key: ValueKey('splitParticipantChip_$name'),
-                    label: Text(name),
-                    selected: _selected.contains(name),
-                    onSelected: (v) => setState(() {
-                      if (v) {
-                        _selected.add(name);
-                      } else {
-                        _selected.remove(name);
-                      }
-                    }),
-                  ),
-              ],
-            ),
-            const SizedBox(height: AppSpacing.sm),
-            ..._buildSplitInputs(colors),
-            const SizedBox(height: AppSpacing.sm),
-            Text(
-              key: const ValueKey('splitRemainderLine'),
-              _remainderText,
-              style: AppTypography.caption.copyWith(
-                color: _isSplitValid ? colors.textTertiary : colors.error,
-              ),
-            ),
+            ..._buildCoreSection(colors, participants),
             const SizedBox(height: AppSpacing.lg),
             Row(
               children: [
@@ -430,6 +506,593 @@ class _AddEditExpenseScreenState extends ConsumerState<AddEditExpenseScreen> {
         ],
       ),
     );
+  }
+
+  Widget _sectionLabel(AppColors colors, String text) => Padding(
+    padding: const EdgeInsets.only(bottom: AppSpacing.xs),
+    child: Text(
+      text,
+      style: AppTypography.label.copyWith(color: colors.textTertiary),
+    ),
+  );
+
+  /// PRD §11.2 -- dispatches to a category-specific layout for the
+  /// three categories whose structure genuinely differs from the
+  /// generic paid-by/split-method flow (Fine: single finee, not a
+  /// split; Travel: per-vehicle sub-groups; both bypass Title/Amount
+  /// too, since their totals are derived). Every other category reuses
+  /// the generic flow with a small category note plus, for Prize Money,
+  /// a distribution-method swap in place of the split editor.
+  List<Widget> _buildCoreSection(AppColors colors, List<String> participants) {
+    if (_category == ExpenseCategory.penaltyFine) {
+      return _buildFineSection(colors, participants);
+    }
+    if (_category == ExpenseCategory.travel) {
+      return _buildTravelSection(colors, participants);
+    }
+    final isPrize = _category == ExpenseCategory.prizeMoney;
+    final usesWallet =
+        _category == ExpenseCategory.groundFees ||
+        _category == ExpenseCategory.tournamentEntry;
+
+    return [
+      AppTextField(
+        key: const ValueKey('expenseTitleField'),
+        label: 'Title',
+        controller: _titleController,
+      ),
+      const SizedBox(height: AppSpacing.sm),
+      AppCurrencyField(
+        key: const ValueKey('expenseAmountField'),
+        label: 'Amount',
+        controller: _amountController,
+        onChanged: (_) => setState(() {}),
+      ),
+      const SizedBox(height: AppSpacing.sm),
+      ..._buildCategoryNote(colors),
+      if (!isPrize) ...[
+        const SizedBox(height: AppSpacing.lg),
+        _sectionLabel(colors, 'Paid by'),
+        if (usesWallet)
+          Row(
+            children: [
+              Switch(
+                key: const ValueKey('teamWalletPaysSwitch'),
+                value: _teamWalletPays,
+                onChanged: (v) => setState(() => _teamWalletPays = v),
+              ),
+              Expanded(
+                child: Text(
+                  'Team wallet pays',
+                  style: AppTypography.body.copyWith(color: colors.textPrimary),
+                ),
+              ),
+            ],
+          ),
+        if (!(usesWallet && _teamWalletPays)) ...[
+          Wrap(
+            spacing: AppSpacing.xs,
+            children: [
+              for (final name in participants)
+                ChoiceChip(
+                  key: ValueKey('payerChip_$name'),
+                  label: Text(name),
+                  selected: _payerName == name,
+                  onSelected: (_) => setState(() => _payerName = name),
+                ),
+            ],
+          ),
+          if (_extraPayerAmounts.isNotEmpty)
+            for (final entry in _extraPayerAmounts.entries)
+              Padding(
+                padding: const EdgeInsets.only(top: AppSpacing.xs),
+                child: Text(
+                  '${entry.key}: ₹${entry.value}',
+                  style: AppTypography.caption.copyWith(
+                    color: colors.textSecondary,
+                  ),
+                ),
+              ),
+          AppButton(
+            key: const ValueKey('addAnotherPayerButton'),
+            variant: AppButtonVariant.tertiary,
+            label: 'Add another payer',
+            onPressed: () => _showAddPayerSheet(participants),
+          ),
+        ],
+      ],
+      const SizedBox(height: AppSpacing.lg),
+      _sectionLabel(colors, 'Split'),
+      if (isPrize)
+        ..._buildPrizeDistributionSection(colors, participants)
+      else ...[
+        AppSegmentedControl<SplitMethod>(
+          key: const ValueKey('splitMethodControl'),
+          options: SplitMethod.values,
+          value: _splitMethod,
+          onChanged: (v) => setState(() => _splitMethod = v),
+          labelBuilder: (v) => splitMethodLabels[v]!,
+        ),
+        const SizedBox(height: AppSpacing.sm),
+        Wrap(
+          spacing: AppSpacing.xs,
+          children: [
+            for (final name in participants)
+              FilterChip(
+                key: ValueKey('splitParticipantChip_$name'),
+                label: Text(name),
+                selected: _selected.contains(name),
+                onSelected: (v) => setState(() {
+                  if (v) {
+                    _selected.add(name);
+                  } else {
+                    _selected.remove(name);
+                  }
+                }),
+              ),
+          ],
+        ),
+        const SizedBox(height: AppSpacing.sm),
+        ..._buildSplitInputs(colors),
+        const SizedBox(height: AppSpacing.sm),
+        Text(
+          key: const ValueKey('splitRemainderLine'),
+          _remainderText,
+          style: AppTypography.caption.copyWith(
+            color: _isSplitValid ? colors.textTertiary : colors.error,
+          ),
+        ),
+      ],
+    ];
+  }
+
+  /// One-line category behaviors that stay inside the generic flow --
+  /// PRD §11.2's ground-fee/ball-purchase/umpire-fee/equipment bullets.
+  List<Widget> _buildCategoryNote(AppColors colors) {
+    switch (_category!) {
+      case ExpenseCategory.groundFees:
+        return [
+          Text(
+            'Auto-draft from a Ground booking isn\'t wired in yet -- enter manually.',
+            style: AppTypography.caption.copyWith(color: colors.textTertiary),
+          ),
+        ];
+      case ExpenseCategory.ballPurchase:
+        return [
+          Row(
+            children: [
+              Text(
+                'Quantity',
+                style: AppTypography.body.copyWith(color: colors.textPrimary),
+              ),
+              IconButton(
+                key: const ValueKey('ballQuantityDecrement'),
+                icon: const Icon(Icons.remove_circle_outline),
+                onPressed: _ballQuantity > 1
+                    ? () => setState(() => _ballQuantity--)
+                    : null,
+              ),
+              Text(
+                '$_ballQuantity',
+                style: AppTypography.stat.copyWith(color: colors.textPrimary),
+              ),
+              IconButton(
+                key: const ValueKey('ballQuantityIncrement'),
+                icon: const Icon(Icons.add_circle_outline),
+                onPressed: () => setState(() => _ballQuantity++),
+              ),
+            ],
+          ),
+          ActionChip(
+            key: const ValueKey('ballPresetSuggestionChip'),
+            label: const Text('You buy ~2 balls/match -- add to preset?'),
+            onPressed: () => ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text(
+                  'No preset-learning backend in this codebase yet',
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(height: AppSpacing.xs),
+          Row(
+            children: [
+              Switch(
+                key: const ValueKey('losingTeamPaysSwitch'),
+                value: _losingTeamPays,
+                onChanged: (v) => setState(() => _losingTeamPays = v),
+              ),
+              Expanded(
+                child: Text(
+                  'Losing team pays (pre-agreed by both captains)',
+                  style: AppTypography.body.copyWith(color: colors.textPrimary),
+                ),
+              ),
+            ],
+          ),
+        ];
+      case ExpenseCategory.umpireScorerFees:
+        return [
+          Row(
+            children: [
+              Switch(
+                key: const ValueKey('halfWithOpponentSwitch'),
+                value: _halfWithOpponent,
+                onChanged: (v) => setState(() => _halfWithOpponent = v),
+              ),
+              Expanded(
+                child: Text(
+                  'Split half-half with opponent team',
+                  style: AppTypography.body.copyWith(color: colors.textPrimary),
+                ),
+              ),
+            ],
+          ),
+          if (_halfWithOpponent)
+            Text(
+              'Our share: ₹$_effectiveAmount (visible to both captains)',
+              style: AppTypography.caption.copyWith(color: colors.textTertiary),
+            ),
+        ];
+      case ExpenseCategory.equipmentJersey:
+        return [
+          Row(
+            children: [
+              Switch(
+                key: const ValueKey('amortizeAcrossSeasonSwitch'),
+                value: _amortizeAcrossSeason,
+                onChanged: (v) => setState(() => _amortizeAcrossSeason = v),
+              ),
+              Expanded(
+                child: Text(
+                  'Amortize across the season',
+                  style: AppTypography.body.copyWith(color: colors.textPrimary),
+                ),
+              ),
+            ],
+          ),
+          if (_amortizeAcrossSeason) ...[
+            Row(
+              children: [
+                Text(
+                  'Months',
+                  style: AppTypography.body.copyWith(color: colors.textPrimary),
+                ),
+                IconButton(
+                  key: const ValueKey('amortizeMonthsDecrement'),
+                  icon: const Icon(Icons.remove_circle_outline),
+                  onPressed: _amortizeMonths > 1
+                      ? () => setState(() => _amortizeMonths--)
+                      : null,
+                ),
+                Text(
+                  '$_amortizeMonths',
+                  style: AppTypography.stat.copyWith(color: colors.textPrimary),
+                ),
+                IconButton(
+                  key: const ValueKey('amortizeMonthsIncrement'),
+                  icon: const Icon(Icons.add_circle_outline),
+                  onPressed: () => setState(() => _amortizeMonths++),
+                ),
+              ],
+            ),
+            Row(
+              children: [
+                Switch(
+                  key: const ValueKey('proRataForJoinersSwitch'),
+                  value: _proRataForJoiners,
+                  onChanged: (v) => setState(() => _proRataForJoiners = v),
+                ),
+                Expanded(
+                  child: Text(
+                    'Joiners mid-season pay pro-rata',
+                    style: AppTypography.body.copyWith(
+                      color: colors.textPrimary,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
+          const SizedBox(height: AppSpacing.xs),
+          AppButton(
+            key: const ValueKey('linkJerseyBoardButton'),
+            variant: AppButtonVariant.tertiary,
+            label: 'Link jersey board sizes',
+            onPressed: _linkJerseyBoard,
+          ),
+        ];
+      case ExpenseCategory.tournamentEntry:
+        return [
+          Text(
+            'Refund events auto-reversing proportionally isn\'t wired in '
+            'yet (no Tournament module exists).',
+            style: AppTypography.caption.copyWith(color: colors.textTertiary),
+          ),
+        ];
+      case ExpenseCategory.travel:
+      case ExpenseCategory.food:
+      case ExpenseCategory.penaltyFine:
+      case ExpenseCategory.prizeMoney:
+        return const [];
+    }
+  }
+
+  /// PRD §6.12/E5-02 Equipment/Jersey: "jersey links to size-sheet";
+  /// per-member exact price incl. personalization. Genuinely reads the
+  /// existing Jersey Board module (E3-09) -- its own price-per-member
+  /// baseline seeds Custom amounts here, which the captain can then
+  /// tweak per member for personalization deltas.
+  void _linkJerseyBoard() {
+    final jerseyState = ref.read(jerseyBoardProvider);
+    final names = {for (final s in jerseyState.submissions) s.memberName};
+    if (names.isEmpty) return;
+    final perMember = jerseyState.pricePerMember() ?? 0;
+    setState(() {
+      _selected = names;
+      _splitMethod = SplitMethod.custom;
+      for (final name in names) {
+        _customAmounts[name] = perMember;
+      }
+      _amountController.text = '${jerseyState.totalPriceRupees}';
+    });
+  }
+
+  List<Widget> _buildFineSection(AppColors colors, List<String> participants) {
+    return [
+      _sectionLabel(colors, 'Fine chart'),
+      Wrap(
+        spacing: AppSpacing.xs,
+        children: [
+          for (final entry in mockFineChart())
+            ChoiceChip(
+              key: ValueKey('fineReasonChip_${entry.reason}'),
+              label: Text('${entry.reason} -- ₹${entry.amount}'),
+              selected: _selectedFineReason == entry,
+              onSelected: (_) => setState(() => _selectedFineReason = entry),
+            ),
+        ],
+      ),
+      const SizedBox(height: AppSpacing.lg),
+      _sectionLabel(colors, 'Finee'),
+      Wrap(
+        spacing: AppSpacing.xs,
+        children: [
+          for (final name in participants)
+            ChoiceChip(
+              key: ValueKey('fineeChip_$name'),
+              label: Text(name),
+              selected: _fineeName == name,
+              onSelected: (_) => setState(() => _fineeName = name),
+            ),
+        ],
+      ),
+      const SizedBox(height: AppSpacing.sm),
+      Text(
+        'Collected fines default into Team Wallet, earmarked "team fund."',
+        style: AppTypography.caption.copyWith(color: colors.textTertiary),
+      ),
+    ];
+  }
+
+  List<Widget> _buildTravelSection(
+    AppColors colors,
+    List<String> participants,
+  ) {
+    return [
+      AppTextField(
+        key: const ValueKey('expenseTitleField'),
+        label: 'Trip title',
+        controller: _titleController,
+      ),
+      const SizedBox(height: AppSpacing.lg),
+      _sectionLabel(colors, 'Vehicles'),
+      for (var i = 0; i < _vehicleGroups.length; i++)
+        Container(
+          key: ValueKey('vehicleGroupCard_$i'),
+          margin: const EdgeInsets.only(bottom: AppSpacing.sm),
+          padding: const EdgeInsets.all(AppSpacing.md),
+          decoration: BoxDecoration(
+            color: colors.surfaceAlt,
+            borderRadius: BorderRadius.circular(14),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Driver',
+                style: AppTypography.caption.copyWith(
+                  color: colors.textTertiary,
+                ),
+              ),
+              Wrap(
+                spacing: AppSpacing.xs,
+                children: [
+                  for (final name in participants)
+                    ChoiceChip(
+                      key: ValueKey('vehicleDriverChip_${i}_$name'),
+                      label: Text(name),
+                      selected: _vehicleGroups[i].driverName == name,
+                      onSelected: (_) =>
+                          setState(() => _vehicleGroups[i].driverName = name),
+                    ),
+                ],
+              ),
+              const SizedBox(height: AppSpacing.xs),
+              Text(
+                'Riders',
+                style: AppTypography.caption.copyWith(
+                  color: colors.textTertiary,
+                ),
+              ),
+              Wrap(
+                spacing: AppSpacing.xs,
+                children: [
+                  for (final name in participants)
+                    FilterChip(
+                      key: ValueKey('vehicleRiderChip_${i}_$name'),
+                      label: Text(name),
+                      selected: _vehicleGroups[i].riders.contains(name),
+                      onSelected: (v) => setState(() {
+                        if (v) {
+                          _vehicleGroups[i].riders.add(name);
+                        } else {
+                          _vehicleGroups[i].riders.remove(name);
+                        }
+                      }),
+                    ),
+                ],
+              ),
+              const SizedBox(height: AppSpacing.xs),
+              AppCurrencyField(
+                key: ValueKey('vehicleFuelCostField_$i'),
+                label: 'Fuel cost',
+                onChanged: (v) => setState(
+                  () => _vehicleGroups[i].fuelCost =
+                      int.tryParse(v.replaceAll(',', '')) ?? 0,
+                ),
+              ),
+              Row(
+                children: [
+                  Switch(
+                    key: ValueKey('vehicleDriverExemptSwitch_$i'),
+                    value: _vehicleGroups[i].driverExempt,
+                    onChanged: (v) =>
+                        setState(() => _vehicleGroups[i].driverExempt = v),
+                  ),
+                  Expanded(
+                    child: Text(
+                      'Driver exempt from the fuel split',
+                      style: AppTypography.body.copyWith(
+                        color: colors.textPrimary,
+                      ),
+                    ),
+                  ),
+                  IconButton(
+                    key: ValueKey('removeVehicleButton_$i'),
+                    icon: const Icon(Icons.close),
+                    onPressed: () => setState(() => _vehicleGroups.removeAt(i)),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      AppButton(
+        key: const ValueKey('addVehicleButton'),
+        variant: AppButtonVariant.tertiary,
+        label: 'Add vehicle',
+        onPressed: () =>
+            setState(() => _vehicleGroups.add(_VehicleGroupInput())),
+      ),
+      const SizedBox(height: AppSpacing.sm),
+      Text(
+        key: const ValueKey('travelTotalText'),
+        'Total: ₹$_travelTotal',
+        style: AppTypography.stat.copyWith(color: colors.textPrimary),
+      ),
+    ];
+  }
+
+  List<Widget> _buildPrizeDistributionSection(
+    AppColors colors,
+    List<String> participants,
+  ) {
+    return [
+      AppSegmentedControl<PrizeDistributionMethod>(
+        key: const ValueKey('prizeDistributionControl'),
+        options: PrizeDistributionMethod.values,
+        value: _prizeDistribution,
+        onChanged: (v) => setState(() => _prizeDistribution = v),
+        labelBuilder: (v) => prizeDistributionLabels[v]!,
+      ),
+      const SizedBox(height: AppSpacing.sm),
+      if (_prizeDistribution != PrizeDistributionMethod.toWallet) ...[
+        Wrap(
+          spacing: AppSpacing.xs,
+          children: [
+            for (final name in participants)
+              FilterChip(
+                key: ValueKey('prizeParticipantChip_$name'),
+                label: Text(name),
+                selected: _selected.contains(name),
+                onSelected: (v) => setState(() {
+                  if (v) {
+                    _selected.add(name);
+                  } else {
+                    _selected.remove(name);
+                  }
+                }),
+              ),
+          ],
+        ),
+        if (_prizeDistribution == PrizeDistributionMethod.shares)
+          for (final name in _selected)
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: AppSpacing.xs / 2),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      name,
+                      style: AppTypography.body.copyWith(
+                        color: colors.textPrimary,
+                      ),
+                    ),
+                  ),
+                  IconButton(
+                    key: ValueKey('prizeShareDecrement_$name'),
+                    icon: const Icon(Icons.remove_circle_outline),
+                    onPressed: (_shareWeights[name] ?? 1) > 1
+                        ? () => setState(
+                            () => _shareWeights[name] =
+                                (_shareWeights[name] ?? 1) - 1,
+                          )
+                        : null,
+                  ),
+                  Text(
+                    '${_shareWeights[name] ?? 1}',
+                    style: AppTypography.stat.copyWith(
+                      color: colors.textPrimary,
+                    ),
+                  ),
+                  IconButton(
+                    key: ValueKey('prizeShareIncrement_$name'),
+                    icon: const Icon(Icons.add_circle_outline),
+                    onPressed: () => setState(
+                      () =>
+                          _shareWeights[name] = (_shareWeights[name] ?? 1) + 1,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+      ],
+      const SizedBox(height: AppSpacing.sm),
+      Text(
+        'Every member sees this distribution math:',
+        style: AppTypography.caption.copyWith(color: colors.textTertiary),
+      ),
+      for (final recipient in _computePrizeRecipients())
+        Padding(
+          key: ValueKey('prizeRecipientRow_${recipient.name}'),
+          padding: const EdgeInsets.symmetric(vertical: AppSpacing.xs / 2),
+          child: Row(
+            children: [
+              Expanded(
+                child: Text(
+                  recipient.name,
+                  style: AppTypography.body.copyWith(color: colors.textPrimary),
+                ),
+              ),
+              Text(
+                '₹${recipient.amount}',
+                style: AppTypography.stat.copyWith(color: colors.textPrimary),
+              ),
+            ],
+          ),
+        ),
+    ];
   }
 
   List<Widget> _buildSplitInputs(AppColors colors) {

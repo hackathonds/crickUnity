@@ -157,6 +157,7 @@ class Expense {
   final ExpenseApprovalState approvalState;
   final String createdByName;
   final Map<String, AppExpenseRowState> settlementStates;
+  final bool isIncome;
 
   const Expense({
     required this.id,
@@ -173,6 +174,7 @@ class Expense {
     this.approvalState = ExpenseApprovalState.none,
     required this.createdByName,
     this.settlementStates = const {},
+    this.isIncome = false,
   });
 
   int get splitTotal => splitAmong.fold(0, (sum, s) => sum + s.amount);
@@ -209,6 +211,7 @@ class Expense {
       approvalState: approvalState ?? this.approvalState,
       createdByName: createdByName,
       settlementStates: settlementStates,
+      isIncome: isIncome,
     );
   }
 }
@@ -232,3 +235,79 @@ List<String> mockExpenseParticipants() => const [
   'Arjun Mehta',
   'Sana Iyer',
 ];
+
+/// PRD §11.2 Ground Fees ("captain toggle 'team wallet pays'") /
+/// Tournament ("split = squad or wallet") / Penalty-Fine ("collected
+/// fines default into Team Wallet"). No real Team Wallet ledger exists
+/// yet (E5-07, unbuilt) -- a synthetic payer/payee name stands in, same
+/// convention as every other missing-backend mock this session.
+const String teamWalletPayerName = 'Team Wallet';
+
+/// PRD §11.2 Travel: "per-vehicle sub-groups ('Rahul's car: 4 riders,
+/// ₹600 fuel -> riders split; driver exempt toggle')."
+class VehicleGroup {
+  final String driverName;
+  final List<String> riders;
+  final int fuelCost;
+  final bool driverExempt;
+
+  const VehicleGroup({
+    required this.driverName,
+    required this.riders,
+    required this.fuelCost,
+    this.driverExempt = false,
+  });
+}
+
+/// Aggregates every vehicle's fuel cost across however many riders
+/// actually split it -- a rider in multiple cars (unusual but not
+/// disallowed) simply accumulates a share from each.
+List<SplitShare> travelSplit(List<VehicleGroup> groups) {
+  final totals = <String, int>{};
+  for (final group in groups) {
+    final payers = [
+      ...group.riders,
+      if (!group.driverExempt && !group.riders.contains(group.driverName))
+        group.driverName,
+    ];
+    if (payers.isEmpty) continue;
+    for (final share in equalSplit(group.fuelCost, payers)) {
+      totals[share.name] = (totals[share.name] ?? 0) + share.amount;
+    }
+  }
+  return [
+    for (final entry in totals.entries)
+      SplitShare(name: entry.key, amount: entry.value),
+  ];
+}
+
+/// PRD §11.2 Penalty/Fine: "captain-issued ... per team's published
+/// fine chart (fines require the chart to exist -- no ad-hoc
+/// amounts)." No real fine-chart authoring/persistence screen exists
+/// yet -- a fixed mock chart stands in.
+class FineChartEntry {
+  final String reason;
+  final int amount;
+
+  const FineChartEntry({required this.reason, required this.amount});
+}
+
+List<FineChartEntry> mockFineChart() => const [
+  FineChartEntry(reason: 'Late arrival', amount: 100),
+  FineChartEntry(reason: 'Kit violation', amount: 50),
+  FineChartEntry(reason: 'Missed practice (no notice)', amount: 50),
+];
+
+/// PRD §11.2 Prize Money: "distribution methods: equal / playing-XI
+/// weighted / performance-weighted (uses match points) / to wallet."
+/// The weighted methods need cross-module data (Selection Board XI,
+/// live-match performance points) that isn't wired into this generic
+/// expense flow -- [shares] stands in for manual approximation of
+/// either, flagged rather than fabricating that integration.
+enum PrizeDistributionMethod { equal, shares, toWallet }
+
+const Map<PrizeDistributionMethod, String> prizeDistributionLabels = {
+  PrizeDistributionMethod.equal: 'Equal',
+  PrizeDistributionMethod.shares: 'Weighted (manual)',
+  PrizeDistributionMethod.toWallet: 'To Team Wallet',
+};
