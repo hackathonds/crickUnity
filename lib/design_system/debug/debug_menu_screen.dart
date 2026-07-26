@@ -8,6 +8,7 @@ import '../../matches/match_models.dart';
 import '../../matches/match_opponent_decision_screen.dart';
 import '../../matches/match_proposal_review_screen.dart';
 import '../../matches/live_scoring_console_screen.dart';
+import '../../matches/scoring_provider.dart';
 import '../../matches/matches_provider.dart';
 import '../../matches/toss_screen.dart';
 import '../../onboarding/onboarding_flow.dart';
@@ -911,6 +912,24 @@ class DebugMenuScreen extends StatelessWidget {
                 builder: (_) => const LiveScoringConsoleScreen(),
               ),
             ),
+          ),
+          ListTile(
+            title: const Text('Live scoring console (2nd-innings chase)'),
+            subtitle: const Text(
+              'E4-07 — interrupt/resume, revised overs, CRR/RRR strip',
+            ),
+            onTap: () {
+              final container = ProviderScope.containerOf(
+                context,
+                listen: false,
+              );
+              container.read(inningsProvider.notifier).setTarget(165);
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (_) => const LiveScoringConsoleScreen(),
+                ),
+              );
+            },
           ),
           ListTile(
             title: const Text('Guest mode preview'),

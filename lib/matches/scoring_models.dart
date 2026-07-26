@@ -306,6 +306,10 @@ class InningsState {
   final int totalOversPerSide;
   final ExtraSubRules subRules;
   final List<CorrectionRequest> pendingCorrections;
+  final bool isPaused;
+  final String? interruptionReason;
+  final int? revisedOversForInnings;
+  final int? targetRuns;
 
   const InningsState({
     required this.battingTeamName,
@@ -319,6 +323,10 @@ class InningsState {
     this.deliveries = const [],
     this.subRules = const ExtraSubRules(),
     this.pendingCorrections = const [],
+    this.isPaused = false,
+    this.interruptionReason,
+    this.revisedOversForInnings,
+    this.targetRuns,
   });
 
   int get totalRuns => deliveries.fold(0, (sum, d) => sum + d.runs);
@@ -326,6 +334,33 @@ class InningsState {
   int get _legalDeliveryCount => deliveries.where((d) => d.isLegal).length;
   int get legalBallsThisOver => _legalDeliveryCount % 6;
   int get completedOvers => _legalDeliveryCount ~/ 6;
+
+  /// PRD §7.7: "offers revised-overs calculator" -- the innings' overs
+  /// after any rain/delay adjustment, or the original format overs if
+  /// none has happened yet.
+  int get effectiveTotalOvers => revisedOversForInnings ?? totalOversPerSide;
+
+  double get _oversFaced => completedOvers + legalBallsThisOver / 6;
+
+  double get currentRunRate => _oversFaced > 0 ? totalRuns / _oversFaced : 0;
+
+  double get oversRemaining => (effectiveTotalOvers - _oversFaced).clamp(
+    0.0,
+    effectiveTotalOvers.toDouble(),
+  );
+
+  /// Only meaningful for a 2nd-innings chase ([targetRuns] set) --
+  /// PRD/DS give no target-setting flow of their own yet (no 2-innings
+  /// match model exists), so this is null until a caller sets one.
+  /// Recomputed fresh from [effectiveTotalOvers] on every read, so
+  /// resuming from an interruption with revised overs automatically
+  /// changes the answer -- AC: "resuming recomputes RRR strip."
+  double? get requiredRunRate {
+    final target = targetRuns;
+    if (target == null) return null;
+    if (oversRemaining <= 0) return double.infinity;
+    return (target - totalRuns) / oversRemaining;
+  }
 
   /// PRD §2.6: "last 2 overs freely" -- the over each delivery belongs
   /// to (illegal/manual-swap balls share whichever over was in progress
@@ -491,6 +526,11 @@ class InningsState {
     List<Delivery>? deliveries,
     String? currentBowlerName,
     List<CorrectionRequest>? pendingCorrections,
+    bool? isPaused,
+    String? interruptionReason,
+    bool clearInterruptionReason = false,
+    int? revisedOversForInnings,
+    int? targetRuns,
   }) {
     return InningsState(
       battingTeamName: battingTeamName,
@@ -504,6 +544,13 @@ class InningsState {
       subRules: subRules,
       deliveries: deliveries ?? this.deliveries,
       pendingCorrections: pendingCorrections ?? this.pendingCorrections,
+      isPaused: isPaused ?? this.isPaused,
+      interruptionReason: clearInterruptionReason
+          ? null
+          : (interruptionReason ?? this.interruptionReason),
+      revisedOversForInnings:
+          revisedOversForInnings ?? this.revisedOversForInnings,
+      targetRuns: targetRuns ?? this.targetRuns,
     );
   }
 }
