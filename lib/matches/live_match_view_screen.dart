@@ -5,6 +5,7 @@ import '../design_system/tokens/app_colors.dart';
 import '../design_system/tokens/app_spacing.dart';
 import '../design_system/tokens/app_typography.dart';
 import '../offline/is_online_provider.dart';
+import 'gallery_screen.dart';
 import 'scorecard_screen.dart';
 import 'scoring_models.dart';
 import 'scoring_provider.dart';
@@ -21,7 +22,9 @@ import 'scoring_provider.dart';
 /// chart graphics -- proportionate to a debug-demo build, in the same
 /// spirit as other visualization simplifications this session (e.g.
 /// the field map's plain oval instead of a photorealistic ground).
-/// Gallery is a placeholder: real upload/curation is E4-14's scope.
+/// Gallery tab reuses [GalleryBody] (E4-14) as a fan/spectator viewer
+/// (never captain here -- curate actions are Match Detail/Gallery-tool
+/// scope, not the spectator viewer's).
 class LiveMatchViewScreen extends ConsumerStatefulWidget {
   const LiveMatchViewScreen({super.key});
 
@@ -105,7 +108,7 @@ class _LiveMatchViewScreenState extends ConsumerState<LiveMatchViewScreen>
                 _CommentaryTab(),
                 ScorecardBody(),
                 _ChartsTab(),
-                _GalleryTab(),
+                GalleryBody(viewerName: 'Spectator', isCaptain: false),
               ],
             ),
           ),
@@ -385,29 +388,6 @@ class _ChartsTab extends ConsumerWidget {
             ),
           ),
       ],
-    );
-  }
-}
-
-/// PRD §7.15 (Gallery): real upload/curation/highlights-reel is E4-14's
-/// separate, much larger scope -- this is a placeholder only.
-class _GalleryTab extends StatelessWidget {
-  const _GalleryTab();
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = Theme.of(context).extension<AppColors>()!;
-
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(AppSpacing.xxl),
-        child: Text(
-          key: const ValueKey('galleryEmptyState'),
-          'No media uploaded yet.',
-          textAlign: TextAlign.center,
-          style: AppTypography.body.copyWith(color: colors.textSecondary),
-        ),
-      ),
     );
   }
 }

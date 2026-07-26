@@ -9,6 +9,8 @@ import '../../matches/match_models.dart';
 import '../../matches/match_opponent_decision_screen.dart';
 import '../../matches/match_proposal_review_screen.dart';
 import '../../matches/field_map_screen.dart';
+import '../../matches/gallery_screen.dart';
+import '../../matches/highlights_builder_screen.dart';
 import '../../matches/scorecard_screen.dart';
 import '../../matches/scoring_models.dart';
 import '../../matches/live_scoring_console_screen.dart';
@@ -1024,6 +1026,45 @@ class DebugMenuScreen extends StatelessWidget {
             onTap: () => Navigator.of(context).push(
               MaterialPageRoute(
                 builder: (_) => const AwardsScreen(isOpposingCaptain: false),
+              ),
+            ),
+          ),
+          ListTile(
+            title: const Text('Gallery (squad member)'),
+            subtitle: const Text(
+              'E4-14 — upload, pin-to-ball, no captain curate actions',
+            ),
+            onTap: () => Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (_) => const GalleryScreen(
+                  viewerName: 'Ananya Iyer',
+                  isCaptain: false,
+                ),
+              ),
+            ),
+          ),
+          ListTile(
+            title: const Text('Gallery (captain)'),
+            subtitle: const Text(
+              'E4-14 — feature/hide items, open Highlights builder',
+            ),
+            onTap: () => Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (_) => const GalleryScreen(
+                  viewerName: 'Rohan Verma',
+                  isCaptain: true,
+                ),
+              ),
+            ),
+          ),
+          ListTile(
+            title: const Text('Highlights builder (captain)'),
+            subtitle: const Text(
+              'E4-14 — clip rail, drag-reorder, auto-cut chips, publish reel',
+            ),
+            onTap: () => Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (_) => const HighlightsBuilderScreen(isCaptain: true),
               ),
             ),
           ),
