@@ -20,6 +20,7 @@ import 'announcements_demo.dart';
 import 'avatar_screen.dart';
 import 'members_roles_demo.dart';
 import '../../teams/selection_board_screen.dart';
+import '../../teams/carpool_screen.dart';
 import 'jersey_board_demo.dart';
 import 'practice_session_demo.dart';
 import 'team_home_demo.dart';
@@ -513,6 +514,17 @@ class DebugMenuScreen extends StatelessWidget {
             onTap: () => Navigator.of(
               context,
             ).push(MaterialPageRoute(builder: (_) => const JerseyBoardDemo())),
+          ),
+          ListTile(
+            title: const Text('Carpool'),
+            subtitle: const Text(
+              'E3-10 (1/4) — seat pips, Join confirm, fuel-split suggestion',
+            ),
+            onTap: () => Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (_) => const CarpoolScreen(viewerName: 'Priya Nair'),
+              ),
+            ),
           ),
           ListTile(
             title: const Text('Guest mode preview'),
