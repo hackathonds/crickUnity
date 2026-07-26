@@ -43,6 +43,8 @@ class LiveScoringConsoleScreen extends ConsumerWidget {
     final nonStrikerStats = state.batters[nonStriker];
     final bowler = state.currentBowlerInnings;
     final needsNewBowler = bowler.completedOvers >= state.maxOversPerBowler;
+    final isLastBallWicket =
+        state.deliveries.isNotEmpty && state.deliveries.last.isWicket;
     final odometerDuration = AppMotion.resolveDuration(
       context,
       AppMotionToken.standard,
@@ -104,7 +106,22 @@ class LiveScoringConsoleScreen extends ConsumerWidget {
                         ),
                       ),
                     ),
+                    const SizedBox(width: AppSpacing.sm),
+                    _WicketKeyMomentChip(
+                      show: isLastBallWicket,
+                      wicketsLost: state.wicketsLost,
+                      dismissalLabel: isLastBallWicket
+                          ? dismissalTypeLabels[state
+                                .deliveries
+                                .last
+                                .dismissalType]
+                          : null,
+                    ),
                   ],
+                ),
+                _WicketUnderlineSweep(
+                  show: isLastBallWicket,
+                  wicketsLost: state.wicketsLost,
                 ),
               ],
             ),
@@ -344,16 +361,21 @@ class LiveScoringConsoleScreen extends ConsumerWidget {
     );
   }
 
+  /// AC (DS §1.5): "3 taps for a bowled dismissal" -- WICKET (opens this
+  /// sheet), the dismissal type, the new batter; the sheet auto-submits
+  /// on that last tap rather than requiring a separate Confirm.
   void _showDismissalSheet(BuildContext context, InningsState state) {
     showAppBottomSheet<void>(
       context: context,
       title: 'Wicket',
       contentBuilder: (context) => _DismissalSheetContent(
         strikerName: state.currentStriker,
+        nonStrikerName: state.currentNonStriker,
         availableBatters: state.battingOrder
             .where(
               (name) =>
                   name != state.currentStriker &&
+                  name != state.currentNonStriker &&
                   state.batters[name]?.isOut != true,
             )
             .toList(),
@@ -379,12 +401,19 @@ class LiveScoringConsoleScreen extends ConsumerWidget {
   }
 }
 
+bool _dismissalNeedsFielder(DismissalType type) =>
+    type == DismissalType.caught ||
+    type == DismissalType.runOut ||
+    type == DismissalType.stumped;
+
 class _DismissalSheetContent extends ConsumerStatefulWidget {
   final String strikerName;
+  final String nonStrikerName;
   final List<String> availableBatters;
 
   const _DismissalSheetContent({
     required this.strikerName,
+    required this.nonStrikerName,
     required this.availableBatters,
   });
 
@@ -397,11 +426,33 @@ class _DismissalSheetContentState
     extends ConsumerState<_DismissalSheetContent> {
   DismissalType? _dismissalType;
   String? _fielderName;
-  String? _newBatterName;
+  String? _dismissedBatterName;
+
+  /// AC (DS §1.5): submitting happens on the new-batter tap itself --
+  /// by construction that's always the last field a dismissal needs, so
+  /// there's never a separate Confirm tap.
+  void _submit(String newBatterName) {
+    ref
+        .read(inningsProvider.notifier)
+        .recordWicket(
+          dismissalType: _dismissalType!,
+          fielderName: _fielderName,
+          dismissedBatterName: _dismissedBatterName,
+          newBatterName: newBatterName,
+        );
+    Navigator.of(context).pop();
+  }
 
   @override
   Widget build(BuildContext context) {
     final colors = Theme.of(context).extension<AppColors>()!;
+    final type = _dismissalType;
+    final needsFielder = type != null && _dismissalNeedsFielder(type);
+    final needsRunOutEnd = type == DismissalType.runOut;
+    final readyForNewBatter =
+        type != null &&
+        (!needsFielder || _fielderName != null) &&
+        (!needsRunOutEnd || _dismissedBatterName != null);
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
@@ -410,12 +461,7 @@ class _DismissalSheetContentState
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            '${widget.strikerName} is out',
-            style: AppTypography.subtitle.copyWith(color: colors.textPrimary),
-          ),
-          const SizedBox(height: AppSpacing.md),
-          Text(
-            'How?',
+            'How out?',
             style: AppTypography.label.copyWith(color: colors.textTertiary),
           ),
           const SizedBox(height: AppSpacing.xs),
@@ -423,18 +469,44 @@ class _DismissalSheetContentState
             spacing: AppSpacing.xs,
             runSpacing: AppSpacing.xs,
             children: [
-              for (final type in DismissalType.values)
+              for (final t in DismissalType.values)
                 ChoiceChip(
-                  key: ValueKey('dismissalType_${type.name}'),
-                  label: Text(dismissalTypeLabels[type]!),
-                  selected: _dismissalType == type,
-                  onSelected: (_) => setState(() => _dismissalType = type),
+                  key: ValueKey('dismissalType_${t.name}'),
+                  label: Text(dismissalTypeLabels[t]!),
+                  selected: _dismissalType == t,
+                  onSelected: (_) => setState(() {
+                    _dismissalType = t;
+                    if (t != DismissalType.runOut) {
+                      _dismissedBatterName = widget.strikerName;
+                    } else {
+                      _dismissedBatterName = null;
+                    }
+                  }),
                 ),
             ],
           ),
-          if (_dismissalType == DismissalType.caught ||
-              _dismissalType == DismissalType.runOut ||
-              _dismissalType == DismissalType.stumped) ...[
+          if (needsRunOutEnd) ...[
+            const SizedBox(height: AppSpacing.md),
+            Text(
+              'Who was run out?',
+              style: AppTypography.label.copyWith(color: colors.textTertiary),
+            ),
+            const SizedBox(height: AppSpacing.xs),
+            Wrap(
+              spacing: AppSpacing.xs,
+              children: [
+                for (final name in [widget.strikerName, widget.nonStrikerName])
+                  ChoiceChip(
+                    key: ValueKey('runOutEnd_$name'),
+                    label: Text(name),
+                    selected: _dismissedBatterName == name,
+                    onSelected: (_) =>
+                        setState(() => _dismissedBatterName = name),
+                  ),
+              ],
+            ),
+          ],
+          if (needsFielder) ...[
             const SizedBox(height: AppSpacing.md),
             Text(
               'Fielder',
@@ -468,32 +540,97 @@ class _DismissalSheetContentState
                 ChoiceChip(
                   key: ValueKey('newBatter_$name'),
                   label: Text(name),
-                  selected: _newBatterName == name,
-                  onSelected: (_) => setState(() => _newBatterName = name),
+                  selected: false,
+                  onSelected: readyForNewBatter ? (_) => _submit(name) : null,
                 ),
             ],
           ),
           const SizedBox(height: AppSpacing.lg),
-          AppButton(
-            key: const ValueKey('confirmDismissalButton'),
-            variant: AppButtonVariant.primary,
-            label: 'Confirm',
-            fullWidth: true,
-            onPressed: _dismissalType != null && _newBatterName != null
-                ? () {
-                    ref
-                        .read(inningsProvider.notifier)
-                        .recordWicket(
-                          dismissalType: _dismissalType!,
-                          fielderName: _fielderName,
-                          newBatterName: _newBatterName!,
-                        );
-                    Navigator.of(context).pop();
-                  }
-                : null,
-          ),
-          const SizedBox(height: AppSpacing.lg),
         ],
+      ),
+    );
+  }
+}
+
+/// DS §5.13 "Live update" pattern: "wicket = scoreboard underline sweep
+/// + key-moment chip springs in." Both are purely derived from whether
+/// the *most recent* delivery was a wicket -- no timers -- so they
+/// appear the instant a wicket lands and disappear the instant the next
+/// ball (or manual swap) is recorded. Keyed by wicketsLost so each new
+/// wicket gets a fresh instance and re-animates from scratch rather
+/// than reusing a still-settled one. Not a real spring simulation --
+/// DS §2.6 reserves spring physics for coin/XP only -- this is a plain
+/// scale/fade entrance at the standard 240ms token.
+class _WicketKeyMomentChip extends StatelessWidget {
+  final bool show;
+  final int wicketsLost;
+  final String? dismissalLabel;
+
+  const _WicketKeyMomentChip({
+    required this.show,
+    required this.wicketsLost,
+    required this.dismissalLabel,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    if (!show) return const SizedBox.shrink();
+    final colors = Theme.of(context).extension<AppColors>()!;
+
+    return TweenAnimationBuilder<double>(
+      key: ValueKey('wicketKeyMoment_$wicketsLost'),
+      tween: Tween(begin: 0, end: 1),
+      duration: AppMotionDuration.standard,
+      curve: Curves.easeOut,
+      builder: (context, value, child) => Opacity(
+        opacity: value,
+        child: Transform.scale(scale: 0.8 + (0.2 * value), child: child),
+      ),
+      child: Container(
+        key: const ValueKey('keyMomentChip'),
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.sm,
+          vertical: AppSpacing.xs,
+        ),
+        decoration: BoxDecoration(
+          color: colors.error.withValues(alpha: 0.15),
+          borderRadius: BorderRadius.circular(999),
+        ),
+        child: Text(
+          dismissalLabel ?? 'OUT',
+          style: AppTypography.caption.copyWith(color: colors.error),
+        ),
+      ),
+    );
+  }
+}
+
+class _WicketUnderlineSweep extends StatelessWidget {
+  final bool show;
+  final int wicketsLost;
+
+  const _WicketUnderlineSweep({required this.show, required this.wicketsLost});
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = Theme.of(context).extension<AppColors>()!;
+    if (!show) return const SizedBox(height: 3);
+
+    return TweenAnimationBuilder<double>(
+      key: ValueKey('wicketUnderlineSweep_$wicketsLost'),
+      tween: Tween(begin: 0, end: 1),
+      duration: AppMotionDuration.standard,
+      curve: Curves.easeOut,
+      builder: (context, value, child) => Align(
+        alignment: Alignment.centerLeft,
+        child: FractionallySizedBox(
+          widthFactor: value,
+          child: Container(
+            key: const ValueKey('wicketUnderline'),
+            height: 3,
+            color: colors.error,
+          ),
+        ),
       ),
     );
   }

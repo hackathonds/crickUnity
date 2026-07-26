@@ -33,9 +33,12 @@ class InningsNotifier extends Notifier<InningsState> {
     );
   }
 
+  /// [dismissedBatterName] (E4-05, "run-out sub-fields"): defaults to
+  /// the striker -- only a run-out can name the non-striker instead.
   void recordWicket({
     required DismissalType dismissalType,
     String? fielderName,
+    String? dismissedBatterName,
     required String newBatterName,
   }) {
     state = state.copyWith(
@@ -47,6 +50,7 @@ class InningsNotifier extends Notifier<InningsState> {
           isWicket: true,
           dismissalType: dismissalType,
           fielderName: fielderName,
+          dismissedBatterName: dismissedBatterName ?? state.currentStriker,
           newBatterName: newBatterName,
         ),
       ],
