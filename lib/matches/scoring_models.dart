@@ -74,9 +74,10 @@ String deliveryLabel(Delivery delivery) {
 }
 
 /// PRD §7.8: "Auto-generated text per ball ('FOUR! Priya drives through
-/// covers')." A plain template generator -- scorer quick-edit/custom
-/// notes aren't modeled (no rich-commentary-editing UI exists yet).
+/// covers') with scorer quick-edit." [Delivery.commentaryOverride], when
+/// set, always wins over the template below.
 String commentaryFor(Delivery delivery, {required String strikerName}) {
+  if (delivery.commentaryOverride != null) return delivery.commentaryOverride!;
   if (delivery.isManualSwap) return 'Batters cross ends.';
   if (delivery.isWicket) {
     return "OUT! $strikerName's innings ends -- "
@@ -142,6 +143,7 @@ class Delivery {
   final bool isManualSwap;
   final bool isCorrected;
   final WagonSector? wagonSector;
+  final String? commentaryOverride;
 
   const Delivery({
     required this.bowlerName,
@@ -158,6 +160,7 @@ class Delivery {
     this.isManualSwap = false,
     this.isCorrected = false,
     this.wagonSector,
+    this.commentaryOverride,
   }) : battingRuns = battingRuns ?? runs,
        ranRuns = ranRuns ?? runs;
 
@@ -174,7 +177,8 @@ class Delivery {
       isLegal = false,
       isManualSwap = true,
       isCorrected = false,
-      wagonSector = null;
+      wagonSector = null,
+      commentaryOverride = null;
 
   /// AC: "corrected balls carry an audit marker in ball timeline" --
   /// only the runs (and, transitively, battingRuns/ranRuns for a plain
@@ -197,6 +201,30 @@ class Delivery {
       isManualSwap: isManualSwap,
       isCorrected: true,
       wagonSector: wagonSector,
+      commentaryOverride: commentaryOverride,
+    );
+  }
+
+  /// PRD §7.8: "scorer quick-edit" -- a prose edit to the auto-generated
+  /// commentary line, not a scoring-fact correction, so it doesn't need
+  /// [correctedTo]'s correction-window/dual-captain machinery.
+  Delivery withCommentaryOverride(String text) {
+    return Delivery(
+      bowlerName: bowlerName,
+      runs: runs,
+      battingRuns: battingRuns,
+      ranRuns: ranRuns,
+      isWicket: isWicket,
+      dismissalType: dismissalType,
+      fielderName: fielderName,
+      dismissedBatterName: dismissedBatterName,
+      newBatterName: newBatterName,
+      extraType: extraType,
+      isLegal: isLegal,
+      isManualSwap: isManualSwap,
+      isCorrected: isCorrected,
+      wagonSector: wagonSector,
+      commentaryOverride: text,
     );
   }
 
@@ -218,6 +246,7 @@ class Delivery {
       isManualSwap: isManualSwap,
       isCorrected: isCorrected,
       wagonSector: sector,
+      commentaryOverride: commentaryOverride,
     );
   }
 
@@ -264,6 +293,17 @@ class Delivery {
         );
     }
   }
+}
+
+/// PRD §7.8: "scorer can add custom notes." A freestanding commentary
+/// line that isn't tied to correcting any specific ball's auto-text --
+/// [afterDeliveryIndex] (-1 before any ball has been bowled) anchors
+/// where it renders in the stream.
+class CommentaryNote {
+  final int afterDeliveryIndex;
+  final String text;
+
+  const CommentaryNote({required this.afterDeliveryIndex, required this.text});
 }
 
 /// PRD §2.6 (Scorer): "edit balls within the correction window (last 2
@@ -471,6 +511,7 @@ class InningsState {
   final String? mvpCaptainPick;
   final bool awardsMinted;
   final List<String> awardsLog;
+  final List<CommentaryNote> customNotes;
 
   const InningsState({
     required this.battingTeamName,
@@ -507,6 +548,7 @@ class InningsState {
     this.mvpCaptainPick,
     this.awardsMinted = false,
     this.awardsLog = const [],
+    this.customNotes = const [],
   });
 
   bool get isFullyConfirmed =>
@@ -869,6 +911,7 @@ class InningsState {
     String? mvpCaptainPick,
     bool? awardsMinted,
     List<String>? awardsLog,
+    List<CommentaryNote>? customNotes,
   }) {
     return InningsState(
       battingTeamName: battingTeamName,
@@ -920,6 +963,7 @@ class InningsState {
       mvpCaptainPick: mvpCaptainPick ?? this.mvpCaptainPick,
       awardsMinted: awardsMinted ?? this.awardsMinted,
       awardsLog: awardsLog ?? this.awardsLog,
+      customNotes: customNotes ?? this.customNotes,
     );
   }
 
@@ -984,6 +1028,58 @@ class InningsState {
     if (counts.isEmpty) return null;
     return counts.entries.reduce((a, b) => b.value > a.value ? b : a).key;
   }
+
+  /// PRD §7.8: "key moments auto-flagged (... hat-trick chance)." A
+  /// prospective tension-builder, distinct from [keyMomentIndices]'
+  /// retrospective "this ball completed a hat-trick" flag -- true when
+  /// the current bowler's last 2 legal deliveries were both wickets, so
+  /// the *next* ball they bowl could complete one.
+  bool get isHatTrickChance {
+    final legal = [
+      for (final d in deliveries)
+        if (d.isLegal && d.bowlerName == currentBowlerName) d,
+    ];
+    if (legal.length < 2) return false;
+    final lastTwo = legal.sublist(legal.length - 2);
+    return lastTwo.every((d) => d.isWicket);
+  }
+}
+
+/// PRD §7.8: "key moments auto-flagged (wicket, fifty, hat-trick
+/// chance)." Retrospective flags -- wicket, the ball a batter's running
+/// total first reaches 50, and the ball that completes a hat-trick
+/// (3rd consecutive wicket by the same bowler). The prospective "about
+/// to happen" version of the hat-trick flag is [InningsState.isHatTrickChance].
+Set<int> keyMomentIndices(InningsState state) {
+  final indices = <int>{};
+  final strikerPerDelivery = state.strikerNamePerDelivery;
+  final runningRuns = <String, int>{};
+  final consecutiveWicketsByBowler = <String, int>{};
+
+  for (var i = 0; i < state.deliveries.length; i++) {
+    final delivery = state.deliveries[i];
+    if (delivery.isWicket) {
+      indices.add(i);
+    }
+
+    if (delivery.battingRuns > 0) {
+      final batter = strikerPerDelivery[i];
+      final before = runningRuns[batter] ?? 0;
+      final after = before + delivery.battingRuns;
+      runningRuns[batter] = after;
+      if (before < 50 && after >= 50) indices.add(i);
+    }
+
+    if (delivery.isLegal) {
+      final bowler = delivery.bowlerName;
+      final streak = delivery.isWicket
+          ? (consecutiveWicketsByBowler[bowler] ?? 0) + 1
+          : 0;
+      consecutiveWicketsByBowler[bowler] = streak;
+      if (streak >= 3) indices.add(i);
+    }
+  }
+  return indices;
 }
 
 /// Mock bowling-side roster for the debug demo -- no real Selection

@@ -391,6 +391,27 @@ class LiveScoringConsoleScreen extends ConsumerWidget {
                 ),
               ),
             ),
+          if (!state.isPaused && !needsNewBowler && state.isHatTrickChance)
+            Padding(
+              padding: const EdgeInsets.symmetric(
+                horizontal: AppSpacing.lg,
+                vertical: AppSpacing.sm,
+              ),
+              child: Container(
+                key: const ValueKey('hatTrickChanceBanner'),
+                width: double.infinity,
+                padding: const EdgeInsets.all(AppSpacing.md),
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  color: colors.coin.withValues(alpha: 0.15),
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                child: Text(
+                  'Hat-trick chance!',
+                  style: AppTypography.title.copyWith(color: colors.coin),
+                ),
+              ),
+            ),
           Padding(
             padding: const EdgeInsets.all(AppSpacing.lg),
             child: Column(

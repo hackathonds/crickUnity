@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../design_system/components/app_bottom_sheet.dart';
+import '../design_system/components/app_button.dart';
+import '../design_system/components/app_text_field.dart';
 import '../design_system/tokens/app_colors.dart';
 import '../design_system/tokens/app_spacing.dart';
 import '../design_system/tokens/app_typography.dart';
@@ -26,7 +29,13 @@ import 'scoring_provider.dart';
 /// (never captain here -- curate actions are Match Detail/Gallery-tool
 /// scope, not the spectator viewer's).
 class LiveMatchViewScreen extends ConsumerStatefulWidget {
-  const LiveMatchViewScreen({super.key});
+  /// PRD §7.8: "scorer quick-edit" / "scorer can add custom notes" --
+  /// only ever true when the scorer themself opens this screen (a
+  /// structural guard, same convention as every other privileged
+  /// action this session).
+  final bool isScorer;
+
+  const LiveMatchViewScreen({super.key, this.isScorer = false});
 
   @override
   ConsumerState<LiveMatchViewScreen> createState() =>
@@ -104,11 +113,11 @@ class _LiveMatchViewScreenState extends ConsumerState<LiveMatchViewScreen>
           Expanded(
             child: TabBarView(
               controller: _tabController,
-              children: const [
-                _CommentaryTab(),
-                ScorecardBody(),
-                _ChartsTab(),
-                GalleryBody(viewerName: 'Spectator', isCaptain: false),
+              children: [
+                _CommentaryTab(isScorer: widget.isScorer),
+                const ScorecardBody(),
+                const _ChartsTab(),
+                const GalleryBody(viewerName: 'Spectator', isCaptain: false),
               ],
             ),
           ),
@@ -119,7 +128,9 @@ class _LiveMatchViewScreenState extends ConsumerState<LiveMatchViewScreen>
 }
 
 class _CommentaryTab extends ConsumerStatefulWidget {
-  const _CommentaryTab();
+  final bool isScorer;
+
+  const _CommentaryTab({required this.isScorer});
 
   @override
   ConsumerState<_CommentaryTab> createState() => _CommentaryTabState();
@@ -182,6 +193,11 @@ class _CommentaryTabState extends ConsumerState<_CommentaryTab> {
       for (var i = 0; i < state.deliveries.length; i++)
         if (!state.deliveries[i].isManualSwap) i,
     ];
+    final keyMoments = keyMomentIndices(state);
+    final notesByAnchor = <int, List<CommentaryNote>>{};
+    for (final note in state.customNotes) {
+      notesByAnchor.putIfAbsent(note.afterDeliveryIndex, () => []).add(note);
+    }
 
     return Stack(
       children: [
@@ -190,20 +206,72 @@ class _CommentaryTabState extends ConsumerState<_CommentaryTab> {
           controller: _scrollController,
           padding: const EdgeInsets.all(AppSpacing.lg),
           children: [
+            if (widget.isScorer)
+              Padding(
+                padding: const EdgeInsets.only(bottom: AppSpacing.md),
+                child: AppButton(
+                  key: const ValueKey('addCommentaryNoteButton'),
+                  variant: AppButtonVariant.secondary,
+                  label: 'Add note',
+                  fullWidth: true,
+                  onPressed: () => _showAddNoteSheet(context),
+                ),
+              ),
             if (state.completedOvers >= 2)
               _FanPredictionChip(key: const ValueKey('fanPredictionChip')),
-            for (final i in commentaryDeliveries)
+            for (final note in notesByAnchor[-1] ?? const <CommentaryNote>[])
+              _CustomNoteRow(note: note),
+            for (final i in commentaryDeliveries) ...[
               Padding(
                 key: ValueKey('commentaryEntry_$i'),
                 padding: const EdgeInsets.symmetric(vertical: AppSpacing.xs),
-                child: Text(
-                  commentaryFor(
-                    state.deliveries[i],
-                    strikerName: strikerPerDelivery[i],
-                  ),
-                  style: AppTypography.body.copyWith(color: colors.textPrimary),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Expanded(
+                      child: Container(
+                        key: keyMoments.contains(i)
+                            ? ValueKey('keyMomentEntry_$i')
+                            : null,
+                        padding: keyMoments.contains(i)
+                            ? const EdgeInsets.all(AppSpacing.sm)
+                            : EdgeInsets.zero,
+                        decoration: keyMoments.contains(i)
+                            ? BoxDecoration(
+                                color: colors.coin.withValues(alpha: 0.1),
+                                borderRadius: BorderRadius.circular(10),
+                              )
+                            : null,
+                        child: Text(
+                          commentaryFor(
+                            state.deliveries[i],
+                            strikerName: strikerPerDelivery[i],
+                          ),
+                          style: AppTypography.body.copyWith(
+                            color: colors.textPrimary,
+                          ),
+                        ),
+                      ),
+                    ),
+                    if (widget.isScorer)
+                      IconButton(
+                        key: ValueKey('editCommentaryButton_$i'),
+                        icon: const Icon(Icons.edit_outlined, size: 16),
+                        onPressed: () => _showEditCommentarySheet(
+                          context,
+                          index: i,
+                          currentText: commentaryFor(
+                            state.deliveries[i],
+                            strikerName: strikerPerDelivery[i],
+                          ),
+                        ),
+                      ),
+                  ],
                 ),
               ),
+              for (final note in notesByAnchor[i] ?? const <CommentaryNote>[])
+                _CustomNoteRow(note: note),
+            ],
           ],
         ),
         if (_showJumpToLive)
@@ -233,6 +301,154 @@ class _CommentaryTabState extends ConsumerState<_CommentaryTab> {
             ),
           ),
       ],
+    );
+  }
+
+  void _showEditCommentarySheet(
+    BuildContext context, {
+    required int index,
+    required String currentText,
+  }) {
+    showAppBottomSheet<void>(
+      context: context,
+      title: 'Edit commentary',
+      contentBuilder: (context) =>
+          _EditCommentarySheetContent(index: index, currentText: currentText),
+    );
+  }
+
+  void _showAddNoteSheet(BuildContext context) {
+    showAppBottomSheet<void>(
+      context: context,
+      title: 'Add note',
+      contentBuilder: (context) => const _AddNoteSheetContent(),
+    );
+  }
+}
+
+class _CustomNoteRow extends StatelessWidget {
+  final CommentaryNote note;
+
+  const _CustomNoteRow({required this.note});
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = Theme.of(context).extension<AppColors>()!;
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: AppSpacing.xs),
+      child: Text(
+        note.text,
+        style: AppTypography.caption.copyWith(
+          color: colors.textSecondary,
+          fontStyle: FontStyle.italic,
+        ),
+      ),
+    );
+  }
+}
+
+class _EditCommentarySheetContent extends ConsumerStatefulWidget {
+  final int index;
+  final String currentText;
+
+  const _EditCommentarySheetContent({
+    required this.index,
+    required this.currentText,
+  });
+
+  @override
+  ConsumerState<_EditCommentarySheetContent> createState() =>
+      _EditCommentarySheetContentState();
+}
+
+class _EditCommentarySheetContentState
+    extends ConsumerState<_EditCommentarySheetContent> {
+  late final _controller = TextEditingController(text: widget.currentText);
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          AppTextField(
+            key: const ValueKey('editCommentaryField'),
+            label: 'Commentary',
+            controller: _controller,
+          ),
+          const SizedBox(height: AppSpacing.lg),
+          AppButton(
+            key: const ValueKey('saveCommentaryButton'),
+            variant: AppButtonVariant.primary,
+            label: 'Save',
+            fullWidth: true,
+            onPressed: () {
+              ref
+                  .read(inningsProvider.notifier)
+                  .editCommentary(widget.index, _controller.text.trim());
+              Navigator.of(context).pop();
+            },
+          ),
+          const SizedBox(height: AppSpacing.lg),
+        ],
+      ),
+    );
+  }
+}
+
+class _AddNoteSheetContent extends ConsumerStatefulWidget {
+  const _AddNoteSheetContent();
+
+  @override
+  ConsumerState<_AddNoteSheetContent> createState() =>
+      _AddNoteSheetContentState();
+}
+
+class _AddNoteSheetContentState extends ConsumerState<_AddNoteSheetContent> {
+  final _controller = TextEditingController();
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          AppTextField(
+            key: const ValueKey('addNoteField'),
+            label: 'Note',
+            controller: _controller,
+          ),
+          const SizedBox(height: AppSpacing.lg),
+          AppButton(
+            key: const ValueKey('submitNoteButton'),
+            variant: AppButtonVariant.primary,
+            label: 'Add',
+            fullWidth: true,
+            onPressed: () {
+              final text = _controller.text.trim();
+              if (text.isEmpty) return;
+              ref.read(inningsProvider.notifier).addCustomNote(text);
+              Navigator.of(context).pop();
+            },
+          ),
+          const SizedBox(height: AppSpacing.lg),
+        ],
+      ),
     );
   }
 }
