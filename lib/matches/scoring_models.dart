@@ -55,6 +55,10 @@ const Map<DismissalType, String> dismissalTypeLabels = {
 /// rebowl off. [isManualSwap] marks the scorer's own swap-strike
 /// control -- a zero-effect marker that only flips strike, contributing
 /// no runs/balls/overs to anything.
+///
+/// [dismissedBatterName] (E4-05, "run-out sub-fields"): every other
+/// dismissal type can only ever dismiss whoever's on strike, but a
+/// run-out can dismiss either end -- null defaults to the striker.
 class Delivery {
   final String bowlerName;
   final int runs;
@@ -63,6 +67,7 @@ class Delivery {
   final bool isWicket;
   final DismissalType? dismissalType;
   final String? fielderName;
+  final String? dismissedBatterName;
   final String? newBatterName;
   final ExtraType? extraType;
   final bool isLegal;
@@ -76,6 +81,7 @@ class Delivery {
     this.isWicket = false,
     this.dismissalType,
     this.fielderName,
+    this.dismissedBatterName,
     this.newBatterName,
     this.extraType,
     this.isLegal = true,
@@ -90,6 +96,7 @@ class Delivery {
       isWicket = false,
       dismissalType = null,
       fielderName = null,
+      dismissedBatterName = null,
       newBatterName = null,
       extraType = null,
       isLegal = false,
@@ -281,8 +288,11 @@ class InningsState {
   ///   changes), regardless of the last ball's run parity.
   /// - A wicket substitutes the new batter into the dismissed batter's
   ///   crease position (same end/strike role) -- it is not itself a
-  ///   swap. Partial runs completed before a run-out aren't modeled
-  ///   (recordWicket always logs 0 runs), a deliberate simplification.
+  ///   swap. [Delivery.dismissedBatterName] says which end was actually
+  ///   out (defaults to the striker; only a run-out can name the
+  ///   non-striker instead). Partial runs completed before a run-out
+  ///   aren't modeled (recordWicket always logs 0 runs), a deliberate
+  ///   simplification.
   /// - [Delivery.isManualSwap] (the scorer's own swap-strike button)
   ///   always swaps, independent of runs/over-boundary.
   ({String striker, String nonStriker, Map<String, BatterInnings> stats})
@@ -309,11 +319,20 @@ class InningsState {
         balls: current.balls + (d.isLegal ? 1 : 0),
       );
       if (d.isWicket) {
-        stats[striker] = stats[striker]!.copyWith(
+        final dismissed = d.dismissedBatterName ?? striker;
+        final dismissedCurrent =
+            stats[dismissed] ?? BatterInnings(name: dismissed);
+        stats[dismissed] = dismissedCurrent.copyWith(
           isOut: true,
           dismissalType: d.dismissalType,
         );
-        if (d.newBatterName != null) striker = d.newBatterName!;
+        if (d.newBatterName != null) {
+          if (dismissed == striker) {
+            striker = d.newBatterName!;
+          } else {
+            nonStriker = d.newBatterName!;
+          }
+        }
       } else if (d.ranRuns.isOdd) {
         swap();
       }
