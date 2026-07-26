@@ -16,6 +16,7 @@ import '../../teams/team_invite_models.dart';
 import '../../teams/team_invite_sheet.dart';
 import '../../teams/team_models.dart';
 import 'avatar_screen.dart';
+import 'members_roles_demo.dart';
 import 'team_home_demo.dart';
 import 'nearby_matches_preview_screen.dart';
 import 'onboarding_checklist_screen.dart';
@@ -451,6 +452,15 @@ class DebugMenuScreen extends StatelessWidget {
                 ),
               ),
             ),
+          ),
+          ListTile(
+            title: const Text('Roles & permission matrix'),
+            subtitle: const Text(
+              'E3-04 — roster change-role/remove, read-only matrix + owner toggles',
+            ),
+            onTap: () => Navigator.of(
+              context,
+            ).push(MaterialPageRoute(builder: (_) => const MembersRolesDemo())),
           ),
           ListTile(
             title: const Text('Guest mode preview'),
