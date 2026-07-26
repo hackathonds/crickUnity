@@ -21,6 +21,7 @@ import 'avatar_screen.dart';
 import 'members_roles_demo.dart';
 import '../../teams/selection_board_screen.dart';
 import '../../teams/carpool_screen.dart';
+import '../../teams/duty_roster_screen.dart';
 import 'jersey_board_demo.dart';
 import 'practice_session_demo.dart';
 import 'team_home_demo.dart';
@@ -523,6 +524,18 @@ class DebugMenuScreen extends StatelessWidget {
             onTap: () => Navigator.of(context).push(
               MaterialPageRoute(
                 builder: (_) => const CarpoolScreen(viewerName: 'Priya Nair'),
+              ),
+            ),
+          ),
+          ListTile(
+            title: const Text('Duty roster'),
+            subtitle: const Text(
+              'E3-10 (2/4) — claim/unclaim slots, Volunteer coins/XP',
+            ),
+            onTap: () => Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (_) =>
+                    const DutyRosterScreen(viewerName: 'Priya Nair'),
               ),
             ),
           ),
