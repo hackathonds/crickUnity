@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../guest/guest_live_match_preview_screen.dart';
 import '../../onboarding/onboarding_flow.dart';
+import '../../profile/edit_profile_screen.dart';
 import 'avatar_screen.dart';
 import 'nearby_matches_preview_screen.dart';
 import 'onboarding_checklist_screen.dart';
@@ -338,6 +339,15 @@ class DebugMenuScreen extends StatelessWidget {
             ),
             onTap: () => Navigator.of(context).push(
               MaterialPageRoute(builder: (_) => const ProfileScreenDemo()),
+            ),
+          ),
+          ListTile(
+            title: const Text('Edit profile'),
+            subtitle: const Text(
+              'E2-02 — grouped form, name-change 2/yr limit, dirty-leave guard',
+            ),
+            onTap: () => Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => const EditProfileScreen()),
             ),
           ),
           ListTile(
