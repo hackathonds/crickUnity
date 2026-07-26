@@ -11,6 +11,7 @@ import '../../profile/profile_models.dart';
 import '../../teams/create_team_flow.dart';
 import '../../teams/edit_team_screen.dart';
 import 'avatar_screen.dart';
+import 'team_home_demo.dart';
 import 'nearby_matches_preview_screen.dart';
 import 'onboarding_checklist_screen.dart';
 import 'profile_screen_demo.dart';
@@ -402,6 +403,15 @@ class DebugMenuScreen extends StatelessWidget {
             onTap: () => Navigator.of(
               context,
             ).push(MaterialPageRoute(builder: (_) => const EditTeamScreen())),
+          ),
+          ListTile(
+            title: const Text('Team home'),
+            subtitle: const Text(
+              'E3-02 — role-gated tabs (hidden not disabled), archived banner',
+            ),
+            onTap: () => Navigator.of(
+              context,
+            ).push(MaterialPageRoute(builder: (_) => const TeamHomeDemo())),
           ),
           ListTile(
             title: const Text('Guest mode preview'),
