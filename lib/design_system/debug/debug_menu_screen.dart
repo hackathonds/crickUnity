@@ -12,6 +12,7 @@ import '../../matches/scorecard_screen.dart';
 import '../../matches/scoring_models.dart';
 import '../../matches/live_scoring_console_screen.dart';
 import '../../matches/live_match_view_screen.dart';
+import '../../matches/post_match_summary_screen.dart';
 import '../../matches/scoring_provider.dart';
 import '../../matches/matches_provider.dart';
 import '../../matches/toss_screen.dart';
@@ -943,6 +944,29 @@ class DebugMenuScreen extends StatelessWidget {
             onTap: () => Navigator.of(context).push(
               MaterialPageRoute(builder: (_) => const LiveMatchViewScreen()),
             ),
+          ),
+          ListTile(
+            title: const Text('Post-match summary'),
+            subtitle: const Text(
+              'E4-12 — result hero, MVP, XP/coins, expense, ratings, insights',
+            ),
+            onTap: () {
+              final container = ProviderScope.containerOf(
+                context,
+                listen: false,
+              );
+              final notifier = container.read(inningsProvider.notifier);
+              notifier.confirmScorecard(ConfirmerRole.composerCaptain);
+              notifier.confirmScorecard(ConfirmerRole.opponentCaptain);
+              notifier.confirmScorecard(ConfirmerRole.scorer);
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (_) => const PostMatchSummaryScreen(
+                    viewerPlayerName: 'Rohan Verma',
+                  ),
+                ),
+              );
+            },
           ),
           ListTile(
             title: const Text('Field map tool (captain)'),
