@@ -273,6 +273,61 @@ class MatchesNotifier extends Notifier<MatchesState> {
       ],
     );
   }
+
+  /// PRD §7.24: "Private match: link-holders must be approved." A guest
+  /// who opens a private match's link lands here first -- no-op if
+  /// already approved or already pending, so re-opening the link twice
+  /// doesn't duplicate the request.
+  void requestViewerAccess(String matchId, String viewerName) {
+    state = state.copyWith(
+      matches: [
+        for (final m in state.matches)
+          if (m.id == matchId &&
+              !m.approvedViewerNames.contains(viewerName) &&
+              !m.pendingViewerRequests.contains(viewerName))
+            m.copyWith(
+              pendingViewerRequests: [...m.pendingViewerRequests, viewerName],
+            )
+          else
+            m,
+      ],
+    );
+  }
+
+  void approveViewerAccess(String matchId, String viewerName) {
+    state = state.copyWith(
+      matches: [
+        for (final m in state.matches)
+          if (m.id == matchId)
+            m.copyWith(
+              pendingViewerRequests: [
+                for (final n in m.pendingViewerRequests)
+                  if (n != viewerName) n,
+              ],
+              approvedViewerNames: [...m.approvedViewerNames, viewerName],
+            )
+          else
+            m,
+      ],
+    );
+  }
+
+  void denyViewerAccess(String matchId, String viewerName) {
+    state = state.copyWith(
+      matches: [
+        for (final m in state.matches)
+          if (m.id == matchId)
+            m.copyWith(
+              pendingViewerRequests: [
+                for (final n in m.pendingViewerRequests)
+                  if (n != viewerName) n,
+              ],
+            )
+          else
+            m,
+      ],
+    );
+  }
 }
 
 bool _defaultCoinPick() => Random().nextBool();
