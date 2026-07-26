@@ -26,6 +26,7 @@ import '../../teams/kit_inventory_screen.dart';
 import '../../teams/recruitment_board_screen.dart';
 import '../../teams/season_summary_models.dart';
 import '../../teams/season_summary_screen.dart';
+import '../../teams/succession_screen.dart';
 import '../../teams/team_documents_screen.dart';
 import '../../teams/team_member_models.dart';
 import '../../teams/transfer_screen.dart';
@@ -664,6 +665,28 @@ class DebugMenuScreen extends StatelessWidget {
                   playerName: 'Karan Bhatt',
                   fromTeamName: 'Riverside Strikers',
                 ),
+              ),
+            ),
+          ),
+          ListTile(
+            title: const Text('Captaincy & ownership (as Captain/Owner)'),
+            subtitle: const Text(
+              'E3-15 — VC auto-elevation, ownership transfer, petitions',
+            ),
+            onTap: () => Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (_) =>
+                    const SuccessionScreen(viewerName: 'Rohan Kapoor'),
+              ),
+            ),
+          ),
+          ListTile(
+            title: const Text('Captaincy & ownership (as VC)'),
+            subtitle: const Text('E3-15 — viewer is Vice-Captain'),
+            onTap: () => Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (_) =>
+                    const SuccessionScreen(viewerName: 'Kabir Singh'),
               ),
             ),
           ),
