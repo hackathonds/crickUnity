@@ -49,6 +49,7 @@ class ProfileScreen extends StatefulWidget {
   final VoidCallback? onRequestFollow;
   final VoidCallback? onOpenMenu;
   final ValueChanged<List<String>>? onStyleTagsChanged;
+  final VoidCallback? onOpenAchievements;
 
   const ProfileScreen({
     super.key,
@@ -63,6 +64,7 @@ class ProfileScreen extends StatefulWidget {
     this.onRequestFollow,
     this.onOpenMenu,
     this.onStyleTagsChanged,
+    this.onOpenAchievements,
   });
 
   @override
@@ -177,6 +179,17 @@ class _ProfileScreenState extends State<ProfileScreen> {
                               ),
                               const SizedBox(width: AppSpacing.sm),
                             ],
+                            const Spacer(),
+                            GestureDetector(
+                              key: const ValueKey('profileSeeAllBadges'),
+                              onTap: widget.onOpenAchievements,
+                              child: Text(
+                                'See all',
+                                style: AppTypography.button.copyWith(
+                                  color: colors.textSecondary,
+                                ),
+                              ),
+                            ),
                           ],
                         ),
                       ],

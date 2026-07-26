@@ -221,6 +221,26 @@ void main() {
     }
   });
 
+  testWidgets('tapping "See all" next to the badge strip opens achievements', (
+    tester,
+  ) async {
+    var opened = false;
+    await tester.pumpWidget(
+      harness(
+        ProfileScreen(
+          profile: profileWith(),
+          relation: ViewerRelation.self,
+          onOpenAchievements: () => opened = true,
+        ),
+      ),
+    );
+
+    await tester.tap(find.byKey(const ValueKey('profileSeeAllBadges')));
+    await tester.pump();
+
+    expect(opened, isTrue);
+  });
+
   testWidgets('tapping a tab switches the tab content', (tester) async {
     // Unpinned slivers past the pinned stat header aren't laid out (so
     // never even mount) if they fall outside the viewport's cache extent

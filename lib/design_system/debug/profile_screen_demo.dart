@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../../profile/achievement_models.dart';
+import '../../profile/achievements_wall_screen.dart';
 import '../../profile/edit_profile_screen.dart';
 import '../../profile/profile_models.dart';
 import '../../profile/profile_screen.dart';
@@ -68,6 +70,12 @@ class _ProfileScreenDemoState extends State<ProfileScreenDemo> {
         onEdit: () => Navigator.of(
           context,
         ).push(MaterialPageRoute(builder: (_) => const EditProfileScreen())),
+        onOpenAchievements: () => Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (_) =>
+                AchievementsWallScreen(badges: mockAchievementBadges()),
+          ),
+        ),
       ),
     );
   }
