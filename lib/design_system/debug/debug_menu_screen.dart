@@ -7,6 +7,7 @@ import '../../matches/match_detail_screen.dart';
 import '../../matches/match_models.dart';
 import '../../matches/match_opponent_decision_screen.dart';
 import '../../matches/match_proposal_review_screen.dart';
+import '../../matches/live_scoring_console_screen.dart';
 import '../../matches/matches_provider.dart';
 import '../../matches/toss_screen.dart';
 import '../../onboarding/onboarding_flow.dart';
@@ -899,6 +900,17 @@ class DebugMenuScreen extends StatelessWidget {
                 MaterialPageRoute(builder: (_) => TossScreen(matchId: id)),
               );
             },
+          ),
+          ListTile(
+            title: const Text('Live scoring console (1/4: Pad)'),
+            subtitle: const Text(
+              'E4-04 (1/4) — run buttons, WICKET + dismissal sheet, undo',
+            ),
+            onTap: () => Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (_) => const LiveScoringConsoleScreen(),
+              ),
+            ),
           ),
           ListTile(
             title: const Text('Guest mode preview'),
