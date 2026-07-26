@@ -3,11 +3,18 @@ import 'package:cricunity/design_system/theme/app_theme.dart';
 import 'package:cricunity/profile/profile_models.dart';
 import 'package:cricunity/profile/profile_screen.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
-  Widget harness(Widget child) =>
-      MaterialApp(theme: AppTheme.themes[AppTheme.defaultLight], home: child);
+  // ProviderScope: the self-view ⋮ menu opens a Riverpod-backed
+  // Availability sheet (E2-08).
+  Widget harness(Widget child) => ProviderScope(
+    child: MaterialApp(
+      theme: AppTheme.themes[AppTheme.defaultLight],
+      home: child,
+    ),
+  );
 
   PlayerProfile profileWith({
     bool isMinor = false,
@@ -285,4 +292,30 @@ void main() {
       findsNothing,
     );
   });
+
+  testWidgets(
+    'self sees a profile-menu (⋮) that opens the Availability sheet',
+    (tester) async {
+      await tester.pumpWidget(
+        harness(
+          ProfileScreen(profile: profileWith(), relation: ViewerRelation.self),
+        ),
+      );
+
+      expect(
+        find.byKey(const ValueKey('profileSelfMenuButton')),
+        findsOneWidget,
+      );
+
+      await tester.tap(find.byKey(const ValueKey('profileSelfMenuButton')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Availability'));
+      await tester.pumpAndSettle();
+
+      expect(
+        find.byKey(const ValueKey('availabilityOption_available')),
+        findsOneWidget,
+      );
+    },
+  );
 }

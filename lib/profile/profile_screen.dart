@@ -14,6 +14,7 @@ import 'profile_blocked_view.dart';
 import 'profile_locked_card.dart';
 import 'profile_models.dart';
 import 'profile_overview_tab.dart';
+import 'profile_self_menu_sheet.dart';
 
 const List<String> _profileTabLabels = [
   'Overview',
@@ -348,6 +349,15 @@ class _ProfileActionRow extends StatelessWidget {
             icon: AppIconId.qrCode,
             semanticLabel: 'Show QR code',
             onPressed: onShowQrCode,
+          ),
+          const SizedBox(width: AppSpacing.sm),
+          // No AppIconId fits a generic overflow glyph -- same raw
+          // Material fallback already used for the other-viewer ⋮ below.
+          IconButton(
+            key: const ValueKey('profileSelfMenuButton'),
+            icon: const Icon(Icons.more_vert),
+            tooltip: 'More',
+            onPressed: () => showProfileSelfMenuSheet(context: context),
           ),
         ],
       );

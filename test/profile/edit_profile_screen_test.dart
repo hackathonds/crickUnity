@@ -133,4 +133,38 @@ void main() {
     final container = ProviderScope.containerOf(context);
     expect(container.read(editProfileProvider).isDirty, isTrue);
   });
+
+  testWidgets('the Titles row shows "None equipped" by default and opens the '
+      'picker sheet on tap', (tester) async {
+    await tester.pumpWidget(harness());
+
+    expect(find.text('None equipped'), findsOneWidget);
+
+    await tester.tap(find.byKey(const ValueKey('editProfileTitlesRow')));
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const ValueKey('titleOption_none')), findsOneWidget);
+  });
+
+  testWidgets('equipping a title updates the Titles row without a Save', (
+    tester,
+  ) async {
+    await tester.pumpWidget(harness());
+
+    await tester.tap(find.byKey(const ValueKey('editProfileTitlesRow')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('titleOption_Iron Player')));
+    await tester.pumpAndSettle();
+    await tester.tapAt(const Offset(20, 20)); // dismiss the sheet
+    await tester.pumpAndSettle();
+
+    expect(
+      find.descendant(
+        of: find.byKey(const ValueKey('editProfileTitlesRow')),
+        matching: find.text('Iron Player'),
+      ),
+      findsOneWidget,
+    );
+    expect(find.byKey(const ValueKey('editProfileSaveButton')), findsNothing);
+  });
 }
