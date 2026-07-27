@@ -135,6 +135,8 @@ import '../../analytics/custom_stats_explorer_screen.dart';
 import '../../analytics/entity_analytics_screen.dart';
 import '../../analytics/player_analytics_screen.dart';
 import '../../analytics/team_captain_analytics_screen.dart';
+import '../../officials/gig_board_models.dart' show OfficialRole;
+import '../../officials/gig_board_screen.dart';
 import 'chart_gallery_screen.dart';
 import 'chart_shell_screen.dart';
 import 'comment_widget_screen.dart';
@@ -460,6 +462,27 @@ class DebugMenuScreen extends StatelessWidget {
             ),
             onTap: () => Navigator.of(context).push(
               MaterialPageRoute(builder: (_) => const EntityAnalyticsScreen()),
+            ),
+          ),
+          ListTile(
+            title: const Text('Gig board (scorer)'),
+            subtitle: const Text(
+              'E14-01 — distance/fee/date filters, gig cards, accept -> '
+              'calendar add',
+            ),
+            onTap: () => Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (_) => const GigBoardScreen(role: OfficialRole.scorer),
+              ),
+            ),
+          ),
+          ListTile(
+            title: const Text('Gig board (umpire)'),
+            subtitle: const Text('E14-01 — same board, umpire-scoped gigs'),
+            onTap: () => Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (_) => const GigBoardScreen(role: OfficialRole.umpire),
+              ),
             ),
           ),
           ListTile(
