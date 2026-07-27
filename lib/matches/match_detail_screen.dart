@@ -45,8 +45,10 @@ class MatchDetailScreen extends ConsumerWidget {
 
     // PRD §2.6: resolve who's actually scoring -- "self" means the
     // viewer of this screen (assumed to be the composer captain when
-    // isCaptain is true); "hire from Gig Board" has no name to resolve
-    // since E14-01 doesn't exist, so it can never trigger this check.
+    // isCaptain is true); "hire from Gig Board" still has no name to
+    // resolve -- E14-01's Gig Board now exists, but nothing binds an
+    // accepted gig back to this match's scorer field yet, so this
+    // case can still never trigger the self-scoring check.
     final resolvedScorerName = switch (draft.scorerAssignment) {
       ScorerAssignment.self => viewerName,
       ScorerAssignment.member => draft.scorerMemberName,
