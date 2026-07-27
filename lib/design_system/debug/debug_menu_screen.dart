@@ -131,6 +131,7 @@ import 'profile_screen_demo.dart';
 import 'badge_tile_screen.dart';
 import 'buttons_screen.dart';
 import 'card_screen.dart';
+import '../../analytics/custom_stats_explorer_screen.dart';
 import '../../analytics/player_analytics_screen.dart';
 import '../../analytics/team_captain_analytics_screen.dart';
 import 'chart_gallery_screen.dart';
@@ -435,6 +436,18 @@ class DebugMenuScreen extends StatelessWidget {
             onTap: () => Navigator.of(context).push(
               MaterialPageRoute(
                 builder: (_) => const TeamCaptainAnalyticsScreen(),
+              ),
+            ),
+          ),
+          ListTile(
+            title: const Text('Custom Stats Explorer'),
+            subtitle: const Text(
+              'E13-04 — query builder, qualification stepper, sortable '
+              'results table, save/pin-as-widget',
+            ),
+            onTap: () => Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (_) => const CustomStatsExplorerScreen(),
               ),
             ),
           ),
