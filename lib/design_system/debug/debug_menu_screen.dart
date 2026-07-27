@@ -16,6 +16,7 @@ import '../../expenses/reports_screen.dart';
 import '../../expenses/settle_up_screen.dart';
 import '../../expenses/treasury_screen.dart';
 import '../../expenses/wallet_payouts_provider.dart';
+import '../../grounds/grounds_discovery_screen.dart';
 import '../../guest/guest_live_match_preview_screen.dart';
 import '../../matches/awards_screen.dart';
 import '../../matches/create_match_flow.dart';
@@ -1841,6 +1842,15 @@ class DebugMenuScreen extends StatelessWidget {
             ),
             onTap: () => Navigator.of(context).push(
               MaterialPageRoute(builder: (_) => const ProgressRingsScreen()),
+            ),
+          ),
+          ListTile(
+            title: const Text('Grounds discovery'),
+            subtitle: const Text(
+              'E9-01 — Search, facility/pitch filters, map-view fallback',
+            ),
+            onTap: () => Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => const GroundsDiscoveryScreen()),
             ),
           ),
           ListTile(
