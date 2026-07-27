@@ -52,6 +52,16 @@ const Map<BoundaryBadge, String> boundaryBadgeLabels = {
   BoundaryBadge.small: 'Small ground',
 };
 
+/// PRD §10.3: "facets (pitch, facilities, staff, value)."
+enum ReviewFacet { pitch, facilities, staff, value }
+
+const Map<ReviewFacet, String> reviewFacetLabels = {
+  ReviewFacet.pitch: 'Pitch',
+  ReviewFacet.facilities: 'Facilities',
+  ReviewFacet.staff: 'Staff',
+  ReviewFacet.value: 'Value',
+};
+
 /// No real geolocation/maps package exists in pubspec.yaml -- distance
 /// is a mock number, same flagged gap as recognition/
 /// grounds_heatmap_screen.dart (E8-04).
@@ -72,6 +82,22 @@ class Ground {
   final String cancellationPolicyNote;
   final double rating;
   final double distanceKm;
+  final Map<ReviewFacet, double> facetRatings;
+
+  /// Backlog cites "par-score stats" for E9-02 (PRD §19.8, which does not
+  /// exist -- §19 Analytics has no numbered subsections at all, confirmed
+  /// by grepping every `^# 19` heading; only §19's flat bullet list is
+  /// real, and it names no ground-level par-score metric). No per-ground
+  /// match-log aggregation pipeline exists to derive a genuine average
+  /// first-innings total, so this is a mocked number on the model, same
+  /// flagged-mock convention as [distanceKm].
+  final int parScoreFirstInnings;
+
+  /// PRD §20 screen-list item 50 names a "fully-booked state" for this
+  /// profile. Real availability comes from the booking calendar (E9-03,
+  /// not yet built), so this is a mocked flag standing in until that
+  /// calendar exists.
+  final bool isFullyBookedToday;
 
   const Ground({
     required this.id,
@@ -90,6 +116,9 @@ class Ground {
     required this.cancellationPolicyNote,
     this.rating = 0,
     this.distanceKm = 0,
+    this.facetRatings = const {},
+    this.parScoreFirstInnings = 0,
+    this.isFullyBookedToday = false,
   });
 
   BoundaryBadge get boundaryBadge => boundaryBadgeFor(boundaryMeters);

@@ -16,6 +16,7 @@ import '../../expenses/reports_screen.dart';
 import '../../expenses/settle_up_screen.dart';
 import '../../expenses/treasury_screen.dart';
 import '../../expenses/wallet_payouts_provider.dart';
+import '../../grounds/ground_profile_screen.dart';
 import '../../grounds/grounds_discovery_screen.dart';
 import '../../guest/guest_live_match_preview_screen.dart';
 import '../../matches/awards_screen.dart';
@@ -1851,6 +1852,18 @@ class DebugMenuScreen extends StatelessWidget {
             ),
             onTap: () => Navigator.of(context).push(
               MaterialPageRoute(builder: (_) => const GroundsDiscoveryScreen()),
+            ),
+          ),
+          ListTile(
+            title: const Text('Ground profile (sample)'),
+            subtitle: const Text(
+              'E9-02 — Facilities/pitch/boundary/records shelf/par-score, follow',
+            ),
+            onTap: () => Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (_) =>
+                    const GroundProfileScreen(groundId: 'ground-green-valley'),
+              ),
             ),
           ),
           ListTile(
