@@ -19,6 +19,7 @@ import '../../expenses/wallet_payouts_provider.dart';
 import '../../grounds/booking_flow_screen.dart';
 import '../../grounds/ground_profile_screen.dart';
 import '../../grounds/grounds_discovery_screen.dart';
+import '../../grounds/caretaker_mode_screen.dart';
 import '../../grounds/owner_console_screen.dart';
 import '../../grounds/review_composer_screen.dart';
 import '../../guest/guest_live_match_preview_screen.dart';
@@ -1878,6 +1879,18 @@ class DebugMenuScreen extends StatelessWidget {
               MaterialPageRoute(
                 builder: (_) =>
                     const ReviewComposerScreen(groundId: 'ground-green-valley'),
+              ),
+            ),
+          ),
+          ListTile(
+            title: const Text('Caretaker check-in (sample)'),
+            subtitle: const Text(
+              'E9-06 — Single-purpose today\'s bookings: check-in / no-show',
+            ),
+            onTap: () => Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (_) =>
+                    const CaretakerModeScreen(groundId: 'ground-green-valley'),
               ),
             ),
           ),

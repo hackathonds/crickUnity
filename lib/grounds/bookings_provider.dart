@@ -17,22 +17,27 @@ class BookingsState {
 /// top-of-file note on the exact hold/grace/penalty windows this cites.
 class BookingsNotifier extends Notifier<BookingsState> {
   @override
-  BookingsState build() => BookingsState(bookings: _seedCompletedBooking());
+  BookingsState build() => BookingsState(bookings: _seedBookings());
 
   /// E9-04 (Reviews) needs a genuinely completed stay to exercise the
-  /// verified-booker gate against -- one seeded past booking (no
-  /// per-user renter field exists on Booking; same single-account
-  /// convention as composerViewerName elsewhere) rather than a review
-  /// model that trusts an unchecked flag.
-  static List<Booking> _seedCompletedBooking() {
-    final slotStart = DateTime.now().subtract(const Duration(days: 10));
+  /// verified-booker gate against, and E9-06 (Caretaker mode) needs a
+  /// genuine "today, past grace, not checked in" booking to exercise
+  /// check-in/no-show against -- two seeded bookings (no per-user
+  /// renter field exists on Booking; same single-account convention as
+  /// composerViewerName elsewhere) rather than screens that trust an
+  /// unchecked flag.
+  static List<Booking> _seedBookings() {
+    final completedSlotStart = DateTime.now().subtract(
+      const Duration(days: 10),
+    );
+    final todaySlotStart = DateTime.now().subtract(const Duration(hours: 1));
     return [
       Booking(
         id: 'booking-seed-completed',
         groundId: 'ground-green-valley',
         groundName: 'Green Valley Ground',
-        slotStart: slotStart,
-        slotEnd: slotStart.add(const Duration(hours: 1)),
+        slotStart: completedSlotStart,
+        slotEnd: completedSlotStart.add(const Duration(hours: 1)),
         partySize: 11,
         purpose: BookingPurpose.match,
         priceQuote: 800,
@@ -40,7 +45,22 @@ class BookingsNotifier extends Notifier<BookingsState> {
         status: BookingStatus.completed,
         policyAcknowledged: true,
         qrCode: 'QR-ground-green-valley-seed',
-        createdAt: slotStart.subtract(const Duration(days: 2)),
+        createdAt: completedSlotStart.subtract(const Duration(days: 2)),
+      ),
+      Booking(
+        id: 'booking-seed-today',
+        groundId: 'ground-green-valley',
+        groundName: 'Green Valley Ground',
+        slotStart: todaySlotStart,
+        slotEnd: todaySlotStart.add(const Duration(hours: 1)),
+        partySize: 9,
+        purpose: BookingPurpose.practice,
+        priceQuote: 800,
+        depositAmount: 160,
+        status: BookingStatus.confirmed,
+        policyAcknowledged: true,
+        qrCode: 'QR-ground-green-valley-today',
+        createdAt: todaySlotStart.subtract(const Duration(days: 1)),
       ),
     ];
   }
@@ -174,10 +194,42 @@ class BookingsNotifier extends Notifier<BookingsState> {
   /// score model exists for teams in this module yet -- the deposit
   /// forfeiture is applied; the team-reliability note is flagged as a
   /// future cross-module hook (Trust score lives in the Team module).
-  void markNoShow(String bookingId, {DateTime Function() now = DateTime.now}) {
+  void markNoShow(
+    String bookingId, {
+    String? reason,
+    DateTime Function() now = DateTime.now,
+  }) {
     final booking = state.bookings.where((b) => b.id == bookingId).firstOrNull;
     if (booking == null || !booking.noShowEligible(now())) return;
-    _update(bookingId, (b) => b.copyWith(status: BookingStatus.noShow));
+    _update(
+      bookingId,
+      (b) => b.copyWith(status: BookingStatus.noShow, noShowReason: reason),
+    );
+  }
+
+  /// DS §11.17 Caretaker mode: "[Check in] scan button per row." No
+  /// camera/QR package exists (flagged) -- records a real timestamp.
+  void checkIn(String bookingId, {DateTime Function() now = DateTime.now}) {
+    final booking = state.bookings.where((b) => b.id == bookingId).firstOrNull;
+    if (booking == null || !booking.isActive || booking.checkedIn) return;
+    _update(bookingId, (b) => b.copyWith(checkedIn: true, checkedInAt: now()));
+  }
+
+  List<Booking> todaysBookingsFor(
+    String groundId, {
+    DateTime Function() now = DateTime.now,
+  }) {
+    final today = now();
+    return state.bookings
+        .where(
+          (b) =>
+              b.groundId == groundId &&
+              b.isActive &&
+              b.slotStart.year == today.year &&
+              b.slotStart.month == today.month &&
+              b.slotStart.day == today.day,
+        )
+        .toList();
   }
 
   /// Transitions confirmed/rescheduled bookings whose slot has fully
