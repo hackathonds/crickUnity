@@ -145,6 +145,7 @@ import '../../guardian/guardian_view_screen.dart';
 import '../../medical/captain_medical_view_screen.dart';
 import '../../medical/injury_log_screen.dart';
 import '../../medical/medical_card_screen.dart';
+import '../../settings/data_controls_screen.dart';
 import '../../verification/verification_screen.dart';
 import '../../marketplace/shops_directory_screen.dart';
 import '../../sponsors/sponsor_console_screen.dart';
@@ -672,6 +673,16 @@ class DebugMenuScreen extends StatelessWidget {
                   teamName: 'Strikers CC',
                 ),
               ),
+            ),
+          ),
+          ListTile(
+            title: const Text('Data controls'),
+            subtitle: const Text(
+              'E16-06 — export data summary, deactivate, delete (30-day '
+              'grace)',
+            ),
+            onTap: () => Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => const DataControlsScreen()),
             ),
           ),
           ListTile(
