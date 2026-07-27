@@ -140,6 +140,7 @@ import '../../officials/knowledge_hub_screen.dart';
 import '../../streaming/go_live_screen.dart';
 import '../../discover/discover_screen.dart';
 import '../../marketplace/gear_exchange_screen.dart';
+import '../../privacy/privacy_center_screen.dart';
 import '../../marketplace/shops_directory_screen.dart';
 import '../../sponsors/sponsor_console_screen.dart';
 import '../../streaming/production_kit_screen.dart';
@@ -592,6 +593,16 @@ class DebugMenuScreen extends StatelessWidget {
             ),
             onTap: () => Navigator.of(context).push(
               MaterialPageRoute(builder: (_) => const ShopsDirectoryScreen()),
+            ),
+          ),
+          ListTile(
+            title: const Text('Privacy center'),
+            subtitle: const Text(
+              'E16-01 — per-surface audience dials, preview-as, '
+              'reciprocity + minor-stricter-defaults, ranked-stats rule',
+            ),
+            onTap: () => Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => const PrivacyCenterScreen()),
             ),
           ),
           ListTile(
