@@ -20,6 +20,7 @@ import '../../grounds/booking_flow_screen.dart';
 import '../../grounds/ground_profile_screen.dart';
 import '../../grounds/grounds_discovery_screen.dart';
 import '../../grounds/caretaker_mode_screen.dart';
+import '../../tournaments/tournament_creation_wizard_screen.dart';
 import '../../grounds/owner_console_screen.dart';
 import '../../grounds/review_composer_screen.dart';
 import '../../guest/guest_live_match_preview_screen.dart';
@@ -1879,6 +1880,17 @@ class DebugMenuScreen extends StatelessWidget {
               MaterialPageRoute(
                 builder: (_) =>
                     const ReviewComposerScreen(groundId: 'ground-green-valley'),
+              ),
+            ),
+          ),
+          ListTile(
+            title: const Text('Create tournament (wizard)'),
+            subtitle: const Text(
+              'E10-01 — Identity/format/rules/money/registration/publish',
+            ),
+            onTap: () => Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (_) => const TournamentCreationWizardScreen(),
               ),
             ),
           ),
