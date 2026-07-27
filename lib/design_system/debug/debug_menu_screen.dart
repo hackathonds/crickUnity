@@ -36,6 +36,9 @@ import '../../matches/scoring_provider.dart';
 import '../../matches/matches_provider.dart';
 import '../../matches/toss_screen.dart';
 import '../../onboarding/onboarding_flow.dart';
+import '../../rewards/missions_board_screen.dart';
+import '../../rewards/missions_models.dart';
+import '../../rewards/missions_provider.dart';
 import '../../rewards/rewards_summary_screen.dart';
 import '../../rewards/streaks_summary_screen.dart';
 import '../../profile/achievement_models.dart';
@@ -1532,6 +1535,25 @@ class DebugMenuScreen extends StatelessWidget {
             onTap: () => Navigator.of(context).push(
               MaterialPageRoute(builder: (_) => const StreaksSummaryScreen()),
             ),
+          ),
+          ListTile(
+            title: const Text('Missions board'),
+            subtitle: const Text(
+              'E6-03 — Daily/Weekly/Monthly/Epic tabs, claim states, Season Planner',
+            ),
+            onTap: () {
+              final container = ProviderScope.containerOf(
+                context,
+                listen: false,
+              );
+              final notifier = container.read(missionsProvider.notifier);
+              notifier.ensureCurrentPeriod();
+              notifier.recordAction(MissionActionType.scoreRuns, amount: 30);
+              notifier.recordAction(MissionActionType.takeWicket);
+              Navigator.of(context).push(
+                MaterialPageRoute(builder: (_) => const MissionsBoardScreen()),
+              );
+            },
           ),
           ListTile(
             title: const Text('Field map tool (captain)'),
