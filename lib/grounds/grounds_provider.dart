@@ -38,10 +38,12 @@ class GroundsFilter {
 class GroundsState {
   final List<Ground> grounds;
   final GroundsFilter filter;
+  final Set<String> followedGroundIds;
 
   const GroundsState({
     this.grounds = const [],
     this.filter = const GroundsFilter(),
+    this.followedGroundIds = const {},
   });
 
   List<Ground> get filtered {
@@ -76,10 +78,15 @@ class GroundsState {
     return null;
   }
 
-  GroundsState copyWith({List<Ground>? grounds, GroundsFilter? filter}) {
+  GroundsState copyWith({
+    List<Ground>? grounds,
+    GroundsFilter? filter,
+    Set<String>? followedGroundIds,
+  }) {
     return GroundsState(
       grounds: grounds ?? this.grounds,
       filter: filter ?? this.filter,
+      followedGroundIds: followedGroundIds ?? this.followedGroundIds,
     );
   }
 }
@@ -115,6 +122,13 @@ class GroundsNotifier extends Notifier<GroundsState> {
       cancellationPolicyNote: 'Free cancellation up to 24h before.',
       rating: 4.6,
       distanceKm: 3.2,
+      facetRatings: {
+        ReviewFacet.pitch: 4.7,
+        ReviewFacet.facilities: 4.5,
+        ReviewFacet.staff: 4.4,
+        ReviewFacet.value: 4.2,
+      },
+      parScoreFirstInnings: 168,
     ),
     Ground(
       id: 'ground-riverside-oval',
@@ -137,6 +151,13 @@ class GroundsNotifier extends Notifier<GroundsState> {
       cancellationPolicyNote: '50% refund within 12h.',
       rating: 3.9,
       distanceKm: 6.8,
+      facetRatings: {
+        ReviewFacet.pitch: 3.5,
+        ReviewFacet.facilities: 3.2,
+        ReviewFacet.staff: 4.0,
+        ReviewFacet.value: 4.3,
+      },
+      parScoreFirstInnings: 132,
     ),
     Ground(
       id: 'ground-city-stadium',
@@ -163,6 +184,14 @@ class GroundsNotifier extends Notifier<GroundsState> {
       cancellationPolicyNote: 'Free cancellation up to 48h before.',
       rating: 4.8,
       distanceKm: 400.0,
+      facetRatings: {
+        ReviewFacet.pitch: 4.9,
+        ReviewFacet.facilities: 4.9,
+        ReviewFacet.staff: 4.7,
+        ReviewFacet.value: 4.1,
+      },
+      parScoreFirstInnings: 192,
+      isFullyBookedToday: true,
     ),
   ];
 
@@ -203,6 +232,20 @@ class GroundsNotifier extends Notifier<GroundsState> {
 
   void clearFilters() {
     state = state.copyWith(filter: const GroundsFilter());
+  }
+
+  /// PRD §10.4: "Follow a ground -> new-slot alerts, price-drop alerts,
+  /// records news." The alert-catalog rows themselves are a later
+  /// backlog addendum for E12-05 (Notification Center config) -- this
+  /// story only owns the follow relationship itself.
+  void toggleFollow(String groundId) {
+    final current = {...state.followedGroundIds};
+    if (current.contains(groundId)) {
+      current.remove(groundId);
+    } else {
+      current.add(groundId);
+    }
+    state = state.copyWith(followedGroundIds: current);
   }
 }
 
