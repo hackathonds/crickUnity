@@ -23,6 +23,7 @@ import 'post_detail_screen.dart';
 import 'recently_deleted_posts_screen.dart';
 import 'reels_screen.dart';
 import 'rich_text_content.dart';
+import 'saved_provider.dart';
 import 'stories_bar.dart';
 
 enum _FeedMode { forYou, latest }
@@ -428,6 +429,7 @@ class FeedPostCard extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final hideOffensive = ref.watch(moderationProvider).hideOffensiveComments;
+    final saved = ref.watch(savedProvider).isSaved(post.id);
 
     return Container(
       margin: const EdgeInsets.only(bottom: AppSpacing.md),
@@ -673,6 +675,22 @@ class FeedPostCard extends ConsumerWidget {
                 key: ValueKey('feedShareButton_${post.id}'),
                 icon: const Icon(Icons.share_outlined, size: 18),
                 onPressed: onShare,
+              ),
+              IconButton(
+                key: ValueKey('feedSaveButton_${post.id}'),
+                icon: Icon(
+                  saved ? Icons.bookmark : Icons.bookmark_border,
+                  size: 18,
+                  color: saved ? colors.primary : null,
+                ),
+                onPressed: () {
+                  final notifier = ref.read(savedProvider.notifier);
+                  if (saved) {
+                    notifier.unsavePost(post.id);
+                  } else {
+                    notifier.savePost(post.id, savedFromContext: 'Feed');
+                  }
+                },
               ),
             ],
           ),
