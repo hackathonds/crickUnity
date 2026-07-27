@@ -18,7 +18,9 @@ import 'feed_provider.dart';
 import 'hashtag_screen.dart';
 import 'post_detail_screen.dart';
 import 'recently_deleted_posts_screen.dart';
+import 'reels_screen.dart';
 import 'rich_text_content.dart';
+import 'stories_bar.dart';
 
 enum _FeedMode { forYou, latest }
 
@@ -305,6 +307,14 @@ class _FeedScreenState extends ConsumerState<FeedScreen> {
         title: const Text('Feed'),
         actions: [
           IconButton(
+            key: const ValueKey('reelsButton'),
+            icon: const Icon(Icons.movie_creation_outlined),
+            tooltip: 'Reels',
+            onPressed: () => Navigator.of(
+              context,
+            ).push(MaterialPageRoute(builder: (_) => const ReelsScreen())),
+          ),
+          IconButton(
             key: const ValueKey('recentlyDeletedPostsButton'),
             icon: const Icon(Icons.restore_from_trash_outlined),
             tooltip: 'Recently deleted',
@@ -335,6 +345,8 @@ class _FeedScreenState extends ConsumerState<FeedScreen> {
       body: ListView(
         padding: const EdgeInsets.all(AppSpacing.lg),
         children: [
+          const StoriesBar(),
+          const SizedBox(height: AppSpacing.lg),
           for (final post in newPosts) buildCard(post),
           if (earlierPosts.isNotEmpty) ...[
             Padding(
