@@ -94,10 +94,14 @@ class Ground {
   final int parScoreFirstInnings;
 
   /// PRD §20 screen-list item 50 names a "fully-booked state" for this
-  /// profile. Real availability comes from the booking calendar (E9-03,
-  /// not yet built), so this is a mocked flag standing in until that
-  /// calendar exists.
+  /// profile. Real availability comes from the booking calendar (E9-03),
+  /// so this is a mocked flag standing in until that calendar exists.
   final bool isFullyBookedToday;
+
+  /// PRD §2.11: "cancelling a confirmed booking < 48h before slot
+  /// triggers auto-penalty per platform policy (refund + reliability
+  /// score drop, visible on listing)." 0-100; starts at 100.
+  final double reliabilityScore;
 
   const Ground({
     required this.id,
@@ -119,7 +123,33 @@ class Ground {
     this.facetRatings = const {},
     this.parScoreFirstInnings = 0,
     this.isFullyBookedToday = false,
+    this.reliabilityScore = 100,
   });
 
   BoundaryBadge get boundaryBadge => boundaryBadgeFor(boundaryMeters);
+
+  Ground copyWith({bool? isFullyBookedToday, double? reliabilityScore}) {
+    return Ground(
+      id: id,
+      name: name,
+      verifiedOwner: verifiedOwner,
+      city: city,
+      address: address,
+      photoCount: photoCount,
+      facilities: facilities,
+      pitchTypes: pitchTypes,
+      pitchCount: pitchCount,
+      boundaryMeters: boundaryMeters,
+      surfaceConditionTag: surfaceConditionTag,
+      rulesNote: rulesNote,
+      pricePerHour: pricePerHour,
+      cancellationPolicyNote: cancellationPolicyNote,
+      rating: rating,
+      distanceKm: distanceKm,
+      facetRatings: facetRatings,
+      parScoreFirstInnings: parScoreFirstInnings,
+      isFullyBookedToday: isFullyBookedToday ?? this.isFullyBookedToday,
+      reliabilityScore: reliabilityScore ?? this.reliabilityScore,
+    );
+  }
 }

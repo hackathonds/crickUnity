@@ -16,6 +16,7 @@ import '../../expenses/reports_screen.dart';
 import '../../expenses/settle_up_screen.dart';
 import '../../expenses/treasury_screen.dart';
 import '../../expenses/wallet_payouts_provider.dart';
+import '../../grounds/booking_flow_screen.dart';
 import '../../grounds/ground_profile_screen.dart';
 import '../../grounds/grounds_discovery_screen.dart';
 import '../../guest/guest_live_match_preview_screen.dart';
@@ -1852,6 +1853,18 @@ class DebugMenuScreen extends StatelessWidget {
             ),
             onTap: () => Navigator.of(context).push(
               MaterialPageRoute(builder: (_) => const GroundsDiscoveryScreen()),
+            ),
+          ),
+          ListTile(
+            title: const Text('Book a slot (sample)'),
+            subtitle: const Text(
+              'E9-03 — Hold 15:00, policy ack, QR ticket, reschedule/cancel',
+            ),
+            onTap: () => Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (_) =>
+                    const BookingFlowScreen(groundId: 'ground-green-valley'),
+              ),
             ),
           ),
           ListTile(

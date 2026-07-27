@@ -9,6 +9,7 @@ import '../design_system/tokens/app_spacing.dart';
 import '../design_system/tokens/app_typography.dart';
 import '../recognition/record_models.dart';
 import '../recognition/records_provider.dart';
+import 'booking_flow_screen.dart';
 import 'ground_models.dart';
 import 'grounds_provider.dart';
 
@@ -22,10 +23,10 @@ import 'grounds_provider.dart';
 /// PRD §20 screen-list item 50 additionally names: gallery, facilities,
 /// calendar, records | book/follow/review | fully-booked state. This
 /// story builds the profile itself plus the Follow toggle and the
-/// fully-booked banner; Booking (E9-03) and Reviews (E9-04) are
-/// separate not-yet-built stories, so "Book" and "Write a review" are
-/// disabled stubs noting that, the same "not yet built" convention as
-/// E9-01's ground detail sheet. Weather strip and "upcoming public
+/// fully-booked banner; "Book" now opens the real E9-03 booking flow
+/// (grounds/booking_flow_screen.dart). Reviews (E9-04) is still a
+/// separate not-yet-built story, so "Write a review" remains a
+/// disabled stub noting that. Weather strip and "upcoming public
 /// matches here" (also under §10.4) are out of this story's backlog
 /// line and are not built here -- flagged rather than silently scoped
 /// in.
@@ -135,7 +136,12 @@ class GroundProfileScreen extends ConsumerWidget {
                   fullWidth: true,
                   onPressed: ground.isFullyBookedToday
                       ? null
-                      : () => _showNotYetBuilt(context, 'Booking flow (E9-03)'),
+                      : () => Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (_) =>
+                                BookingFlowScreen(groundId: ground.id),
+                          ),
+                        ),
                 ),
               ),
               const SizedBox(width: AppSpacing.sm),
