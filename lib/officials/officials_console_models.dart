@@ -27,7 +27,16 @@ const Map<CredentialTier, int> credentialTierThresholds = {
   CredentialTier.platinum: 500,
 };
 
-CredentialTier? currentTier(int disputeFreeMatches) {
+/// PRD: "'Verified Scorer' badge after 10 dispute-free scored matches
+/// with avg rating >= 4.0" -- a compound condition (backlog AC amendment
+/// #11 flagged this: the original tier check only counted matches, not
+/// rating). Applied consistently across every tier, not just the entry
+/// Bronze one, since the PRD gives no reason the rating bar would relax
+/// at higher tiers.
+const double minAverageRatingForCredentialTier = 4.0;
+
+CredentialTier? currentTier(int disputeFreeMatches, double averageRating) {
+  if (averageRating < minAverageRatingForCredentialTier) return null;
   CredentialTier? tier;
   for (final t in CredentialTier.values) {
     if (disputeFreeMatches >= credentialTierThresholds[t]!) tier = t;
