@@ -11,6 +11,7 @@ import '../design_system/tokens/app_spacing.dart';
 import '../design_system/tokens/app_typography.dart';
 import '../offline/is_online_provider.dart';
 import '../offline/queued_action.dart';
+import '../rewards/ceremony_suppression_scope.dart';
 import 'ball_timeline_screen.dart';
 import 'scoring_models.dart';
 import 'scoring_provider.dart';
@@ -61,190 +62,454 @@ class LiveScoringConsoleScreen extends ConsumerWidget {
       AppMotionToken.standard,
     );
 
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Live scoring'),
-        actions: [
-          IconButton(
-            key: const ValueKey('offlineToggleButton'),
-            icon: Icon(isOnline ? Icons.wifi : Icons.wifi_off),
-            tooltip: isOnline ? 'Go offline (debug)' : 'Go online (debug)',
-            onPressed: () =>
-                ref.read(isOnlineProvider.notifier).state = !isOnline,
-          ),
-          IconButton(
-            key: const ValueKey('ballTimelineButton'),
-            icon: const Icon(Icons.history),
-            tooltip: 'Ball timeline',
-            onPressed: () => Navigator.of(context).push(
-              MaterialPageRoute(builder: (_) => const BallTimelineScreen()),
+    return CeremonySuppressionScope(
+      child: Scaffold(
+        appBar: AppBar(
+          title: const Text('Live scoring'),
+          actions: [
+            IconButton(
+              key: const ValueKey('offlineToggleButton'),
+              icon: Icon(isOnline ? Icons.wifi : Icons.wifi_off),
+              tooltip: isOnline ? 'Go offline (debug)' : 'Go online (debug)',
+              onPressed: () =>
+                  ref.read(isOnlineProvider.notifier).state = !isOnline,
             ),
-          ),
-          PopupMenuButton<String>(
-            key: const ValueKey('consoleOverflowMenu'),
-            onSelected: (_) => _showHandoverSheet(context, state.scorerName),
-            itemBuilder: (context) => [
-              const PopupMenuItem(
-                key: ValueKey('handoverMenuItem'),
-                value: 'handover',
-                child: Text('Handover'),
+            IconButton(
+              key: const ValueKey('ballTimelineButton'),
+              icon: const Icon(Icons.history),
+              tooltip: 'Ball timeline',
+              onPressed: () => Navigator.of(context).push(
+                MaterialPageRoute(builder: (_) => const BallTimelineScreen()),
               ),
-            ],
-          ),
-        ],
-      ),
-      body: Column(
-        children: [
-          Container(
-            key: const ValueKey('pinnedScoreboard'),
-            height: 128,
-            width: double.infinity,
-            padding: const EdgeInsets.all(AppSpacing.lg),
-            color: colors.surfaceAlt,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Text(
-                  state.battingTeamName,
-                  style: AppTypography.subtitle.copyWith(
-                    color: colors.textSecondary,
-                  ),
-                ),
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.end,
-                  children: [
-                    AnimatedSwitcher(
-                      key: const ValueKey('scoreOdometer'),
-                      duration: odometerDuration,
-                      transitionBuilder: (child, animation) => FadeTransition(
-                        opacity: animation,
-                        child: SlideTransition(
-                          position: Tween<Offset>(
-                            begin: const Offset(0, 0.3),
-                            end: Offset.zero,
-                          ).animate(animation),
-                          child: child,
-                        ),
-                      ),
-                      child: Text(
-                        '${state.totalRuns}/${state.wicketsLost}',
-                        key: ValueKey(
-                          '${state.totalRuns}-${state.wicketsLost}',
-                        ),
-                        style: AppTypography.scoreboard.copyWith(
-                          color: colors.textPrimary,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: AppSpacing.sm),
-                    Padding(
-                      padding: const EdgeInsets.only(bottom: AppSpacing.xs),
-                      child: Text(
-                        '(${state.completedOvers}.${state.legalBallsThisOver} ov)',
-                        style: AppTypography.body.copyWith(
-                          color: colors.textSecondary,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: AppSpacing.sm),
-                    _WicketKeyMomentChip(
-                      show: isLastBallWicket,
-                      wicketsLost: state.wicketsLost,
-                      dismissalLabel: isLastBallWicket
-                          ? dismissalTypeLabels[state
-                                .deliveries
-                                .last
-                                .dismissalType]
-                          : null,
-                    ),
-                  ],
-                ),
-                _WicketUnderlineSweep(
-                  show: isLastBallWicket,
-                  wicketsLost: state.wicketsLost,
-                ),
-                Text(
-                  key: const ValueKey('contextStrip'),
-                  state.requiredRunRate != null
-                      ? 'CRR ${state.currentRunRate.toStringAsFixed(2)} · '
-                            'RRR ${state.requiredRunRate!.toStringAsFixed(2)}'
-                      : 'CRR ${state.currentRunRate.toStringAsFixed(2)}',
-                  style: AppTypography.caption.copyWith(
-                    color: colors.textSecondary,
-                  ),
+            ),
+            PopupMenuButton<String>(
+              key: const ValueKey('consoleOverflowMenu'),
+              onSelected: (_) => _showHandoverSheet(context, state.scorerName),
+              itemBuilder: (context) => [
+                const PopupMenuItem(
+                  key: ValueKey('handoverMenuItem'),
+                  value: 'handover',
+                  child: Text('Handover'),
                 ),
               ],
             ),
-          ),
-          if (!isOnline)
+          ],
+        ),
+        body: Column(
+          children: [
             Container(
-              key: const ValueKey('savingLocallyChip'),
+              key: const ValueKey('pinnedScoreboard'),
+              height: 128,
               width: double.infinity,
-              alignment: Alignment.center,
-              padding: const EdgeInsets.symmetric(vertical: AppSpacing.xs),
-              color: colors.warning.withValues(alpha: 0.15),
-              child: Text(
-                pendingSyncCount > 0
-                    ? 'Saving locally -- will sync ($pendingSyncCount)'
-                    : 'Saving locally -- will sync',
-                style: AppTypography.caption.copyWith(color: colors.warning),
+              padding: const EdgeInsets.all(AppSpacing.lg),
+              color: colors.surfaceAlt,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(
+                    state.battingTeamName,
+                    style: AppTypography.subtitle.copyWith(
+                      color: colors.textSecondary,
+                    ),
+                  ),
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      AnimatedSwitcher(
+                        key: const ValueKey('scoreOdometer'),
+                        duration: odometerDuration,
+                        transitionBuilder: (child, animation) => FadeTransition(
+                          opacity: animation,
+                          child: SlideTransition(
+                            position: Tween<Offset>(
+                              begin: const Offset(0, 0.3),
+                              end: Offset.zero,
+                            ).animate(animation),
+                            child: child,
+                          ),
+                        ),
+                        child: Text(
+                          '${state.totalRuns}/${state.wicketsLost}',
+                          key: ValueKey(
+                            '${state.totalRuns}-${state.wicketsLost}',
+                          ),
+                          style: AppTypography.scoreboard.copyWith(
+                            color: colors.textPrimary,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: AppSpacing.sm),
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: AppSpacing.xs),
+                        child: Text(
+                          '(${state.completedOvers}.${state.legalBallsThisOver} ov)',
+                          style: AppTypography.body.copyWith(
+                            color: colors.textSecondary,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: AppSpacing.sm),
+                      _WicketKeyMomentChip(
+                        show: isLastBallWicket,
+                        wicketsLost: state.wicketsLost,
+                        dismissalLabel: isLastBallWicket
+                            ? dismissalTypeLabels[state
+                                  .deliveries
+                                  .last
+                                  .dismissalType]
+                            : null,
+                      ),
+                    ],
+                  ),
+                  _WicketUnderlineSweep(
+                    show: isLastBallWicket,
+                    wicketsLost: state.wicketsLost,
+                  ),
+                  Text(
+                    key: const ValueKey('contextStrip'),
+                    state.requiredRunRate != null
+                        ? 'CRR ${state.currentRunRate.toStringAsFixed(2)} · '
+                              'RRR ${state.requiredRunRate!.toStringAsFixed(2)}'
+                        : 'CRR ${state.currentRunRate.toStringAsFixed(2)}',
+                    style: AppTypography.caption.copyWith(
+                      color: colors.textSecondary,
+                    ),
+                  ),
+                ],
               ),
             ),
-          if (state.pendingHandoverToName != null)
+            if (!isOnline)
+              Container(
+                key: const ValueKey('savingLocallyChip'),
+                width: double.infinity,
+                alignment: Alignment.center,
+                padding: const EdgeInsets.symmetric(vertical: AppSpacing.xs),
+                color: colors.warning.withValues(alpha: 0.15),
+                child: Text(
+                  pendingSyncCount > 0
+                      ? 'Saving locally -- will sync ($pendingSyncCount)'
+                      : 'Saving locally -- will sync',
+                  style: AppTypography.caption.copyWith(color: colors.warning),
+                ),
+              ),
+            if (state.pendingHandoverToName != null)
+              Container(
+                key: const ValueKey('pendingHandoverBanner'),
+                width: double.infinity,
+                padding: const EdgeInsets.all(AppSpacing.md),
+                color: colors.surfaceAlt,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Handover to ${state.pendingHandoverToName} -- '
+                      'needs both captains to approve.',
+                      style: AppTypography.body.copyWith(
+                        color: colors.textPrimary,
+                      ),
+                    ),
+                    const SizedBox(height: AppSpacing.sm),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: AppButton(
+                            key: const ValueKey('handoverAckComposerButton'),
+                            variant: state.composerCaptainApprovedHandover
+                                ? AppButtonVariant.secondary
+                                : AppButtonVariant.primary,
+                            label: state.composerCaptainApprovedHandover
+                                ? 'Composer acked'
+                                : 'Composer captain ack',
+                            onPressed: state.composerCaptainApprovedHandover
+                                ? null
+                                : () => _approveHandover(
+                                    context,
+                                    ref,
+                                    asComposerCaptain: true,
+                                  ),
+                          ),
+                        ),
+                        const SizedBox(width: AppSpacing.sm),
+                        Expanded(
+                          child: AppButton(
+                            key: const ValueKey('handoverAckOpponentButton'),
+                            variant: state.opponentCaptainApprovedHandover
+                                ? AppButtonVariant.secondary
+                                : AppButtonVariant.primary,
+                            label: state.opponentCaptainApprovedHandover
+                                ? 'Opponent acked'
+                                : 'Opponent captain ack',
+                            onPressed: state.opponentCaptainApprovedHandover
+                                ? null
+                                : () => _approveHandover(
+                                    context,
+                                    ref,
+                                    asComposerCaptain: false,
+                                  ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
             Container(
-              key: const ValueKey('pendingHandoverBanner'),
+              key: const ValueKey('overBeadsStrip'),
+              height: 32,
               width: double.infinity,
-              padding: const EdgeInsets.all(AppSpacing.md),
-              color: colors.surfaceAlt,
+              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+              alignment: Alignment.centerLeft,
+              child: Row(
+                children: [
+                  for (final delivery in state.currentOverDeliveries)
+                    Padding(
+                      padding: const EdgeInsets.only(right: AppSpacing.xs),
+                      child: Container(
+                        width: 24,
+                        height: 24,
+                        alignment: Alignment.center,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: delivery.isWicket
+                              ? colors.error.withValues(alpha: 0.15)
+                              : colors.surfaceAlt,
+                        ),
+                        child: Text(
+                          deliveryLabel(delivery),
+                          style: AppTypography.caption.copyWith(
+                            color: delivery.isWicket
+                                ? colors.error
+                                : colors.textPrimary,
+                          ),
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.symmetric(
+                horizontal: AppSpacing.lg,
+                vertical: AppSpacing.sm,
+              ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Handover to ${state.pendingHandoverToName} -- '
-                    'needs both captains to approve.',
+                    key: const ValueKey('strikerStrip'),
+                    '$striker* ${strikerStats?.runs ?? 0} (${strikerStats?.balls ?? 0})',
                     style: AppTypography.body.copyWith(
                       color: colors.textPrimary,
+                    ),
+                  ),
+                  Text(
+                    key: const ValueKey('nonStrikerStrip'),
+                    '$nonStriker ${nonStrikerStats?.runs ?? 0} '
+                    '(${nonStrikerStats?.balls ?? 0})',
+                    style: AppTypography.caption.copyWith(
+                      color: colors.textSecondary,
+                    ),
+                  ),
+                  Text(
+                    key: const ValueKey('bowlerStrip'),
+                    '${bowler.name} ${bowler.completedOvers}.${bowler.ballsThisOver}-'
+                    '${bowler.runsConceded}-${bowler.wickets}',
+                    style: AppTypography.caption.copyWith(
+                      color: colors.textSecondary,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const Spacer(),
+            if (state.isPaused)
+              Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: AppSpacing.lg,
+                  vertical: AppSpacing.sm,
+                ),
+                child: Container(
+                  key: const ValueKey('pausedBanner'),
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(AppSpacing.md),
+                  decoration: BoxDecoration(
+                    color: colors.error.withValues(alpha: 0.12),
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Match paused: ${state.interruptionReason}',
+                        style: AppTypography.body.copyWith(
+                          color: colors.textPrimary,
+                        ),
+                      ),
+                      const SizedBox(height: AppSpacing.sm),
+                      AppButton(
+                        key: const ValueKey('resumeMatchButton'),
+                        variant: AppButtonVariant.primary,
+                        label: 'Resume',
+                        fullWidth: true,
+                        onPressed: () => _showInterruptSheet(context, state),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            if (needsNewBowler)
+              Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: AppSpacing.lg,
+                  vertical: AppSpacing.sm,
+                ),
+                child: Container(
+                  key: const ValueKey('needsNewBowlerBanner'),
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(AppSpacing.md),
+                  decoration: BoxDecoration(
+                    color: colors.warning.withValues(alpha: 0.15),
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        '${bowler.name} has bowled the maximum '
+                        '${state.maxOversPerBowler} overs -- select the next '
+                        'bowler to continue.',
+                        style: AppTypography.body.copyWith(
+                          color: colors.textPrimary,
+                        ),
+                      ),
+                      const SizedBox(height: AppSpacing.sm),
+                      AppButton(
+                        key: const ValueKey('selectNextBowlerButton'),
+                        variant: AppButtonVariant.primary,
+                        label: 'Select next bowler',
+                        fullWidth: true,
+                        onPressed: () => _showBowlerSelectSheet(context, state),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            if (!state.isPaused && !needsNewBowler && state.isHatTrickChance)
+              Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: AppSpacing.lg,
+                  vertical: AppSpacing.sm,
+                ),
+                child: Container(
+                  key: const ValueKey('hatTrickChanceBanner'),
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(AppSpacing.md),
+                  alignment: Alignment.center,
+                  decoration: BoxDecoration(
+                    color: colors.coin.withValues(alpha: 0.15),
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                  child: Text(
+                    'Hat-trick chance!',
+                    style: AppTypography.title.copyWith(color: colors.coin),
+                  ),
+                ),
+              ),
+            Padding(
+              padding: const EdgeInsets.all(AppSpacing.lg),
+              child: Column(
+                children: [
+                  const _WagonGhostOverlay(),
+                  Wrap(
+                    spacing: AppSpacing.sm,
+                    runSpacing: AppSpacing.sm,
+                    children: [
+                      for (final runs in _runButtons)
+                        SizedBox(
+                          width: 64,
+                          height: 64,
+                          child: ElevatedButton(
+                            key: ValueKey('runButton_$runs'),
+                            style: ElevatedButton.styleFrom(
+                              shape: const CircleBorder(),
+                              backgroundColor: colors.surfaceAlt,
+                              foregroundColor: colors.textPrimary,
+                            ),
+                            onPressed: scoringDisabled
+                                ? null
+                                : () => notifier.recordRun(runs),
+                            child: Text(
+                              '$runs',
+                              style: AppTypography.stat.copyWith(
+                                color: colors.textPrimary,
+                              ),
+                            ),
+                          ),
+                        ),
+                    ],
+                  ),
+                  const SizedBox(height: AppSpacing.sm),
+                  Wrap(
+                    spacing: AppSpacing.sm,
+                    children: [
+                      for (final type in ExtraType.values)
+                        AppButton(
+                          key: ValueKey('extraButton_${type.name}'),
+                          variant: AppButtonVariant.secondary,
+                          label: extraTypeShortLabels[type]!,
+                          onPressed: scoringDisabled
+                              ? null
+                              : () => _showExtraSheet(context, type),
+                        ),
+                    ],
+                  ),
+                  const SizedBox(height: AppSpacing.md),
+                  SizedBox(
+                    width: double.infinity,
+                    height: 52,
+                    child: AppButton(
+                      key: const ValueKey('wicketButton'),
+                      variant: AppButtonVariant.destructive,
+                      label: 'WICKET',
+                      fullWidth: true,
+                      onPressed: scoringDisabled
+                          ? null
+                          : () => _showDismissalSheet(context, state),
                     ),
                   ),
                   const SizedBox(height: AppSpacing.sm),
                   Row(
                     children: [
-                      Expanded(
-                        child: AppButton(
-                          key: const ValueKey('handoverAckComposerButton'),
-                          variant: state.composerCaptainApprovedHandover
-                              ? AppButtonVariant.secondary
-                              : AppButtonVariant.primary,
-                          label: state.composerCaptainApprovedHandover
-                              ? 'Composer acked'
-                              : 'Composer captain ack',
-                          onPressed: state.composerCaptainApprovedHandover
-                              ? null
-                              : () => _approveHandover(
-                                  context,
-                                  ref,
-                                  asComposerCaptain: true,
-                                ),
+                      SizedBox(
+                        width: 44,
+                        height: 44,
+                        child: IconButton(
+                          key: const ValueKey('undoButton'),
+                          icon: const Icon(Icons.undo),
+                          onPressed: state.canUndoFreely ? notifier.undo : null,
                         ),
                       ),
                       const SizedBox(width: AppSpacing.sm),
                       Expanded(
                         child: AppButton(
-                          key: const ValueKey('handoverAckOpponentButton'),
-                          variant: state.opponentCaptainApprovedHandover
-                              ? AppButtonVariant.secondary
-                              : AppButtonVariant.primary,
-                          label: state.opponentCaptainApprovedHandover
-                              ? 'Opponent acked'
-                              : 'Opponent captain ack',
-                          onPressed: state.opponentCaptainApprovedHandover
+                          key: const ValueKey('swapStrikeButton'),
+                          variant: AppButtonVariant.tertiary,
+                          label: 'Swap strike',
+                          onPressed: scoringDisabled
                               ? null
-                              : () => _approveHandover(
-                                  context,
-                                  ref,
-                                  asComposerCaptain: false,
-                                ),
+                              : notifier.manualSwapStrike,
+                        ),
+                      ),
+                      const SizedBox(width: AppSpacing.sm),
+                      SizedBox(
+                        width: 44,
+                        height: 44,
+                        child: IconButton(
+                          key: const ValueKey('interruptButton'),
+                          icon: const Icon(Icons.more_horiz),
+                          tooltip: 'Interrupt',
+                          onPressed: () => _showInterruptSheet(context, state),
                         ),
                       ),
                     ],
@@ -252,268 +517,8 @@ class LiveScoringConsoleScreen extends ConsumerWidget {
                 ],
               ),
             ),
-          Container(
-            key: const ValueKey('overBeadsStrip'),
-            height: 32,
-            width: double.infinity,
-            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
-            alignment: Alignment.centerLeft,
-            child: Row(
-              children: [
-                for (final delivery in state.currentOverDeliveries)
-                  Padding(
-                    padding: const EdgeInsets.only(right: AppSpacing.xs),
-                    child: Container(
-                      width: 24,
-                      height: 24,
-                      alignment: Alignment.center,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: delivery.isWicket
-                            ? colors.error.withValues(alpha: 0.15)
-                            : colors.surfaceAlt,
-                      ),
-                      child: Text(
-                        deliveryLabel(delivery),
-                        style: AppTypography.caption.copyWith(
-                          color: delivery.isWicket
-                              ? colors.error
-                              : colors.textPrimary,
-                        ),
-                      ),
-                    ),
-                  ),
-              ],
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.symmetric(
-              horizontal: AppSpacing.lg,
-              vertical: AppSpacing.sm,
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  key: const ValueKey('strikerStrip'),
-                  '$striker* ${strikerStats?.runs ?? 0} (${strikerStats?.balls ?? 0})',
-                  style: AppTypography.body.copyWith(color: colors.textPrimary),
-                ),
-                Text(
-                  key: const ValueKey('nonStrikerStrip'),
-                  '$nonStriker ${nonStrikerStats?.runs ?? 0} '
-                  '(${nonStrikerStats?.balls ?? 0})',
-                  style: AppTypography.caption.copyWith(
-                    color: colors.textSecondary,
-                  ),
-                ),
-                Text(
-                  key: const ValueKey('bowlerStrip'),
-                  '${bowler.name} ${bowler.completedOvers}.${bowler.ballsThisOver}-'
-                  '${bowler.runsConceded}-${bowler.wickets}',
-                  style: AppTypography.caption.copyWith(
-                    color: colors.textSecondary,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const Spacer(),
-          if (state.isPaused)
-            Padding(
-              padding: const EdgeInsets.symmetric(
-                horizontal: AppSpacing.lg,
-                vertical: AppSpacing.sm,
-              ),
-              child: Container(
-                key: const ValueKey('pausedBanner'),
-                width: double.infinity,
-                padding: const EdgeInsets.all(AppSpacing.md),
-                decoration: BoxDecoration(
-                  color: colors.error.withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(14),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Match paused: ${state.interruptionReason}',
-                      style: AppTypography.body.copyWith(
-                        color: colors.textPrimary,
-                      ),
-                    ),
-                    const SizedBox(height: AppSpacing.sm),
-                    AppButton(
-                      key: const ValueKey('resumeMatchButton'),
-                      variant: AppButtonVariant.primary,
-                      label: 'Resume',
-                      fullWidth: true,
-                      onPressed: () => _showInterruptSheet(context, state),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          if (needsNewBowler)
-            Padding(
-              padding: const EdgeInsets.symmetric(
-                horizontal: AppSpacing.lg,
-                vertical: AppSpacing.sm,
-              ),
-              child: Container(
-                key: const ValueKey('needsNewBowlerBanner'),
-                width: double.infinity,
-                padding: const EdgeInsets.all(AppSpacing.md),
-                decoration: BoxDecoration(
-                  color: colors.warning.withValues(alpha: 0.15),
-                  borderRadius: BorderRadius.circular(14),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      '${bowler.name} has bowled the maximum '
-                      '${state.maxOversPerBowler} overs -- select the next '
-                      'bowler to continue.',
-                      style: AppTypography.body.copyWith(
-                        color: colors.textPrimary,
-                      ),
-                    ),
-                    const SizedBox(height: AppSpacing.sm),
-                    AppButton(
-                      key: const ValueKey('selectNextBowlerButton'),
-                      variant: AppButtonVariant.primary,
-                      label: 'Select next bowler',
-                      fullWidth: true,
-                      onPressed: () => _showBowlerSelectSheet(context, state),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          if (!state.isPaused && !needsNewBowler && state.isHatTrickChance)
-            Padding(
-              padding: const EdgeInsets.symmetric(
-                horizontal: AppSpacing.lg,
-                vertical: AppSpacing.sm,
-              ),
-              child: Container(
-                key: const ValueKey('hatTrickChanceBanner'),
-                width: double.infinity,
-                padding: const EdgeInsets.all(AppSpacing.md),
-                alignment: Alignment.center,
-                decoration: BoxDecoration(
-                  color: colors.coin.withValues(alpha: 0.15),
-                  borderRadius: BorderRadius.circular(14),
-                ),
-                child: Text(
-                  'Hat-trick chance!',
-                  style: AppTypography.title.copyWith(color: colors.coin),
-                ),
-              ),
-            ),
-          Padding(
-            padding: const EdgeInsets.all(AppSpacing.lg),
-            child: Column(
-              children: [
-                const _WagonGhostOverlay(),
-                Wrap(
-                  spacing: AppSpacing.sm,
-                  runSpacing: AppSpacing.sm,
-                  children: [
-                    for (final runs in _runButtons)
-                      SizedBox(
-                        width: 64,
-                        height: 64,
-                        child: ElevatedButton(
-                          key: ValueKey('runButton_$runs'),
-                          style: ElevatedButton.styleFrom(
-                            shape: const CircleBorder(),
-                            backgroundColor: colors.surfaceAlt,
-                            foregroundColor: colors.textPrimary,
-                          ),
-                          onPressed: scoringDisabled
-                              ? null
-                              : () => notifier.recordRun(runs),
-                          child: Text(
-                            '$runs',
-                            style: AppTypography.stat.copyWith(
-                              color: colors.textPrimary,
-                            ),
-                          ),
-                        ),
-                      ),
-                  ],
-                ),
-                const SizedBox(height: AppSpacing.sm),
-                Wrap(
-                  spacing: AppSpacing.sm,
-                  children: [
-                    for (final type in ExtraType.values)
-                      AppButton(
-                        key: ValueKey('extraButton_${type.name}'),
-                        variant: AppButtonVariant.secondary,
-                        label: extraTypeShortLabels[type]!,
-                        onPressed: scoringDisabled
-                            ? null
-                            : () => _showExtraSheet(context, type),
-                      ),
-                  ],
-                ),
-                const SizedBox(height: AppSpacing.md),
-                SizedBox(
-                  width: double.infinity,
-                  height: 52,
-                  child: AppButton(
-                    key: const ValueKey('wicketButton'),
-                    variant: AppButtonVariant.destructive,
-                    label: 'WICKET',
-                    fullWidth: true,
-                    onPressed: scoringDisabled
-                        ? null
-                        : () => _showDismissalSheet(context, state),
-                  ),
-                ),
-                const SizedBox(height: AppSpacing.sm),
-                Row(
-                  children: [
-                    SizedBox(
-                      width: 44,
-                      height: 44,
-                      child: IconButton(
-                        key: const ValueKey('undoButton'),
-                        icon: const Icon(Icons.undo),
-                        onPressed: state.canUndoFreely ? notifier.undo : null,
-                      ),
-                    ),
-                    const SizedBox(width: AppSpacing.sm),
-                    Expanded(
-                      child: AppButton(
-                        key: const ValueKey('swapStrikeButton'),
-                        variant: AppButtonVariant.tertiary,
-                        label: 'Swap strike',
-                        onPressed: scoringDisabled
-                            ? null
-                            : notifier.manualSwapStrike,
-                      ),
-                    ),
-                    const SizedBox(width: AppSpacing.sm),
-                    SizedBox(
-                      width: 44,
-                      height: 44,
-                      child: IconButton(
-                        key: const ValueKey('interruptButton'),
-                        icon: const Icon(Icons.more_horiz),
-                        tooltip: 'Interrupt',
-                        onPressed: () => _showInterruptSheet(context, state),
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
