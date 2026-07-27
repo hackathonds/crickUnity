@@ -8,6 +8,8 @@ class RewardsState {
   final List<CeremonyEvent> ceremonyQueue;
   final List<String> log;
   final bool suppressCeremonies;
+  final int coinsEarnedThisMonth;
+  final int? coinsEarnedMonthKey;
 
   const RewardsState({
     this.coinBatches = const [],
@@ -15,6 +17,8 @@ class RewardsState {
     this.ceremonyQueue = const [],
     this.log = const [],
     this.suppressCeremonies = false,
+    this.coinsEarnedThisMonth = 0,
+    this.coinsEarnedMonthKey,
   });
 
   int get level => levelForXp(xpTotal);
@@ -28,6 +32,8 @@ class RewardsState {
     List<CeremonyEvent>? ceremonyQueue,
     List<String>? log,
     bool? suppressCeremonies,
+    int? coinsEarnedThisMonth,
+    int? coinsEarnedMonthKey,
   }) {
     return RewardsState(
       coinBatches: coinBatches ?? this.coinBatches,
@@ -35,9 +41,13 @@ class RewardsState {
       ceremonyQueue: ceremonyQueue ?? this.ceremonyQueue,
       log: log ?? this.log,
       suppressCeremonies: suppressCeremonies ?? this.suppressCeremonies,
+      coinsEarnedThisMonth: coinsEarnedThisMonth ?? this.coinsEarnedThisMonth,
+      coinsEarnedMonthKey: coinsEarnedMonthKey ?? this.coinsEarnedMonthKey,
     );
   }
 }
+
+int monthKeyFor(DateTime d) => d.year * 12 + d.month;
 
 /// PRD §13 -- E6-01's coin/XP engine. "All match-derived earnings
 /// release only after scorecard confirmation" -- callers only ever
@@ -78,6 +88,15 @@ class RewardsNotifier extends Notifier<RewardsState> {
     _applyCoinsAndXp(coins, 0, ['$label: +$coins coins'], now: now);
   }
 
+  /// Pure-XP awards (E6-06's spin wheel XP segment) -- no coin batch.
+  void awardXp(
+    int xp, {
+    required String label,
+    DateTime Function() now = DateTime.now,
+  }) {
+    _applyCoinsAndXp(0, xp, ['$label: +$xp XP'], now: now);
+  }
+
   void _applyCoinsAndXp(
     int coins,
     int xp,
@@ -97,11 +116,22 @@ class RewardsNotifier extends Notifier<RewardsState> {
             CoinBatch(amount: coins, remaining: coins, earnedAt: now()),
           ]
         : state.coinBatches;
+    // PRD §13.4's lucky draw: "monthly ticket per 500 coins earned (not
+    // spent) that month" -- tracked here, the one funnel every coin
+    // award already goes through, rather than wiring every earn call
+    // site individually.
+    final currentMonthKey = monthKeyFor(now());
+    final sameMonth = state.coinsEarnedMonthKey == currentMonthKey;
+    final newCoinsEarnedThisMonth = coins > 0
+        ? (sameMonth ? state.coinsEarnedThisMonth + coins : coins)
+        : (sameMonth ? state.coinsEarnedThisMonth : 0);
     state = state.copyWith(
       coinBatches: newBatches,
       xpTotal: newXpTotal,
       log: [...state.log, ...logEntries],
       ceremonyQueue: [...state.ceremonyQueue, ...newCeremonies],
+      coinsEarnedThisMonth: newCoinsEarnedThisMonth,
+      coinsEarnedMonthKey: currentMonthKey,
     );
   }
 

@@ -38,6 +38,8 @@ import '../../matches/toss_screen.dart';
 import '../../onboarding/onboarding_flow.dart';
 import '../../rewards/achievements_provider.dart';
 import '../../rewards/badge_engine_screen.dart';
+import '../../rewards/luck_layer_screen.dart';
+import '../../rewards/luck_provider.dart';
 import '../../rewards/missions_board_screen.dart';
 import '../../rewards/missions_models.dart';
 import '../../rewards/missions_provider.dart';
@@ -1595,6 +1597,27 @@ class DebugMenuScreen extends StatelessWidget {
               Navigator.of(
                 context,
               ).push(MaterialPageRoute(builder: (_) => const WalletScreen()));
+            },
+          ),
+          ListTile(
+            title: const Text('Luck Layer'),
+            subtitle: const Text(
+              'E6-06 — Scratch card, spin wheel, chest, odds page, lucky draw',
+            ),
+            onTap: () {
+              final container = ProviderScope.containerOf(
+                context,
+                listen: false,
+              );
+              container
+                  .read(rewardsProvider.notifier)
+                  .awardBonus(600, label: 'Debug seed');
+              container
+                  .read(luckLayerProvider.notifier)
+                  .grantScratchCard(label: 'Debug seed');
+              Navigator.of(context).push(
+                MaterialPageRoute(builder: (_) => const LuckLayerScreen()),
+              );
             },
           ),
           ListTile(

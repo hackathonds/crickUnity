@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'achievements_provider.dart';
+import 'luck_provider.dart';
 import 'rewards_models.dart';
 import 'rewards_provider.dart';
 
@@ -99,7 +100,10 @@ class StreaksNotifier extends Notifier<StreakState> {
     if (newStreak == 7) {
       notifier.awardBonus(20, label: 'Login streak day 7');
     } else if (newStreak == 30) {
-      note += ' + scratch card earned (mock -- Luck Layer/E6-06 not built yet)';
+      note += ' + scratch card earned';
+      ref
+          .read(luckLayerProvider.notifier)
+          .grantScratchCard(label: 'Login streak day 30');
     }
 
     state = state.copyWith(
