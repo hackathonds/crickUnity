@@ -5,7 +5,22 @@ import 'dart:math';
 /// attendance %, props) x windows (week/month/season/all-time). Friends
 /// scope is default ... Self row always pinned visible with rank even
 /// off-screen."
-enum LeaderboardScope { friends, team, club, city, ground, tournament, global }
+///
+/// [association] is not in PRD §14's own scope list -- it's added for
+/// E10-09 per DS §11.10's explicit "Rankings pages reuse Leaderboard
+/// components with association scope," a requirement PRD §14 predates.
+/// Flagged as an extension of the frozen enum rather than a silent
+/// addition.
+enum LeaderboardScope {
+  friends,
+  team,
+  club,
+  city,
+  ground,
+  tournament,
+  global,
+  association,
+}
 
 const Map<LeaderboardScope, String> leaderboardScopeLabels = {
   LeaderboardScope.friends: 'Friends',
@@ -15,6 +30,7 @@ const Map<LeaderboardScope, String> leaderboardScopeLabels = {
   LeaderboardScope.ground: 'Ground',
   LeaderboardScope.tournament: 'Tournament',
   LeaderboardScope.global: 'Global',
+  LeaderboardScope.association: 'Association',
 };
 
 enum LeaderboardMetric { runs, wickets, mvps, xp, attendancePercent, props }

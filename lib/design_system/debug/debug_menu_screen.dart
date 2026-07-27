@@ -21,7 +21,9 @@ import '../../grounds/ground_profile_screen.dart';
 import '../../grounds/grounds_discovery_screen.dart';
 import '../../grounds/caretaker_mode_screen.dart';
 import '../../tournaments/auction_room_screen.dart';
+import '../../tournaments/association_screen.dart';
 import '../../tournaments/organizer_console_screen.dart';
+import '../../tournaments/sanction_request_screen.dart';
 import '../../tournaments/stats_hub_screen.dart';
 import '../../tournaments/bracket_screen.dart';
 import '../../tournaments/fixtures_editor_screen.dart';
@@ -1945,6 +1947,28 @@ class DebugMenuScreen extends StatelessWidget {
             onTap: () => Navigator.of(
               context,
             ).push(MaterialPageRoute(builder: (_) => const StatsHubScreen())),
+          ),
+          ListTile(
+            title: const Text('Sanction requests (organizer side)'),
+            subtitle: const Text(
+              'E10-09 — Request tracker, revocation with public reason',
+            ),
+            onTap: () => Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => const SanctionRequestScreen()),
+            ),
+          ),
+          ListTile(
+            title: const Text('Association profile (sample)'),
+            subtitle: const Text(
+              'E10-09 — Member clubs, sanctioned tournaments, rankings, circulars',
+            ),
+            onTap: () => Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (_) => const AssociationScreen(
+                  associationId: 'assoc-city-cricket-board',
+                ),
+              ),
+            ),
           ),
           ListTile(
             title: const Text('Points table + NRR + what-if'),
