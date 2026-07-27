@@ -48,6 +48,7 @@ import '../../rewards/referral_screen.dart';
 import '../../rewards/rewards_provider.dart';
 import '../../rewards/rewards_summary_screen.dart';
 import '../../rewards/wallet_screen.dart';
+import '../../social/feed_screen.dart';
 import '../../rewards/streaks_summary_screen.dart';
 import '../../profile/achievement_models.dart';
 import '../../profile/achievements_wall_screen.dart';
@@ -1639,6 +1640,16 @@ class DebugMenuScreen extends StatelessWidget {
             onTap: () => Navigator.of(
               context,
             ).push(MaterialPageRoute(builder: (_) => const ProPaywallScreen())),
+          ),
+          ListTile(
+            title: const Text('Feed'),
+            subtitle: const Text(
+              'E7-01 — Ranked/Latest toggle, why-am-I-seeing-this, '
+              'attached-object cards, caught-up interstitial',
+            ),
+            onTap: () => Navigator.of(
+              context,
+            ).push(MaterialPageRoute(builder: (_) => const FeedScreen())),
           ),
           ListTile(
             title: const Text('Field map tool (captain)'),
