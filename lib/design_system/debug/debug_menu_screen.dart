@@ -20,6 +20,7 @@ import '../../grounds/booking_flow_screen.dart';
 import '../../grounds/ground_profile_screen.dart';
 import '../../grounds/grounds_discovery_screen.dart';
 import '../../grounds/caretaker_mode_screen.dart';
+import '../../tournaments/bracket_screen.dart';
 import '../../tournaments/fixtures_editor_screen.dart';
 import '../../tournaments/points_table_screen.dart';
 import '../../tournaments/tournament_creation_wizard_screen.dart';
@@ -1905,6 +1906,15 @@ class DebugMenuScreen extends StatelessWidget {
             onTap: () => Navigator.of(context).push(
               MaterialPageRoute(builder: (_) => const FixturesEditorScreen()),
             ),
+          ),
+          ListTile(
+            title: const Text('Brackets + seeding'),
+            subtitle: const Text(
+              'E10-05 — Auto-seed from standings, tappable slots, path to final',
+            ),
+            onTap: () => Navigator.of(
+              context,
+            ).push(MaterialPageRoute(builder: (_) => const BracketScreen())),
           ),
           ListTile(
             title: const Text('Points table + NRR + what-if'),
