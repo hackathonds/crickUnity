@@ -22,6 +22,7 @@ import '../../coaching/coach_console_screen.dart';
 import '../../coaching/compliance_vault_screen.dart';
 import '../../coaching/personal_training_log_screen.dart';
 import '../../grounds/booking_flow_screen.dart';
+import '../../notifications/notification_center_screen.dart';
 import '../../search/global_search_screen.dart';
 import '../../search/qr_scanner_screen.dart';
 import '../../grounds/ground_profile_screen.dart';
@@ -1864,6 +1865,17 @@ class DebugMenuScreen extends StatelessWidget {
             ),
             onTap: () => Navigator.of(context).push(
               MaterialPageRoute(builder: (_) => const ProgressRingsScreen()),
+            ),
+          ),
+          ListTile(
+            title: const Text('Notification center'),
+            subtitle: const Text(
+              'E12-04 — Tabs, entity rollups, inline actions, swipe done/snooze',
+            ),
+            onTap: () => Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (_) => const NotificationCenterScreen(),
+              ),
             ),
           ),
           ListTile(
