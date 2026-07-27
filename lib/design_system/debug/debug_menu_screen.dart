@@ -55,6 +55,7 @@ import '../../recognition/challenges_hub_screen.dart';
 import '../../recognition/compare_screen.dart';
 import '../../recognition/goals_screen.dart';
 import '../../recognition/awards_screen.dart';
+import '../../recognition/progress_rings_screen.dart';
 import '../../recognition/ranks_screen.dart';
 import '../../rewards/season_screen.dart';
 import '../../recognition/year_in_review_screen.dart';
@@ -1830,6 +1831,16 @@ class DebugMenuScreen extends StatelessWidget {
             ),
             onTap: () => Navigator.of(context).push(
               MaterialPageRoute(builder: (_) => const PeriodicAwardsScreen()),
+            ),
+          ),
+          ListTile(
+            title: const Text('Progress rings'),
+            subtitle: const Text(
+              'E8-08 — Weekly Play/Train/Contribute rings, ring-close '
+              'streaks + burst',
+            ),
+            onTap: () => Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => const ProgressRingsScreen()),
             ),
           ),
           ListTile(
