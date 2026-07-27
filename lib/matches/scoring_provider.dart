@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../offline/queued_action.dart';
+import '../rewards/achievements_provider.dart';
 import '../rewards/rewards_models.dart';
 import '../rewards/rewards_provider.dart';
 import '../rewards/streaks_provider.dart';
@@ -364,6 +365,12 @@ class InningsNotifier extends Notifier<InningsState> {
     // activity." A completed, confirmed match is real cricket activity
     // -- same scorer-scoped identity used above (flagged there).
     ref.read(streaksProvider.notifier).recordActivity();
+    // E6-04's "Scorer Supreme" badge tier -- same zero-dispute check
+    // scorerZeroDisputes above already computed.
+    final everCorrected = state.deliveries.any((d) => d.isCorrected);
+    if (!everCorrected && state.pendingCorrections.isEmpty) {
+      ref.read(achievementsProvider.notifier).recordDisputeFreeMatchScored();
+    }
     state = state.copyWith(
       rippleFired: true,
       rippleLog: const [

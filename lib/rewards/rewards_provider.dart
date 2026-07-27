@@ -85,6 +85,12 @@ class RewardsNotifier extends Notifier<RewardsState> {
     );
   }
 
+  /// Lets other notifiers (e.g. AchievementsNotifier's badge tier-ups)
+  /// push into the same shared ceremony queue as level-ups.
+  void enqueueCeremony(CeremonyEvent event) {
+    state = state.copyWith(ceremonyQueue: [...state.ceremonyQueue, event]);
+  }
+
   /// DS §5.8: "suppressed during Live Scoring & money confirmations,
   /// delivered after." Callers on those specific surfaces toggle this
   /// (e.g. Live Scoring Console in initState/dispose) -- comprehensive

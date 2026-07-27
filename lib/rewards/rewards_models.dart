@@ -95,11 +95,21 @@ double levelProgress(int totalXp) {
   return xpIntoCurrentLevel(totalXp) / needed;
 }
 
-enum CeremonyType { levelUp }
+enum CeremonyType { levelUp, badgeUnlock }
 
+/// DS §5.8's ceremony overlay spec covers both "Achievement/level"
+/// events in one motion spec -- badge unlocks (E6-04) reuse this same
+/// event/queue/suppression mechanism rather than a second parallel one.
 class CeremonyEvent {
   final CeremonyType type;
-  final int level;
+  final int? level;
+  final String? badgeName;
+  final String? tierLabel;
 
-  const CeremonyEvent({required this.type, required this.level});
+  const CeremonyEvent({
+    required this.type,
+    this.level,
+    this.badgeName,
+    this.tierLabel,
+  });
 }
