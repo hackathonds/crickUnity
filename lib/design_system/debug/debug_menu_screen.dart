@@ -132,6 +132,7 @@ import 'badge_tile_screen.dart';
 import 'buttons_screen.dart';
 import 'card_screen.dart';
 import '../../analytics/player_analytics_screen.dart';
+import '../../analytics/team_captain_analytics_screen.dart';
 import 'chart_gallery_screen.dart';
 import 'chart_shell_screen.dart';
 import 'comment_widget_screen.dart';
@@ -423,6 +424,18 @@ class DebugMenuScreen extends StatelessWidget {
             ),
             onTap: () => Navigator.of(context).push(
               MaterialPageRoute(builder: (_) => const PlayerAnalyticsScreen()),
+            ),
+          ),
+          ListTile(
+            title: const Text('Team & captain analytics'),
+            subtitle: const Text(
+              'E13-03 — toss/bowling-change/lineup-cluster analysis, '
+              'margins, collapse frequency, ground record',
+            ),
+            onTap: () => Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (_) => const TeamCaptainAnalyticsScreen(),
+              ),
             ),
           ),
           ListTile(

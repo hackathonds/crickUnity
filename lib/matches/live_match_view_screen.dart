@@ -3,7 +3,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../design_system/components/app_bottom_sheet.dart';
 import '../design_system/components/app_button.dart';
+import '../design_system/components/app_chart_shell.dart';
 import '../design_system/components/app_text_field.dart';
+import '../design_system/components/charts/app_manhattan_chart.dart';
+import '../design_system/components/charts/app_tag_coverage_caption.dart';
+import '../design_system/components/charts/app_wagon_wheel_chart.dart';
+import '../design_system/components/charts/app_worm_chart.dart';
 import '../design_system/tokens/app_colors.dart';
 import '../design_system/tokens/app_spacing.dart';
 import '../design_system/tokens/app_typography.dart';
@@ -20,11 +25,17 @@ import 'scoring_provider.dart';
 /// when scorer offline." Supersedes E4-08's minimal MatchViewerScreen,
 /// which only ever existed as a stand-in for this screen.
 ///
-/// Charts (DS §3.3: Manhattan/Worm/Partnerships/Wagon wheel) are
-/// rendered as simplified bar/list views rather than full custom-paint
-/// chart graphics -- proportionate to a debug-demo build, in the same
-/// spirit as other visualization simplifications this session (e.g.
-/// the field map's plain oval instead of a photorealistic ground).
+/// Charts (DS §3.3: Manhattan/Worm/Wagon wheel) now render via E13-01's
+/// real chart primitives (this tab's own doc comment used to flag them
+/// as "simplified bar/list views ... proportionate to a debug-demo
+/// build" until that primitive library existed -- retired now, E13-03
+/// addendum). Partnerships has no dedicated primitive (only the 7
+/// visualizations E13-01 actually shipped are reused anywhere this
+/// session -- see chart_gallery_screen.dart's own flagged-count note),
+/// so it stays a plain list. "Momentum" (E13-03, PRD's "match analysis
+/// room": momentum timeline + turning-point card) reuses
+/// [InningsState.winProbabilitySeries] as the timeline and flags the
+/// over with the largest swing as the turning point.
 /// Gallery tab reuses [GalleryBody] (E4-14) as a fan/spectator viewer
 /// (never captain here -- curate actions are Match Detail/Gallery-tool
 /// scope, not the spectator viewer's).
@@ -497,6 +508,24 @@ class _FanPredictionChipState extends State<_FanPredictionChip> {
   }
 }
 
+/// E13-03: the over (0-indexed) where [InningsState.winProbabilitySeries]
+/// swings the most -- PRD/DS name no "turning point" formula, so "the
+/// biggest single-over probability swing" is a flagged judgment call,
+/// same convention as the series itself (scoring_models.dart).
+int? _turningPointOverIndex(List<double> winProb) {
+  if (winProb.length < 2) return null;
+  var maxSwing = -1.0;
+  var index = 0;
+  for (var i = 1; i < winProb.length; i++) {
+    final swing = (winProb[i] - winProb[i - 1]).abs();
+    if (swing > maxSwing) {
+      maxSwing = swing;
+      index = i;
+    }
+  }
+  return index;
+}
+
 class _ChartsTab extends ConsumerWidget {
   const _ChartsTab();
 
@@ -505,12 +534,19 @@ class _ChartsTab extends ConsumerWidget {
     final colors = Theme.of(context).extension<AppColors>()!;
     final state = ref.watch(inningsProvider);
     final runsPerOver = state.runsPerOver;
-    final maxOverRuns = runsPerOver.isEmpty
-        ? 1
-        : runsPerOver
-              .map((e) => e.$1)
-              .reduce((a, b) => a > b ? a : b)
-              .clamp(1, 1 << 30);
+    final winProb = state.winProbabilitySeries;
+    final turningPoint = _turningPointOverIndex(winProb);
+
+    Widget sectionLabel(String text) => Padding(
+      padding: const EdgeInsets.only(
+        bottom: AppSpacing.sm,
+        top: AppSpacing.xxl,
+      ),
+      child: Text(
+        text,
+        style: AppTypography.label.copyWith(color: colors.textTertiary),
+      ),
+    );
 
     return ListView(
       padding: const EdgeInsets.all(AppSpacing.lg),
@@ -520,59 +556,88 @@ class _ChartsTab extends ConsumerWidget {
           style: AppTypography.label.copyWith(color: colors.textTertiary),
         ),
         const SizedBox(height: AppSpacing.sm),
-        SizedBox(
+        AppChartShell(
           key: const ValueKey('manhattanChart'),
-          height: 96,
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.end,
+          title: 'Runs & wickets per over',
+          chart: AppManhattanChart(perOver: runsPerOver),
+          onScrub: runsPerOver.isEmpty
+              ? null
+              : (fraction) {
+                  final i = (fraction * (runsPerOver.length - 1)).round();
+                  final (runs, wkts) = runsPerOver[i];
+                  return AppChartScrubValue('Over $i: $runs run(s), $wkts wkt');
+                },
+          tableViewBuilder: (context) => Column(
             children: [
               for (var i = 0; i < runsPerOver.length; i++)
-                Expanded(
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: AppSpacing.xs / 2,
-                    ),
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.end,
-                      children: [
-                        for (var w = 0; w < runsPerOver[i].$2; w++)
-                          Icon(Icons.circle, size: 6, color: colors.error),
-                        Container(
-                          height: 80 * runsPerOver[i].$1 / maxOverRuns,
-                          color: colors.primary,
-                        ),
-                      ],
-                    ),
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: AppSpacing.xs),
+                  child: Row(
+                    children: [
+                      Expanded(child: Text('Over $i')),
+                      Text('${runsPerOver[i].$1}-${runsPerOver[i].$2}'),
+                    ],
                   ),
                 ),
             ],
           ),
         ),
-        const SizedBox(height: AppSpacing.xxl),
-        Text(
-          'Worm (cumulative runs per over)',
-          style: AppTypography.label.copyWith(color: colors.textTertiary),
-        ),
-        const SizedBox(height: AppSpacing.sm),
-        Wrap(
-          spacing: AppSpacing.sm,
-          runSpacing: AppSpacing.xs,
-          children: [
-            for (var i = 0; i < state.cumulativeRunsPerOver.length; i++)
-              Text(
-                'Ov ${i + 1}: ${state.cumulativeRunsPerOver[i]}',
-                style: AppTypography.caption.copyWith(
-                  color: colors.textSecondary,
-                ),
+        if (winProb.isNotEmpty) ...[
+          sectionLabel('Momentum (win probability)'),
+          AppChartShell(
+            title: 'Win probability by over',
+            chart: AppWormChart(values: winProb, referenceLine: 50, maxY: 100),
+            onScrub: (fraction) {
+              final i = (fraction * (winProb.length - 1)).round();
+              return AppChartScrubValue(
+                'Over $i: ${winProb[i].toStringAsFixed(0)}%',
+              );
+            },
+            tableViewBuilder: (context) => Column(
+              children: [
+                for (var i = 0; i < winProb.length; i++)
+                  Padding(
+                    padding: const EdgeInsets.symmetric(
+                      vertical: AppSpacing.xs,
+                    ),
+                    child: Row(
+                      children: [
+                        Expanded(child: Text('Over $i')),
+                        Text('${winProb[i].toStringAsFixed(0)}%'),
+                      ],
+                    ),
+                  ),
+              ],
+            ),
+          ),
+          if (turningPoint != null)
+            Container(
+              key: const ValueKey('turningPointCard'),
+              margin: const EdgeInsets.only(top: AppSpacing.sm),
+              padding: const EdgeInsets.all(AppSpacing.md),
+              decoration: BoxDecoration(
+                color: colors.surfaceAlt,
+                borderRadius: BorderRadius.circular(14),
               ),
-          ],
-        ),
-        const SizedBox(height: AppSpacing.xxl),
-        Text(
-          'Partnerships',
-          style: AppTypography.label.copyWith(color: colors.textTertiary),
-        ),
-        const SizedBox(height: AppSpacing.sm),
+              child: Row(
+                children: [
+                  Icon(Icons.bolt, size: 18, color: colors.warning),
+                  const SizedBox(width: AppSpacing.sm),
+                  Expanded(
+                    child: Text(
+                      'Turning point: over $turningPoint '
+                      '(win prob ${winProb[turningPoint - 1].toStringAsFixed(0)}% '
+                      '-> ${winProb[turningPoint].toStringAsFixed(0)}%)',
+                      style: AppTypography.body.copyWith(
+                        color: colors.textPrimary,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+        ],
+        sectionLabel('Partnerships'),
         for (var i = 0; i < state.partnershipRuns.length; i++)
           Padding(
             key: ValueKey('partnershipRow_$i'),
@@ -582,27 +647,46 @@ class _ChartsTab extends ConsumerWidget {
               style: AppTypography.body.copyWith(color: colors.textPrimary),
             ),
           ),
-        const SizedBox(height: AppSpacing.xxl),
-        Text(
-          'Wagon wheel (shot direction breakdown)',
-          style: AppTypography.label.copyWith(color: colors.textTertiary),
-        ),
-        const SizedBox(height: AppSpacing.sm),
-        Text(
-          '${state.wagonCompletionPercent.toStringAsFixed(0)}% of scoring '
-          'shots logged',
-          style: AppTypography.caption.copyWith(color: colors.textTertiary),
-        ),
-        const SizedBox(height: AppSpacing.xs),
-        for (final entry in state.wagonSectorCounts.entries)
-          Padding(
-            key: ValueKey('wagonSectorRow_${entry.key.name}'),
-            padding: const EdgeInsets.symmetric(vertical: AppSpacing.xs),
-            child: Text(
-              '${wagonSectorLabels[entry.key]}: ${entry.value}',
-              style: AppTypography.body.copyWith(color: colors.textPrimary),
-            ),
+        sectionLabel('Wagon wheel'),
+        AppChartShell(
+          chartHeight: 240,
+          title: 'Shot direction breakdown',
+          legend: [
+            AppChartLegendItem(color: colors.secondary, label: 'Four'),
+            AppChartLegendItem(color: colors.accent, label: 'Six'),
+          ],
+          chart: AppWagonWheelChart(
+            shots: [
+              for (final (sector, runs) in state.wagonShots)
+                AppWagonShot(
+                  sectorIndex: WagonSector.values.indexOf(sector),
+                  runs: runs,
+                ),
+            ],
           ),
+          tableViewBuilder: (context) => Column(
+            children: [
+              for (final entry in state.wagonSectorCounts.entries)
+                Padding(
+                  key: ValueKey('wagonSectorRow_${entry.key.name}'),
+                  padding: const EdgeInsets.symmetric(vertical: AppSpacing.xs),
+                  child: Row(
+                    children: [
+                      Expanded(child: Text(wagonSectorLabels[entry.key]!)),
+                      Text('${entry.value}'),
+                    ],
+                  ),
+                ),
+            ],
+          ),
+        ),
+        Padding(
+          padding: const EdgeInsets.only(top: AppSpacing.xs),
+          child: AppChartTagCoverageCaption(
+            tagged: state.wagonTagCoverage.$1,
+            total: state.wagonTagCoverage.$2,
+          ),
+        ),
       ],
     );
   }
