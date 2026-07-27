@@ -1036,7 +1036,8 @@ class DebugMenuScreen extends StatelessWidget {
           ListTile(
             title: const Text('Expenses home'),
             subtitle: const Text(
-              'E5-01 — net header, I-owe/Owed/All tabs, ledger rows',
+              'E5-01/E5-05 — net header, I-owe/Owed/All tabs, age chips, '
+              'reminders',
             ),
             onTap: () {
               final container = ProviderScope.containerOf(
@@ -1054,6 +1055,9 @@ class DebugMenuScreen extends StatelessWidget {
                   splitAmong: equalSplit(800, mockExpenseParticipants()),
                   createdByName: 'Kabir Singh',
                   createdByIsCaptain: true,
+                  // E5-05 demo: backdated so the age chip/reminder
+                  // cadence shows the "firm" (>7d) stage on first view.
+                  now: () => DateTime.now().subtract(const Duration(days: 8)),
                 );
                 notifier.addExpense(
                   title: 'Post-match chai',

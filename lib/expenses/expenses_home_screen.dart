@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../design_system/components/app_bottom_sheet.dart';
 import '../design_system/components/app_button.dart';
 import '../design_system/components/app_expense_card.dart';
+import '../design_system/components/app_tag_chip.dart';
 import '../design_system/components/app_text_field.dart';
 import '../design_system/icons/app_icon_id.dart';
 import '../design_system/tokens/app_colors.dart';
@@ -14,6 +15,7 @@ import '../matches/matches_provider.dart';
 import 'add_edit_expense_screen.dart';
 import 'expense_models.dart';
 import 'expenses_provider.dart';
+import 'reminders_provider.dart';
 import 'settle_up_screen.dart';
 import 'settlement_models.dart';
 import 'settlements_provider.dart';
@@ -55,6 +57,83 @@ class _ExpensesHomeScreenState extends ConsumerState<ExpensesHomeScreen> {
         .where((m) => m.id == expense.contextMatchId);
     if (matches.isEmpty) return expenseCategoryLabels[expense.category]!;
     return 'vs ${matches.first.draft.opponentTeamName}';
+  }
+
+  /// PRD §11.10: age chip (per §3.2.5's warning >3d / error >7d
+  /// convention) + payer-visible reminder-cadence schedule with Snooze,
+  /// or the payee's manual-remind action -- whichever direction this
+  /// expense nets for the viewer.
+  Widget _reminderRow(AppColors colors, WidgetRef ref, Expense expense) {
+    final ageDays = DateTime.now().difference(expense.date).inDays;
+    final net = expense.netFor(widget.viewerName);
+    final remindersState = ref.watch(remindersProvider);
+    final remindersNotifier = ref.read(remindersProvider.notifier);
+    final reminderState = remindersState.stateFor(expense.id);
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(
+        AppSpacing.lg,
+        0,
+        AppSpacing.lg,
+        AppSpacing.sm,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              AppTagChip(
+                key: ValueKey('ageChip_${expense.id}'),
+                label: '${ageDays}d',
+                variant: ageChipVariant(ageDays),
+              ),
+              const SizedBox(width: AppSpacing.sm),
+              if (net < 0)
+                Expanded(
+                  child: Text(
+                    reminderCadenceLabel(ageDays),
+                    style: AppTypography.caption.copyWith(
+                      color: colors.textTertiary,
+                    ),
+                  ),
+                ),
+              const Spacer(),
+              if (net < 0)
+                AppButton(
+                  key: ValueKey('snoozeButton_${expense.id}'),
+                  variant: AppButtonVariant.tertiary,
+                  label: remindersNotifier.canSnooze(expense.id)
+                      ? 'Snooze'
+                      : 'Snoozed',
+                  onPressed: remindersNotifier.canSnooze(expense.id)
+                      ? () => remindersNotifier.snooze(expense.id)
+                      : null,
+                ),
+              if (net > 0)
+                AppButton(
+                  key: ValueKey('remindButton_${expense.id}'),
+                  variant: AppButtonVariant.tertiary,
+                  label: remindersNotifier.canSendManualReminder(expense.id)
+                      ? 'Remind'
+                      : 'Reminded today',
+                  onPressed: remindersNotifier.canSendManualReminder(expense.id)
+                      ? () => remindersNotifier.sendManualReminder(expense.id, [
+                          for (final share in expense.splitAmong)
+                            if (share.name != widget.viewerName)
+                              '${share.name}: ${reminderCopy(amount: share.amount, contextCaption: _contextCaption(expense))}',
+                        ])
+                      : null,
+                ),
+            ],
+          ),
+          if (reminderState.log.isNotEmpty)
+            Text(
+              'Last reminder sent',
+              style: AppTypography.caption.copyWith(color: colors.textTertiary),
+            ),
+        ],
+      ),
+    );
   }
 
   @override
@@ -256,6 +335,7 @@ class _ExpensesHomeScreenState extends ConsumerState<ExpensesHomeScreen> {
                                   AppExpenseRowState.pending,
                               categoryIcon: AppIconId.receipt,
                             ),
+                            _reminderRow(colors, ref, expense),
                             if (expense.approvalState ==
                                 ExpenseApprovalState.pendingApproval)
                               Padding(
