@@ -174,6 +174,13 @@ class Tournament {
   /// counter.
   final int escrowedAmount;
 
+  /// PRD §8 edge cases: "Organizer abandonment (inactive 14d mid-
+  /// event) -> Admin intervention path visible to captains." Updated
+  /// whenever the organizer takes a genuine action on this tournament
+  /// (publish, fixture edit, result recorded, payout awarded, ...);
+  /// defaults to publish time.
+  final DateTime? organizerLastActiveAt;
+
   const Tournament({
     required this.id,
     this.status = TournamentStatus.draft,
@@ -202,6 +209,7 @@ class Tournament {
     this.docsRequiredNote = '',
     this.registrationDeadline,
     this.escrowedAmount = 0,
+    this.organizerLastActiveAt,
   });
 
   /// Backlog: rain-final + tie-breaker rules are "mandatory at
@@ -214,6 +222,11 @@ class Tournament {
       tieBreakerOrder.length == TieBreaker.values.length &&
       rainFinalRule != null &&
       withdrawalRule != null;
+
+  /// PRD names the exact 14-day window (not a judgment call).
+  bool isOrganizerInactive(DateTime now) =>
+      organizerLastActiveAt != null &&
+      now.difference(organizerLastActiveAt!) > const Duration(days: 14);
 
   Tournament copyWith({
     TournamentStatus? status,
@@ -242,6 +255,7 @@ class Tournament {
     String? docsRequiredNote,
     DateTime? registrationDeadline,
     int? escrowedAmount,
+    DateTime? organizerLastActiveAt,
   }) {
     return Tournament(
       id: id,
@@ -274,6 +288,8 @@ class Tournament {
       docsRequiredNote: docsRequiredNote ?? this.docsRequiredNote,
       registrationDeadline: registrationDeadline ?? this.registrationDeadline,
       escrowedAmount: escrowedAmount ?? this.escrowedAmount,
+      organizerLastActiveAt:
+          organizerLastActiveAt ?? this.organizerLastActiveAt,
     );
   }
 }

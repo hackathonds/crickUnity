@@ -25,6 +25,16 @@ class MatchResult {
   final bool isManualAdjustment;
   final String? adjustmentReason;
 
+  /// PRD §2.12 (Tournament Organizer restrictions): "cannot change a
+  /// completed match result without both captains + scorer
+  /// acknowledgment (or documented committee ruling, which is
+  /// publicly logged)." No multi-account ack system exists (same
+  /// flagged convention as every other cross-party flow this session)
+  /// -- only the committee-ruling path is reachable; this is that
+  /// ruling's public log entry, set whenever a result overwrites an
+  /// existing one.
+  final String? committeeRulingReason;
+
   const MatchResult({
     required this.fixtureId,
     required this.homeRuns,
@@ -34,6 +44,7 @@ class MatchResult {
     this.winnerRegistrationId,
     this.isManualAdjustment = false,
     this.adjustmentReason,
+    this.committeeRulingReason,
   });
 }
 
@@ -64,6 +75,13 @@ class StandingsRow {
   final int runsAgainst;
   final double oversAgainst;
 
+  /// PRD §8 edge cases: "Team withdrawal mid-league -> past results
+  /// stand or void per pre-declared rule." A withdrawn team whose
+  /// rule is pastResultsStand still appears here (their record stays
+  /// valid for opponents' sake) but is flagged so the UI can visually
+  /// distinguish them from active competitors.
+  final bool isWithdrawn;
+
   const StandingsRow({
     required this.registrationId,
     required this.teamName,
@@ -76,6 +94,7 @@ class StandingsRow {
     this.oversFor = 0,
     this.runsAgainst = 0,
     this.oversAgainst = 0,
+    this.isWithdrawn = false,
   });
 
   double get nrr => netRunRate(

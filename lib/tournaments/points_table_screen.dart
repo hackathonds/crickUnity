@@ -66,9 +66,16 @@ class _PointsTableScreenState extends ConsumerState<PointsTableScreen> {
       );
     }
 
-    final approvedTeams = registrationsState
+    // computeStandings needs withdrawn teams too, to apply PRD §8 edge
+    // cases' withdrawal rule (their rows still exist so opponents'
+    // past results can be credited correctly under "results stand").
+    final standingsTeams = registrationsState
         .forTournament(tournament.id)
-        .where((r) => r.status == RegistrationStatus.approved)
+        .where(
+          (r) =>
+              r.status == RegistrationStatus.approved ||
+              r.status == RegistrationStatus.withdrawn,
+        )
         .toList();
     final fixtures = fixturesState.forTournament(tournament.id);
     final results = standingsState.resultsFor(tournament.id);
@@ -79,7 +86,7 @@ class _PointsTableScreenState extends ConsumerState<PointsTableScreen> {
 
     final standings = standingsNotifier.computeStandings(
       tournament,
-      approvedTeams,
+      standingsTeams,
       fixtures,
       results,
     );
@@ -102,6 +109,45 @@ class _PointsTableScreenState extends ConsumerState<PointsTableScreen> {
                 ),
             ],
           ),
+          if (tournament.isOrganizerInactive(DateTime.now())) ...[
+            const SizedBox(height: AppSpacing.sm),
+            Container(
+              key: const ValueKey('organizerInactiveBanner'),
+              padding: const EdgeInsets.all(AppSpacing.sm),
+              decoration: BoxDecoration(
+                color: colors.error.withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      // PRD §8 edge cases: "Organizer abandonment
+                      // (inactive 14d mid-event) -> Admin intervention
+                      // path visible to captains." No real Admin
+                      // console/escalation queue exists yet (flagged,
+                      // same convention as other missing-infra gaps).
+                      'Organizer has been inactive 14+ days -- escalation to Admin is available.',
+                      style: AppTypography.caption.copyWith(
+                        color: colors.error,
+                      ),
+                    ),
+                  ),
+                  TextButton(
+                    key: const ValueKey('escalateToAdminButton'),
+                    onPressed: () => ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text(
+                          'Escalated to Admin (no Admin console exists yet).',
+                        ),
+                      ),
+                    ),
+                    child: const Text('Escalate'),
+                  ),
+                ],
+              ),
+            ),
+          ],
           const SizedBox(height: AppSpacing.lg),
           _StandingsTable(rows: standings, colors: colors),
           const SizedBox(height: AppSpacing.xl),
@@ -118,6 +164,44 @@ class _PointsTableScreenState extends ConsumerState<PointsTableScreen> {
             Text(
               'All scheduled fixtures have results.',
               style: AppTypography.body.copyWith(color: colors.textSecondary),
+            ),
+          const SizedBox(height: AppSpacing.xl),
+          Text('Recorded results', style: AppTypography.h2),
+          const SizedBox(height: AppSpacing.sm),
+          for (final fixture in fixtures.where(
+            (f) => playedFixtureIds.contains(f.id),
+          ))
+            Builder(
+              builder: (context) {
+                final result = results.firstWhere(
+                  (r) => r.fixtureId == fixture.id,
+                );
+                return Padding(
+                  padding: const EdgeInsets.only(bottom: AppSpacing.sm),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      if (result.committeeRulingReason != null)
+                        Padding(
+                          padding: const EdgeInsets.only(bottom: AppSpacing.xs),
+                          child: Text(
+                            'Committee ruling (public): ${result.committeeRulingReason}',
+                            style: AppTypography.caption.copyWith(
+                              color: colors.warning,
+                            ),
+                          ),
+                        ),
+                      _RecordResultRow(
+                        key: ValueKey('changeResultRow_${fixture.id}'),
+                        tournamentId: tournament.id,
+                        fixture: fixture,
+                        colors: colors,
+                        isChange: true,
+                      ),
+                    ],
+                  ),
+                );
+              },
             ),
           const SizedBox(height: AppSpacing.xl),
           Text('What-if calculator', style: AppTypography.h2),
@@ -209,7 +293,7 @@ class _PointsTableScreenState extends ConsumerState<PointsTableScreen> {
                       _StandingsTable(
                         rows: standingsNotifier.computeStandings(
                           tournament,
-                          approvedTeams,
+                          standingsTeams,
                           fixtures,
                           results,
                           extraResult: MatchResult(
@@ -310,9 +394,14 @@ class _StandingsTable extends StatelessWidget {
                   Expanded(
                     flex: 3,
                     child: Text(
-                      '${i + 1}. ${rows[i].teamName}',
+                      // PRD §8 edge cases: a withdrawn team whose
+                      // results stand still appears here, visually
+                      // marked so it reads as no longer active.
+                      '${i + 1}. ${rows[i].teamName}${rows[i].isWithdrawn ? ' (withdrawn)' : ''}',
                       style: AppTypography.body.copyWith(
-                        color: colors.textPrimary,
+                        color: rows[i].isWithdrawn
+                            ? colors.textTertiary
+                            : colors.textPrimary,
                       ),
                     ),
                   ),
@@ -388,12 +477,14 @@ class _RecordResultRow extends ConsumerWidget {
   final String tournamentId;
   final Fixture fixture;
   final AppColors colors;
+  final bool isChange;
 
   const _RecordResultRow({
     super.key,
     required this.tournamentId,
     required this.fixture,
     required this.colors,
+    this.isChange = false,
   });
 
   @override
@@ -414,15 +505,20 @@ class _RecordResultRow extends ConsumerWidget {
             ),
           ),
           TextButton(
-            key: ValueKey('recordResultButton_${fixture.id}'),
+            key: ValueKey(
+              isChange
+                  ? 'changeResultButton_${fixture.id}'
+                  : 'recordResultButton_${fixture.id}',
+            ),
             onPressed: () => _showResultSheet(context, ref),
-            child: const Text('Record result'),
+            child: Text(isChange ? 'Change result' : 'Record result'),
           ),
-          TextButton(
-            key: ValueKey('recordWalkoverButton_${fixture.id}'),
-            onPressed: () => _showWalkoverSheet(context, ref),
-            child: const Text('Walkover'),
-          ),
+          if (!isChange)
+            TextButton(
+              key: ValueKey('recordWalkoverButton_${fixture.id}'),
+              onPressed: () => _showWalkoverSheet(context, ref),
+              child: const Text('Walkover'),
+            ),
         ],
       ),
     );
@@ -431,6 +527,7 @@ class _RecordResultRow extends ConsumerWidget {
   void _showResultSheet(BuildContext context, WidgetRef ref) {
     final homeRunsController = TextEditingController();
     final awayRunsController = TextEditingController();
+    final reasonController = TextEditingController();
     String? winnerRegId;
     showModalBottomSheet<void>(
       context: context,
@@ -447,7 +544,10 @@ class _RecordResultRow extends ConsumerWidget {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('Record result', style: AppTypography.h2),
+              Text(
+                isChange ? 'Change result' : 'Record result',
+                style: AppTypography.h2,
+              ),
               TextField(
                 controller: homeRunsController,
                 keyboardType: TextInputType.number,
@@ -486,25 +586,59 @@ class _RecordResultRow extends ConsumerWidget {
                   ),
                 ],
               ),
+              if (isChange) ...[
+                const SizedBox(height: AppSpacing.sm),
+                Text(
+                  // PRD §2.12: changing a completed result requires
+                  // both-captains+scorer ack or a publicly-logged
+                  // committee ruling -- only the ruling path is
+                  // reachable (no multi-account ack system exists).
+                  'Changing a recorded result requires a documented, publicly-logged committee ruling.',
+                  style: AppTypography.caption.copyWith(
+                    color: colors.textTertiary,
+                  ),
+                ),
+                TextField(
+                  key: const ValueKey('committeeRulingReasonField'),
+                  controller: reasonController,
+                  decoration: const InputDecoration(
+                    labelText: 'Committee ruling reason (required)',
+                  ),
+                  onChanged: (_) => setSheetState(() {}),
+                ),
+              ],
               const SizedBox(height: AppSpacing.md),
               AppButton(
+                key: const ValueKey('saveResultButton'),
                 variant: AppButtonVariant.primary,
                 label: 'Save result',
                 fullWidth: true,
-                onPressed: () {
-                  ref
-                      .read(standingsProvider.notifier)
-                      .recordResult(
-                        tournamentId,
-                        fixture.id,
-                        homeRuns: int.tryParse(homeRunsController.text) ?? 0,
-                        homeOvers: 20,
-                        awayRuns: int.tryParse(awayRunsController.text) ?? 0,
-                        awayOvers: 20,
-                        winnerRegistrationId: winnerRegId,
-                      );
-                  Navigator.of(context).pop();
-                },
+                onPressed: isChange && reasonController.text.trim().isEmpty
+                    ? null
+                    : () {
+                        final error = ref
+                            .read(standingsProvider.notifier)
+                            .recordResult(
+                              tournamentId,
+                              fixture.id,
+                              homeRuns:
+                                  int.tryParse(homeRunsController.text) ?? 0,
+                              homeOvers: 20,
+                              awayRuns:
+                                  int.tryParse(awayRunsController.text) ?? 0,
+                              awayOvers: 20,
+                              winnerRegistrationId: winnerRegId,
+                              committeeRulingReason: reasonController.text
+                                  .trim(),
+                            );
+                        if (error != null) {
+                          ScaffoldMessenger.of(
+                            context,
+                          ).showSnackBar(SnackBar(content: Text(error)));
+                          return;
+                        }
+                        Navigator.of(context).pop();
+                      },
               ),
             ],
           ),

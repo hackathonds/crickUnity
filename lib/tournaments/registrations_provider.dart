@@ -116,6 +116,9 @@ class RegistrationsNotifier extends Notifier<RegistrationsState> {
           .read(tournamentsProvider.notifier)
           .addToEscrow(tournament.id, tournament.entryFee);
     }
+    ref
+        .read(tournamentsProvider.notifier)
+        .markOrganizerActive(registration.tournamentId);
     return null;
   }
 

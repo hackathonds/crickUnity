@@ -4,6 +4,7 @@ import 'fixture_models.dart';
 import 'registration_models.dart';
 import 'standings_models.dart';
 import 'tournament_models.dart';
+import 'tournaments_provider.dart';
 
 class StandingsState {
   final Map<String, List<MatchResult>> resultsByTournament;
@@ -40,7 +41,14 @@ class StandingsNotifier extends Notifier<StandingsState> {
   @override
   StandingsState build() => const StandingsState();
 
-  void recordResult(
+  /// PRD §2.12: "cannot change a completed match result without both
+  /// captains + scorer acknowledgment (or documented committee
+  /// ruling, which is publicly logged)." A result already existing
+  /// for this fixture makes this a *change*, not a first entry, so a
+  /// [committeeRulingReason] becomes mandatory (only the committee-
+  /// ruling path is reachable -- no multi-account ack system exists,
+  /// flagged). Returns null on success, or a rejection message.
+  String? recordResult(
     String tournamentId,
     String fixtureId, {
     required int homeRuns,
@@ -48,7 +56,16 @@ class StandingsNotifier extends Notifier<StandingsState> {
     required int awayRuns,
     required double awayOvers,
     required String? winnerRegistrationId,
+    String? committeeRulingReason,
   }) {
+    final isChange = state
+        .resultsFor(tournamentId)
+        .any((r) => r.fixtureId == fixtureId);
+    if (isChange &&
+        (committeeRulingReason == null ||
+            committeeRulingReason.trim().isEmpty)) {
+      return 'Changing a completed result requires a documented committee ruling.';
+    }
     _addResult(
       tournamentId,
       MatchResult(
@@ -58,8 +75,10 @@ class StandingsNotifier extends Notifier<StandingsState> {
         awayRuns: awayRuns,
         awayOvers: awayOvers,
         winnerRegistrationId: winnerRegistrationId,
+        committeeRulingReason: isChange ? committeeRulingReason : null,
       ),
     );
+    return null;
   }
 
   /// PRD §8.4: "manual adjustments (penalties/walkovers) badge-marked
@@ -97,6 +116,7 @@ class StandingsNotifier extends Notifier<StandingsState> {
         ],
       },
     );
+    ref.read(tournamentsProvider.notifier).markOrganizerActive(tournamentId);
   }
 
   void addScenario(String tournamentId, WhatIfScenario scenario) {
@@ -123,9 +143,16 @@ class StandingsNotifier extends Notifier<StandingsState> {
   /// PRD §8.4: NRR "tappable to see formula inputs" and points-table
   /// live derivation. [extraResult] lets the what-if calculator inject
   /// one hypothetical result without touching real recorded state.
+  ///
+  /// [teams] should include both approved and withdrawn registrations
+  /// (not approved-only) so PRD §8 edge cases' withdrawal rule can be
+  /// genuinely applied: a withdrawn team's rows still exist here so
+  /// "past results stand" credits their opponents correctly; matches
+  /// involving them are voided entirely when the rule is
+  /// pastResultsVoid.
   List<StandingsRow> computeStandings(
     Tournament tournament,
-    List<TeamRegistration> approvedTeams,
+    List<TeamRegistration> teams,
     List<Fixture> fixtures,
     List<MatchResult> results, {
     MatchResult? extraResult,
@@ -139,8 +166,12 @@ class StandingsNotifier extends Notifier<StandingsState> {
     final scheme = tournament.pointsScheme;
 
     final rows = <String, StandingsRow>{
-      for (final team in approvedTeams)
-        team.id: StandingsRow(registrationId: team.id, teamName: team.teamName),
+      for (final team in teams)
+        team.id: StandingsRow(
+          registrationId: team.id,
+          teamName: team.teamName,
+          isWithdrawn: team.status == RegistrationStatus.withdrawn,
+        ),
     };
 
     for (final fixture in fixtures) {
@@ -149,6 +180,10 @@ class StandingsNotifier extends Notifier<StandingsState> {
       final home = rows[fixture.homeRegistrationId];
       final away = rows[fixture.awayRegistrationId];
       if (home == null || away == null) continue;
+      if ((home.isWithdrawn || away.isWithdrawn) &&
+          tournament.withdrawalRule == WithdrawalRule.pastResultsVoid) {
+        continue;
+      }
 
       final homeWon = result.winnerRegistrationId == fixture.homeRegistrationId;
       final awayWon = result.winnerRegistrationId == fixture.awayRegistrationId;
@@ -168,6 +203,7 @@ class StandingsNotifier extends Notifier<StandingsState> {
         oversFor: home.oversFor + result.homeOvers,
         runsAgainst: home.runsAgainst + result.awayRuns,
         oversAgainst: home.oversAgainst + result.awayOvers,
+        isWithdrawn: home.isWithdrawn,
       );
       rows[fixture.awayRegistrationId] = StandingsRow(
         registrationId: away.registrationId,
@@ -183,6 +219,7 @@ class StandingsNotifier extends Notifier<StandingsState> {
         oversFor: away.oversFor + result.awayOvers,
         runsAgainst: away.runsAgainst + result.homeRuns,
         oversAgainst: away.oversAgainst + result.homeOvers,
+        isWithdrawn: away.isWithdrawn,
       );
     }
 
