@@ -142,6 +142,81 @@ List<SplitShare> weightedSplit(
   ];
 }
 
+/// PRD §11.7: "Disputes: any participant disputes a line (reason
+/// mandatory) -> expense freezes for that person; resolution: creator
+/// amends / creator+captain uphold (disputer may escalate to Admin
+/// after 7d)." One entry per disputing participant -- the freeze is
+/// per-person, so two people can have independent, differently-resolved
+/// disputes on the same expense.
+class ExpenseDispute {
+  final String disputerName;
+  final String reason;
+  final DateTime createdAt;
+  final bool resolved;
+  final String? resolution;
+  final bool escalatedToAdmin;
+  final bool creatorUpheld;
+  final bool captainUpheld;
+
+  const ExpenseDispute({
+    required this.disputerName,
+    required this.reason,
+    required this.createdAt,
+    this.resolved = false,
+    this.resolution,
+    this.escalatedToAdmin = false,
+    this.creatorUpheld = false,
+    this.captainUpheld = false,
+  });
+
+  ExpenseDispute copyWith({
+    bool? resolved,
+    String? resolution,
+    bool? escalatedToAdmin,
+    bool? creatorUpheld,
+    bool? captainUpheld,
+  }) {
+    return ExpenseDispute(
+      disputerName: disputerName,
+      reason: reason,
+      createdAt: createdAt,
+      resolved: resolved ?? this.resolved,
+      resolution: resolution ?? this.resolution,
+      escalatedToAdmin: escalatedToAdmin ?? this.escalatedToAdmin,
+      creatorUpheld: creatorUpheld ?? this.creatorUpheld,
+      captainUpheld: captainUpheld ?? this.captainUpheld,
+    );
+  }
+}
+
+/// PRD §11.7: "creator amends ... edits after -> versioned with
+/// everyone re-notified and settlements recomputed." A full versioned-
+/// edit-with-consent flow isn't built (flagged) -- this proportionally
+/// rescales the existing split shares to the corrected total,
+/// regardless of which of the 6 methods produced them originally, with
+/// the rounding remainder going to whoever held the largest share.
+List<SplitShare> rescaleSplit(List<SplitShare> shares, int newTotal) {
+  final oldTotal = shares.fold(0, (sum, s) => sum + s.amount);
+  if (oldTotal == 0 || shares.isEmpty) return shares;
+  final scaled = <int>[];
+  var allocated = 0;
+  for (final s in shares) {
+    final amount = (s.amount * newTotal / oldTotal).floor();
+    scaled.add(amount);
+    allocated += amount;
+  }
+  final remainder = newTotal - allocated;
+  var largestIndex = 0;
+  for (var i = 1; i < shares.length; i++) {
+    if (shares[i].amount > shares[largestIndex].amount) largestIndex = i;
+  }
+  scaled[largestIndex] += remainder;
+  return [
+    for (var i = 0; i < shares.length; i++)
+      SplitShare(name: shares[i].name, amount: scaled[i]),
+  ];
+}
+
 class Expense {
   final String id;
   final String title;
@@ -158,6 +233,7 @@ class Expense {
   final String createdByName;
   final Map<String, AppExpenseRowState> settlementStates;
   final bool isIncome;
+  final List<ExpenseDispute> disputes;
 
   const Expense({
     required this.id,
@@ -175,7 +251,10 @@ class Expense {
     required this.createdByName,
     this.settlementStates = const {},
     this.isIncome = false,
+    this.disputes = const [],
   });
+
+  bool get hasActiveDispute => disputes.any((d) => !d.resolved);
 
   int get splitTotal => splitAmong.fold(0, (sum, s) => sum + s.amount);
   int get splitRemainder => amount - splitTotal;
@@ -195,15 +274,20 @@ class Expense {
     return paid - owed;
   }
 
-  Expense copyWith({ExpenseApprovalState? approvalState}) {
+  Expense copyWith({
+    ExpenseApprovalState? approvalState,
+    int? amount,
+    List<SplitShare>? splitAmong,
+    List<ExpenseDispute>? disputes,
+  }) {
     return Expense(
       id: id,
       title: title,
       category: category,
-      amount: amount,
+      amount: amount ?? this.amount,
       paidBy: paidBy,
       splitMethod: splitMethod,
-      splitAmong: splitAmong,
+      splitAmong: splitAmong ?? this.splitAmong,
       contextMatchId: contextMatchId,
       date: date,
       hasProof: hasProof,
@@ -212,6 +296,7 @@ class Expense {
       createdByName: createdByName,
       settlementStates: settlementStates,
       isIncome: isIncome,
+      disputes: disputes ?? this.disputes,
     );
   }
 }

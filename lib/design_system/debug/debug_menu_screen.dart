@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../expenses/add_edit_expense_screen.dart';
 import '../../expenses/auto_split_review_screen.dart';
+import '../../expenses/expense_detail_screen.dart';
 import '../../expenses/expense_models.dart';
 import '../../expenses/expenses_home_screen.dart';
 import '../../expenses/expenses_provider.dart';
@@ -1131,6 +1132,43 @@ class DebugMenuScreen extends StatelessWidget {
                 MaterialPageRoute(
                   builder: (_) =>
                       const SettleUpScreen(viewerName: 'Kabir Singh'),
+                ),
+              );
+            },
+          ),
+          ListTile(
+            title: const Text('Expense detail (disputed)'),
+            subtitle: const Text(
+              'E5-06 — frozen banner, activity log, amend/uphold/escalate',
+            ),
+            onTap: () {
+              final container = ProviderScope.containerOf(
+                context,
+                listen: false,
+              );
+              final notifier = container.read(expensesProvider.notifier);
+              final id = notifier.addExpense(
+                title: 'Ground fee',
+                category: ExpenseCategory.groundFees,
+                amount: 800,
+                paidBy: const [PaidByEntry(name: 'Kabir Singh', amount: 800)],
+                splitMethod: SplitMethod.equal,
+                splitAmong: equalSplit(800, mockExpenseParticipants()),
+                createdByName: 'Kabir Singh',
+                createdByIsCaptain: true,
+              );
+              notifier.disputeExpense(
+                id,
+                'Priya Nair',
+                "This wasn't the agreed ground fee amount",
+              );
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (_) => ExpenseDetailScreen(
+                    expenseId: id,
+                    viewerName: 'Kabir Singh',
+                    viewerIsCaptain: true,
+                  ),
                 ),
               );
             },

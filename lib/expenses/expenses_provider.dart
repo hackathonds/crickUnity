@@ -83,6 +83,131 @@ class ExpensesNotifier extends Notifier<ExpensesState> {
       ],
     );
   }
+
+  /// PRD §11.7: "any participant disputes a line (reason mandatory) ->
+  /// expense freezes for that person." A no-op if this disputer already
+  /// has an active (unresolved) dispute on this expense.
+  void disputeExpense(
+    String expenseId,
+    String disputerName,
+    String reason, {
+    DateTime Function() now = DateTime.now,
+  }) {
+    _updateExpense(expenseId, (e) {
+      if (e.disputes.any(
+        (d) => d.disputerName == disputerName && !d.resolved,
+      )) {
+        return e;
+      }
+      return e.copyWith(
+        disputes: [
+          ...e.disputes,
+          ExpenseDispute(
+            disputerName: disputerName,
+            reason: reason,
+            createdAt: now(),
+          ),
+        ],
+      );
+    });
+  }
+
+  /// PRD §11.7: "resolution: creator amends." Rescales the split
+  /// proportionally to [newAmount] (see [rescaleSplit]) and resolves
+  /// every currently-active dispute at once, since an amendment is a
+  /// factual correction that applies to everyone, not just whoever
+  /// happened to raise it first.
+  void amendExpense(String expenseId, int newAmount) {
+    _updateExpense(
+      expenseId,
+      (e) => e.copyWith(
+        amount: newAmount,
+        splitAmong: rescaleSplit(e.splitAmong, newAmount),
+        disputes: [
+          for (final d in e.disputes)
+            if (!d.resolved)
+              d.copyWith(resolved: true, resolution: 'amended')
+            else
+              d,
+        ],
+      ),
+    );
+  }
+
+  /// PRD §11.7: "resolution: ... creator+captain uphold." Both must
+  /// sign off (same dual-actor convention used throughout this
+  /// session, e.g. E4-09's handover approval) before the dispute
+  /// resolves; only then does it ding the creator's Trust -- no Trust
+  /// system exists yet (flagged), so that's logged, not enacted.
+  void upholdDispute(
+    String expenseId,
+    String disputerName, {
+    required bool asCreator,
+  }) {
+    _updateExpense(expenseId, (e) {
+      return e.copyWith(
+        disputes: [
+          for (final d in e.disputes)
+            if (d.disputerName == disputerName && !d.resolved)
+              _applyUphold(d, asCreator: asCreator)
+            else
+              d,
+        ],
+      );
+    });
+  }
+
+  ExpenseDispute _applyUphold(ExpenseDispute d, {required bool asCreator}) {
+    final creatorUpheld = asCreator || d.creatorUpheld;
+    final captainUpheld = !asCreator || d.captainUpheld;
+    if (creatorUpheld && captainUpheld) {
+      return d.copyWith(
+        resolved: true,
+        resolution: 'upheld',
+        creatorUpheld: true,
+        captainUpheld: true,
+      );
+    }
+    return d.copyWith(
+      creatorUpheld: creatorUpheld,
+      captainUpheld: captainUpheld,
+    );
+  }
+
+  /// PRD §11.7: "disputer may escalate to Admin after 7d." No real
+  /// Admin/Moderation queue exists yet (Epic 16, unbuilt) -- flagged;
+  /// this only records the escalation flag.
+  void escalateDispute(
+    String expenseId,
+    String disputerName, {
+    DateTime Function() now = DateTime.now,
+  }) {
+    _updateExpense(expenseId, (e) {
+      final dispute = e.disputes.where(
+        (d) => d.disputerName == disputerName && !d.resolved,
+      );
+      if (dispute.isEmpty) return e;
+      if (now().difference(dispute.first.createdAt).inDays < 7) return e;
+      return e.copyWith(
+        disputes: [
+          for (final d in e.disputes)
+            if (d.disputerName == disputerName && !d.resolved)
+              d.copyWith(escalatedToAdmin: true)
+            else
+              d,
+        ],
+      );
+    });
+  }
+
+  void _updateExpense(String expenseId, Expense Function(Expense) f) {
+    state = state.copyWith(
+      expenses: [
+        for (final e in state.expenses)
+          if (e.id == expenseId) f(e) else e,
+      ],
+    );
+  }
 }
 
 final expensesProvider = NotifierProvider<ExpensesNotifier, ExpensesState>(
