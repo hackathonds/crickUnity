@@ -137,6 +137,7 @@ import '../../analytics/player_analytics_screen.dart';
 import '../../analytics/team_captain_analytics_screen.dart';
 import '../../officials/gig_board_models.dart' show OfficialRole;
 import '../../officials/gig_board_screen.dart';
+import '../../officials/officials_console_screen.dart';
 import 'chart_gallery_screen.dart';
 import 'chart_shell_screen.dart';
 import 'comment_widget_screen.dart';
@@ -483,6 +484,16 @@ class DebugMenuScreen extends StatelessWidget {
               MaterialPageRoute(
                 builder: (_) => const GigBoardScreen(role: OfficialRole.umpire),
               ),
+            ),
+          ),
+          ListTile(
+            title: const Text('Officials console'),
+            subtitle: const Text(
+              'E14-02 — assignments/earnings/ratings tabs, credential '
+              'tier progress, payment reminder, dispute-appeal',
+            ),
+            onTap: () => Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => const OfficialsConsoleScreen()),
             ),
           ),
           ListTile(
