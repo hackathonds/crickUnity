@@ -17,6 +17,13 @@ class TournamentsState {
       draft: draft ?? this.draft,
     );
   }
+
+  Tournament? tournamentById(String id) {
+    for (final t in tournaments) {
+      if (t.id == id) return t;
+    }
+    return null;
+  }
 }
 
 /// Backlog E10-01 -- Tournament creation wizard engine. See
@@ -60,6 +67,21 @@ class TournamentsNotifier extends Notifier<TournamentsState> {
       draft: Tournament(id: _newId()),
     );
     return null;
+  }
+
+  /// PRD §8.2: entry-fee escrow credit on registration approval. Not a
+  /// content edit, so it does not bump [Tournament.publishedVersion]
+  /// the way [editPublished] does.
+  void addToEscrow(String tournamentId, int amount) {
+    state = state.copyWith(
+      tournaments: [
+        for (final t in state.tournaments)
+          if (t.id == tournamentId)
+            t.copyWith(escrowedAmount: t.escrowedAmount + amount)
+          else
+            t,
+      ],
+    );
   }
 
   /// Post-publish edits are versioned per PRD §8.1.

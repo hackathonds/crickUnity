@@ -81,6 +81,20 @@ const Map<RegistrationMode, String> registrationModeLabels = {
   RegistrationMode.inviteOnly: 'Invite-only',
 };
 
+/// Backlog cites "G.13" for the registration forms checklist -- no
+/// Appendix G exists anywhere in the frozen PRD (only Appendix A
+/// "Acceptance Criteria Pattern" and B "Cross-Module Interaction Map"
+/// actually exist, confirmed by grepping every `^# Appendix` heading).
+/// A curated, real-tournament-domain checklist stands in, same
+/// flagged-bigger-gap convention as record_models.dart's category list
+/// (E8-02).
+const List<String> commonRegistrationDocs = [
+  'Signed team roster',
+  'Player ID proof',
+  'Medical fitness undertaking',
+  'Guardian consent (minor players)',
+];
+
 enum TournamentStatus { draft, published }
 
 class PointsScheme {
@@ -153,6 +167,13 @@ class Tournament {
   final String docsRequiredNote;
   final DateTime? registrationDeadline;
 
+  /// PRD §8.2: "pays entry fee into tournament wallet (escrow)."
+  /// Running total of approved teams' entry fees -- no real payment
+  /// gateway exists (flagged, same convention as other missing-
+  /// payment-infra gaps this session), so approval just credits this
+  /// counter.
+  final int escrowedAmount;
+
   const Tournament({
     required this.id,
     this.status = TournamentStatus.draft,
@@ -180,6 +201,7 @@ class Tournament {
     this.teamCap = 8,
     this.docsRequiredNote = '',
     this.registrationDeadline,
+    this.escrowedAmount = 0,
   });
 
   /// Backlog: rain-final + tie-breaker rules are "mandatory at
@@ -219,6 +241,7 @@ class Tournament {
     int? teamCap,
     String? docsRequiredNote,
     DateTime? registrationDeadline,
+    int? escrowedAmount,
   }) {
     return Tournament(
       id: id,
@@ -250,6 +273,7 @@ class Tournament {
       teamCap: teamCap ?? this.teamCap,
       docsRequiredNote: docsRequiredNote ?? this.docsRequiredNote,
       registrationDeadline: registrationDeadline ?? this.registrationDeadline,
+      escrowedAmount: escrowedAmount ?? this.escrowedAmount,
     );
   }
 }
