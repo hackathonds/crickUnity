@@ -17,7 +17,33 @@ class BookingsState {
 /// top-of-file note on the exact hold/grace/penalty windows this cites.
 class BookingsNotifier extends Notifier<BookingsState> {
   @override
-  BookingsState build() => const BookingsState();
+  BookingsState build() => BookingsState(bookings: _seedCompletedBooking());
+
+  /// E9-04 (Reviews) needs a genuinely completed stay to exercise the
+  /// verified-booker gate against -- one seeded past booking (no
+  /// per-user renter field exists on Booking; same single-account
+  /// convention as composerViewerName elsewhere) rather than a review
+  /// model that trusts an unchecked flag.
+  static List<Booking> _seedCompletedBooking() {
+    final slotStart = DateTime.now().subtract(const Duration(days: 10));
+    return [
+      Booking(
+        id: 'booking-seed-completed',
+        groundId: 'ground-green-valley',
+        groundName: 'Green Valley Ground',
+        slotStart: slotStart,
+        slotEnd: slotStart.add(const Duration(hours: 1)),
+        partySize: 11,
+        purpose: BookingPurpose.match,
+        priceQuote: 800,
+        depositAmount: 160,
+        status: BookingStatus.completed,
+        policyAcknowledged: true,
+        qrCode: 'QR-ground-green-valley-seed',
+        createdAt: slotStart.subtract(const Duration(days: 2)),
+      ),
+    ];
+  }
 
   /// PRD §10.2 step 1-3: pick slot -> party size & purpose -> price
   /// quote incl. deposits. Slots are treated as 1-hour blocks priced at
@@ -153,6 +179,37 @@ class BookingsNotifier extends Notifier<BookingsState> {
     if (booking == null || !booking.noShowEligible(now())) return;
     _update(bookingId, (b) => b.copyWith(status: BookingStatus.noShow));
   }
+
+  /// Transitions confirmed/rescheduled bookings whose slot has fully
+  /// elapsed to completed -- the real state E9-04's verified-booker
+  /// gate reads. Same "sweep on read" convention as expireStaleHolds.
+  void sweepCompletions({DateTime Function() now = DateTime.now}) {
+    final nowValue = now();
+    final due = state.bookings.any(
+      (b) =>
+          (b.status == BookingStatus.confirmed ||
+              b.status == BookingStatus.rescheduled) &&
+          nowValue.isAfter(b.slotEnd),
+    );
+    if (!due) return;
+    state = state.copyWith(
+      bookings: [
+        for (final b in state.bookings)
+          if ((b.status == BookingStatus.confirmed ||
+                  b.status == BookingStatus.rescheduled) &&
+              nowValue.isAfter(b.slotEnd))
+            b.copyWith(status: BookingStatus.completed)
+          else
+            b,
+      ],
+    );
+  }
+
+  List<Booking> completedBookingsFor(String groundId) => state.bookings
+      .where(
+        (b) => b.groundId == groundId && b.status == BookingStatus.completed,
+      )
+      .toList();
 
   void _update(String bookingId, Booking Function(Booking) transform) {
     state = state.copyWith(
