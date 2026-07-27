@@ -52,6 +52,9 @@ import '../../messaging/chat_list_screen.dart';
 import '../../moderation/moderation_settings_screen.dart';
 import '../../recognition/leaderboard_hub_screen.dart';
 import '../../recognition/challenges_hub_screen.dart';
+import '../../recognition/compare_screen.dart';
+import '../../recognition/grounds_heatmap_screen.dart';
+import '../../recognition/personal_bests_screen.dart';
 import '../../recognition/records_hub_screen.dart';
 import '../../social/events_list_screen.dart';
 import '../../social/feed_screen.dart';
@@ -1724,6 +1727,34 @@ class DebugMenuScreen extends StatelessWidget {
             ),
             onTap: () => Navigator.of(context).push(
               MaterialPageRoute(builder: (_) => const ChallengesHubScreen()),
+            ),
+          ),
+          ListTile(
+            title: const Text('Compare tool'),
+            subtitle: const Text(
+              'E8-04 (1/3) — Consent-gated side-by-side + radar stand-in',
+            ),
+            onTap: () => Navigator.of(
+              context,
+            ).push(MaterialPageRoute(builder: (_) => const CompareScreen())),
+          ),
+          ListTile(
+            title: const Text('Grounds heatmap'),
+            subtitle: const Text(
+              'E8-04 (2/3) — Visited-grounds grid, my-city toggle, '
+              'ground record card',
+            ),
+            onTap: () => Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => const GroundsHeatmapScreen()),
+            ),
+          ),
+          ListTile(
+            title: const Text('Personal Bests'),
+            subtitle: const Text(
+              'E8-04 (3/3) — PB shelf, live PB-detection announcements',
+            ),
+            onTap: () => Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => const PersonalBestsScreen()),
             ),
           ),
           ListTile(

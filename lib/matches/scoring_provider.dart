@@ -1,6 +1,8 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../offline/queued_action.dart';
+import '../recognition/personal_bests_provider.dart';
+import '../recognition/record_models.dart';
 import '../rewards/achievements_provider.dart';
 import '../rewards/rewards_models.dart';
 import '../rewards/rewards_provider.dart';
@@ -371,6 +373,17 @@ class InningsNotifier extends Notifier<InningsState> {
     if (!everCorrected && state.pendingCorrections.isEmpty) {
       ref.read(achievementsProvider.notifier).recordDisputeFreeMatchScored();
     }
+    // E8-04's Personal Bests -- "Achievements & records checked" below
+    // is a real check for the scorer's own batting/bowling line, same
+    // scoped identity used above (flagged there).
+    final scorerBatting = state.batters[state.scorerName];
+    final scorerBowling = state.bowlers[state.scorerName];
+    ref.read(personalBestsProvider.notifier).checkPerformance({
+      if (scorerBatting != null)
+        RecordCategory.highestIndividualScore: scorerBatting.runs,
+      if (scorerBowling != null)
+        RecordCategory.bestBowlingFigures: scorerBowling.wickets,
+    });
     state = state.copyWith(
       rippleFired: true,
       rippleLog: const [
