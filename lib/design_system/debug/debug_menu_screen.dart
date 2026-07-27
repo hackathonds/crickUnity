@@ -8,6 +8,7 @@ import '../../expenses/expense_detail_screen.dart';
 import '../../expenses/expense_models.dart';
 import '../../expenses/expenses_home_screen.dart';
 import '../../expenses/expenses_provider.dart';
+import '../../expenses/reports_screen.dart';
 import '../../expenses/settle_up_screen.dart';
 import '../../expenses/treasury_screen.dart';
 import '../../expenses/wallet_payouts_provider.dart';
@@ -1233,6 +1234,49 @@ class DebugMenuScreen extends StatelessWidget {
                   builder: (_) => const TreasuryScreen(
                     viewerName: 'Kabir Singh',
                     viewerIsManagerOrCaptain: true,
+                  ),
+                ),
+              );
+            },
+          ),
+          ListTile(
+            title: const Text('Reports (donut/trend/insights/export)'),
+            subtitle: const Text(
+              'E5-08 — period segmented, category breakdown, CSV export',
+            ),
+            onTap: () {
+              final container = ProviderScope.containerOf(
+                context,
+                listen: false,
+              );
+              final notifier = container.read(expensesProvider.notifier);
+              if (container.read(expensesProvider).expenses.isEmpty) {
+                notifier.addExpense(
+                  title: 'Ground fee',
+                  category: ExpenseCategory.groundFees,
+                  amount: 800,
+                  paidBy: const [PaidByEntry(name: 'Kabir Singh', amount: 800)],
+                  splitMethod: SplitMethod.equal,
+                  splitAmong: equalSplit(800, mockExpenseParticipants()),
+                  createdByName: 'Kabir Singh',
+                  createdByIsCaptain: true,
+                );
+                notifier.addExpense(
+                  title: 'Post-match chai',
+                  category: ExpenseCategory.food,
+                  amount: 200,
+                  paidBy: const [PaidByEntry(name: 'Priya Nair', amount: 200)],
+                  splitMethod: SplitMethod.equal,
+                  splitAmong: equalSplit(200, mockExpenseParticipants()),
+                  createdByName: 'Priya Nair',
+                  createdByIsCaptain: false,
+                );
+              }
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (_) => const ReportsScreen(
+                    viewerName: 'Kabir Singh',
+                    viewerIsCaptain: true,
                   ),
                 ),
               );
