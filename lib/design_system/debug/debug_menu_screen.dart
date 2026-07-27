@@ -18,6 +18,7 @@ import '../../expenses/treasury_screen.dart';
 import '../../expenses/wallet_payouts_provider.dart';
 import '../../academies/academy_console_screen.dart';
 import '../../clubs/club_home_screen.dart';
+import '../../coaching/coach_console_screen.dart';
 import '../../grounds/booking_flow_screen.dart';
 import '../../grounds/ground_profile_screen.dart';
 import '../../grounds/grounds_discovery_screen.dart';
@@ -1877,6 +1878,15 @@ class DebugMenuScreen extends StatelessWidget {
             ),
             onTap: () => Navigator.of(context).push(
               MaterialPageRoute(builder: (_) => const AcademyConsoleScreen()),
+            ),
+          ),
+          ListTile(
+            title: const Text('Coach console + drill library'),
+            subtitle: const Text(
+              'E11-03 — Template sessions, rings, PB tracking, progress cards',
+            ),
+            onTap: () => Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => const CoachConsoleScreen()),
             ),
           ),
           ListTile(
