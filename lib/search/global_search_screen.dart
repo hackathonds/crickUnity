@@ -1,14 +1,20 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../design_system/components/app_button.dart';
 import '../design_system/components/app_search_bar.dart';
 import '../design_system/tokens/app_colors.dart';
 import '../design_system/tokens/app_spacing.dart';
 import '../design_system/tokens/app_typography.dart';
+import '../grounds/ground_models.dart';
 import '../grounds/grounds_provider.dart';
+import '../onboarding/profile_wizard_provider.dart' show PrimaryRole;
+import '../social/feed_models.dart'
+    show AttachedObjectType, attachedObjectTypeLabels;
 import '../teams/selection_board_models.dart';
 import '../tournaments/tournament_models.dart';
 import '../tournaments/tournaments_provider.dart';
+import 'search_filter_models.dart';
 import 'search_models.dart';
 import 'search_provider.dart';
 
@@ -27,6 +33,10 @@ class GlobalSearchScreen extends ConsumerStatefulWidget {
 class _GlobalSearchScreenState extends ConsumerState<GlobalSearchScreen> {
   String _query = '';
   final Set<SearchResultType> _expanded = {};
+  PlayerFilter? _playerFilter;
+  TournamentFilter? _tournamentFilter;
+  GroundFilter? _groundFilter;
+  PostFilter? _postFilter;
 
   // PRD zero-state: "Trending in your city (tournaments, hashtags)."
   // No real hashtag-trending computation exists (flagged, same
@@ -44,6 +54,305 @@ class _GlobalSearchScreenState extends ConsumerState<GlobalSearchScreen> {
     ref.read(searchProvider.notifier).addRecentSearch(query);
   }
 
+  /// Backlog E12-02: "filter sheet per type." One sheet, a type
+  /// selector at top, only the fields with real backing data enabled
+  /// per type (see search_filter_models.dart's top-of-file note).
+  void _showAdvancedFiltersSheet(BuildContext context) {
+    SearchResultType selectedType = SearchResultType.tournament;
+    PlayerFilter draftPlayer = _playerFilter ?? const PlayerFilter();
+    TournamentFilter draftTournament =
+        _tournamentFilter ?? const TournamentFilter();
+    GroundFilter draftGround = _groundFilter ?? const GroundFilter();
+    PostFilter draftPost = _postFilter ?? const PostFilter();
+    final nameController = TextEditingController();
+
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setSheetState) => Padding(
+          padding: EdgeInsets.only(
+            left: AppSpacing.lg,
+            right: AppSpacing.lg,
+            top: AppSpacing.lg,
+            bottom: MediaQuery.of(context).viewInsets.bottom + AppSpacing.lg,
+          ),
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('Advanced filters', style: AppTypography.h2),
+                const SizedBox(height: AppSpacing.sm),
+                Wrap(
+                  spacing: AppSpacing.sm,
+                  children: [
+                    for (final type in [
+                      SearchResultType.player,
+                      SearchResultType.team,
+                      SearchResultType.tournament,
+                      SearchResultType.ground,
+                      SearchResultType.club,
+                      SearchResultType.post,
+                    ])
+                      ChoiceChip(
+                        key: ValueKey('filterTypeChip_${type.name}'),
+                        label: Text(searchResultTypeLabels[type]!),
+                        selected: selectedType == type,
+                        onSelected: (_) =>
+                            setSheetState(() => selectedType = type),
+                      ),
+                  ],
+                ),
+                const SizedBox(height: AppSpacing.md),
+                if (selectedType == SearchResultType.player) ...[
+                  Text('Role', style: AppTypography.label),
+                  Wrap(
+                    spacing: AppSpacing.sm,
+                    children: [
+                      for (final role in PrimaryRole.values)
+                        ChoiceChip(
+                          label: Text(role.name),
+                          selected: draftPlayer.role == role,
+                          onSelected: (_) => setSheetState(
+                            () => draftPlayer = PlayerFilter(
+                              role: draftPlayer.role == role ? null : role,
+                            ),
+                          ),
+                        ),
+                    ],
+                  ),
+                  const Text(
+                    'Batting/bowling style, city+radius, age band, rating range, '
+                    'Trust band, free-agent, and availability-day filters await a '
+                    'real player-profile model (not yet built).',
+                  ),
+                ] else if (selectedType == SearchResultType.team)
+                  const Text(
+                    'No team directory exists yet beyond names (flagged) -- '
+                    'city/format/recruiting-now/activity-level/follower-count '
+                    'filters are not yet available.',
+                  )
+                else if (selectedType == SearchResultType.tournament) ...[
+                  Text('Format', style: AppTypography.label),
+                  Wrap(
+                    spacing: AppSpacing.sm,
+                    children: [
+                      for (final format in TournamentFormat.values)
+                        ChoiceChip(
+                          label: Text(tournamentFormatLabels[format]!),
+                          selected: draftTournament.format == format,
+                          onSelected: (_) => setSheetState(
+                            () => draftTournament = TournamentFilter(
+                              city: draftTournament.city,
+                              format: draftTournament.format == format
+                                  ? null
+                                  : format,
+                              ballType: draftTournament.ballType,
+                              maxEntryFee: draftTournament.maxEntryFee,
+                              registrationOpenOnly:
+                                  draftTournament.registrationOpenOnly,
+                            ),
+                          ),
+                        ),
+                    ],
+                  ),
+                  Text('Ball', style: AppTypography.label),
+                  Wrap(
+                    spacing: AppSpacing.sm,
+                    children: [
+                      for (final ball in TournamentBallType.values)
+                        ChoiceChip(
+                          label: Text(tournamentBallTypeLabels[ball]!),
+                          selected: draftTournament.ballType == ball,
+                          onSelected: (_) => setSheetState(
+                            () => draftTournament = TournamentFilter(
+                              city: draftTournament.city,
+                              format: draftTournament.format,
+                              ballType: draftTournament.ballType == ball
+                                  ? null
+                                  : ball,
+                              maxEntryFee: draftTournament.maxEntryFee,
+                              registrationOpenOnly:
+                                  draftTournament.registrationOpenOnly,
+                            ),
+                          ),
+                        ),
+                    ],
+                  ),
+                  CheckboxListTile(
+                    contentPadding: EdgeInsets.zero,
+                    title: const Text('Registration open only'),
+                    value: draftTournament.registrationOpenOnly,
+                    onChanged: (v) => setSheetState(
+                      () => draftTournament = TournamentFilter(
+                        city: draftTournament.city,
+                        format: draftTournament.format,
+                        ballType: draftTournament.ballType,
+                        maxEntryFee: draftTournament.maxEntryFee,
+                        registrationOpenOnly: v ?? false,
+                      ),
+                    ),
+                  ),
+                  const Text(
+                    'City filter and organizer-score filter await richer real data -- flagged.',
+                  ),
+                ] else if (selectedType == SearchResultType.ground) ...[
+                  Text('Pitch type', style: AppTypography.label),
+                  Wrap(
+                    spacing: AppSpacing.sm,
+                    children: [
+                      for (final pitch in PitchType.values)
+                        ChoiceChip(
+                          label: Text(pitchTypeLabels[pitch]!),
+                          selected: draftGround.pitchType == pitch,
+                          onSelected: (_) => setSheetState(
+                            () => draftGround = GroundFilter(
+                              maxDistanceKm: draftGround.maxDistanceKm,
+                              maxPrice: draftGround.maxPrice,
+                              pitchType: draftGround.pitchType == pitch
+                                  ? null
+                                  : pitch,
+                              facilities: draftGround.facilities,
+                              minRating: draftGround.minRating,
+                            ),
+                          ),
+                        ),
+                    ],
+                  ),
+                  Text('Facilities', style: AppTypography.label),
+                  Wrap(
+                    spacing: AppSpacing.sm,
+                    children: [
+                      for (final facility in Facility.values)
+                        FilterChip(
+                          label: Text(facilityLabels[facility]!),
+                          selected: draftGround.facilities.contains(facility),
+                          onSelected: (_) => setSheetState(() {
+                            final updated = {...draftGround.facilities};
+                            if (!updated.add(facility)) {
+                              updated.remove(facility);
+                            }
+                            draftGround = GroundFilter(
+                              maxDistanceKm: draftGround.maxDistanceKm,
+                              maxPrice: draftGround.maxPrice,
+                              pitchType: draftGround.pitchType,
+                              facilities: updated,
+                              minRating: draftGround.minRating,
+                            );
+                          }),
+                        ),
+                    ],
+                  ),
+                ] else if (selectedType == SearchResultType.club)
+                  const Text(
+                    'Club has no city/membership-open/teams-count field yet '
+                    '(flagged) -- no club filters are available.',
+                  )
+                else if (selectedType == SearchResultType.post) ...[
+                  Text('Attached object type', style: AppTypography.label),
+                  Wrap(
+                    spacing: AppSpacing.sm,
+                    children: [
+                      for (final type in AttachedObjectType.values)
+                        ChoiceChip(
+                          label: Text(attachedObjectTypeLabels[type]!),
+                          selected: draftPost.attachedObjectType == type,
+                          onSelected: (_) => setSheetState(
+                            () => draftPost = PostFilter(
+                              author: draftPost.author,
+                              hashtag: draftPost.hashtag,
+                              attachedObjectType:
+                                  draftPost.attachedObjectType == type
+                                  ? null
+                                  : type,
+                              afterDate: draftPost.afterDate,
+                            ),
+                          ),
+                        ),
+                    ],
+                  ),
+                  const Text(
+                    'Author/hashtag/date filters use the same search field -- author/date pickers await a future pass.',
+                  ),
+                ],
+                const SizedBox(height: AppSpacing.md),
+                TextField(
+                  controller: nameController,
+                  decoration: const InputDecoration(
+                    labelText: 'Save this filter set as...',
+                  ),
+                ),
+                const SizedBox(height: AppSpacing.sm),
+                Row(
+                  children: [
+                    Expanded(
+                      child: AppButton(
+                        variant: AppButtonVariant.secondary,
+                        label: 'Save',
+                        fullWidth: true,
+                        onPressed: nameController.text.trim().isEmpty
+                            ? null
+                            : () {
+                                ref
+                                    .read(searchProvider.notifier)
+                                    .saveFilterSet(
+                                      SavedFilterSet(
+                                        id: 'filterset-${DateTime.now().microsecondsSinceEpoch}',
+                                        name: nameController.text.trim(),
+                                        playerFilter:
+                                            selectedType ==
+                                                SearchResultType.player
+                                            ? draftPlayer
+                                            : null,
+                                        tournamentFilter:
+                                            selectedType ==
+                                                SearchResultType.tournament
+                                            ? draftTournament
+                                            : null,
+                                        groundFilter:
+                                            selectedType ==
+                                                SearchResultType.ground
+                                            ? draftGround
+                                            : null,
+                                        postFilter:
+                                            selectedType ==
+                                                SearchResultType.post
+                                            ? draftPost
+                                            : null,
+                                      ),
+                                    );
+                              },
+                      ),
+                    ),
+                    const SizedBox(width: AppSpacing.sm),
+                    Expanded(
+                      child: AppButton(
+                        key: const ValueKey('applyFiltersButton'),
+                        variant: AppButtonVariant.primary,
+                        label: 'Apply',
+                        fullWidth: true,
+                        onPressed: () {
+                          setState(() {
+                            _playerFilter = draftPlayer;
+                            _tournamentFilter = draftTournament;
+                            _groundFilter = draftGround;
+                            _postFilter = draftPost;
+                          });
+                          Navigator.of(context).pop();
+                        },
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final colors = Theme.of(context).extension<AppColors>()!;
@@ -51,14 +360,37 @@ class _GlobalSearchScreenState extends ConsumerState<GlobalSearchScreen> {
     final notifier = ref.read(searchProvider.notifier);
     final results = _query.isEmpty
         ? const <SearchResult>[]
-        : notifier.performSearch(_query);
+        : notifier.performSearch(
+            _query,
+            playerFilter: _playerFilter,
+            tournamentFilter: _tournamentFilter,
+            groundFilter: _groundFilter,
+            postFilter: _postFilter,
+          );
     final grouped = <SearchResultType, List<SearchResult>>{};
     for (final r in results) {
       grouped.putIfAbsent(r.type, () => []).add(r);
     }
+    final hasActiveFilters =
+        (_playerFilter?.isEmpty == false) ||
+        (_tournamentFilter?.isEmpty == false) ||
+        (_groundFilter?.isEmpty == false) ||
+        (_postFilter?.isEmpty == false);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Search')),
+      appBar: AppBar(
+        title: const Text('Search'),
+        actions: [
+          IconButton(
+            key: const ValueKey('advancedFiltersButton'),
+            icon: Icon(
+              hasActiveFilters ? Icons.filter_alt : Icons.filter_alt_outlined,
+            ),
+            tooltip: 'Advanced filters',
+            onPressed: () => _showAdvancedFiltersSheet(context),
+          ),
+        ],
+      ),
       body: Padding(
         padding: const EdgeInsets.all(AppSpacing.lg),
         child: Column(
@@ -70,6 +402,29 @@ class _GlobalSearchScreenState extends ConsumerState<GlobalSearchScreen> {
               onSubmit: _runSearch,
               onRecentTap: _runSearch,
             ),
+            if (searchState.savedFilterSets.isNotEmpty) ...[
+              const SizedBox(height: AppSpacing.sm),
+              Wrap(
+                spacing: AppSpacing.sm,
+                children: [
+                  for (final saved in searchState.savedFilterSets)
+                    InputChip(
+                      key: ValueKey('savedFilterSetChip_${saved.id}'),
+                      label: Text(saved.name),
+                      onPressed: () => setState(() {
+                        _playerFilter = saved.playerFilter ?? _playerFilter;
+                        _tournamentFilter =
+                            saved.tournamentFilter ?? _tournamentFilter;
+                        _groundFilter = saved.groundFilter ?? _groundFilter;
+                        _postFilter = saved.postFilter ?? _postFilter;
+                      }),
+                      onDeleted: () => ref
+                          .read(searchProvider.notifier)
+                          .removeFilterSet(saved.id),
+                    ),
+                ],
+              ),
+            ],
             const SizedBox(height: AppSpacing.lg),
             Expanded(
               child: _query.isEmpty
