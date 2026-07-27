@@ -137,6 +137,7 @@ import '../../analytics/player_analytics_screen.dart';
 import '../../analytics/team_captain_analytics_screen.dart';
 import '../../officials/commentator_room_screen.dart';
 import '../../officials/knowledge_hub_screen.dart';
+import '../../streaming/go_live_screen.dart';
 import '../../officials/conduct_report_screen.dart';
 import '../../officials/gig_board_models.dart' show OfficialRole;
 import '../../officials/gig_board_screen.dart';
@@ -528,6 +529,16 @@ class DebugMenuScreen extends StatelessWidget {
             onTap: () => Navigator.of(context).push(
               MaterialPageRoute(builder: (_) => const KnowledgeHubScreen()),
             ),
+          ),
+          ListTile(
+            title: const Text('Go live'),
+            subtitle: const Text(
+              'E15-01 — preflight checklist, overlay theme, sponsor slot, '
+              'countdown, live HUD, VOD chapters',
+            ),
+            onTap: () => Navigator.of(
+              context,
+            ).push(MaterialPageRoute(builder: (_) => const GoLiveScreen())),
           ),
           ListTile(
             title: const Text('Onboarding: full pre-tab stack'),

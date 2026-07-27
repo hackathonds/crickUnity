@@ -13,6 +13,8 @@ import '../design_system/tokens/app_colors.dart';
 import '../design_system/tokens/app_spacing.dart';
 import '../design_system/tokens/app_typography.dart';
 import '../offline/is_online_provider.dart';
+import '../streaming/go_live_models.dart';
+import '../streaming/go_live_provider.dart';
 import 'gallery_screen.dart';
 import 'scorecard_screen.dart';
 import 'scoring_models.dart';
@@ -39,6 +41,15 @@ import 'scoring_provider.dart';
 /// Gallery tab reuses [GalleryBody] (E4-14) as a fan/spectator viewer
 /// (never captain here -- curate actions are Match Detail/Gallery-tool
 /// scope, not the spectator viewer's).
+///
+/// E15-01 (PRD §12.4, DS §11.8): adds the Watch tab -- "player 16:9,
+/// live chat (slow-mode chip when set), pinned comment slot; VOD
+/// chaptered scrubber (innings/wicket chapter ticks)." No video-player
+/// package exists (flagged, same convention as every other
+/// missing-platform-API gap this session) -- the player is a 16:9
+/// placeholder. Reuses the real goLiveProvider (Go-Live flow,
+/// go_live_provider.dart) for slow-mode state and VOD chapters rather
+/// than a second parallel stream-state model.
 class LiveMatchViewScreen extends ConsumerStatefulWidget {
   /// PRD §7.8: "scorer quick-edit" / "scorer can add custom notes" --
   /// only ever true when the scorer themself opens this screen (a
@@ -55,9 +66,13 @@ class LiveMatchViewScreen extends ConsumerStatefulWidget {
 
 class _LiveMatchViewScreenState extends ConsumerState<LiveMatchViewScreen>
     with SingleTickerProviderStateMixin {
+  // DS §7 screen 28: "Commentary(default)." §11.8 adds a Watch tab
+  // ahead of it for the live-stream viewer -- initialIndex keeps
+  // Commentary the selected tab so the established default holds.
   late final TabController _tabController = TabController(
-    length: 4,
+    length: 5,
     vsync: this,
+    initialIndex: 1,
   );
 
   @override
@@ -115,6 +130,7 @@ class _LiveMatchViewScreenState extends ConsumerState<LiveMatchViewScreen>
           TabBar(
             controller: _tabController,
             tabs: const [
+              Tab(text: 'Watch'),
               Tab(text: 'Commentary'),
               Tab(text: 'Scorecard'),
               Tab(text: 'Charts'),
@@ -125,6 +141,7 @@ class _LiveMatchViewScreenState extends ConsumerState<LiveMatchViewScreen>
             child: TabBarView(
               controller: _tabController,
               children: [
+                const _WatchTab(),
                 _CommentaryTab(isScorer: widget.isScorer),
                 const ScorecardBody(),
                 const _ChartsTab(),
@@ -134,6 +151,124 @@ class _LiveMatchViewScreenState extends ConsumerState<LiveMatchViewScreen>
           ),
         ],
       ),
+    );
+  }
+}
+
+class _WatchTab extends ConsumerWidget {
+  const _WatchTab();
+
+  static const _mockChat = [
+    ChatMessage(author: 'Priya N.', text: 'Great shot!'),
+    ChatMessage(
+      author: 'Match host',
+      text: 'Welcome everyone -- toss just happened.',
+      pinned: true,
+    ),
+    ChatMessage(author: 'Kabir S.', text: 'Who\'s opening the bowling?'),
+  ];
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final colors = Theme.of(context).extension<AppColors>()!;
+    final goLive = ref.watch(goLiveProvider);
+    final ended = goLive.phase == GoLivePhase.ended;
+
+    return ListView(
+      padding: const EdgeInsets.all(AppSpacing.lg),
+      children: [
+        AspectRatio(
+          key: const ValueKey('watchTabPlayerPlaceholder'),
+          aspectRatio: 16 / 9,
+          child: Container(
+            decoration: BoxDecoration(
+              color: colors.textPrimary,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Center(
+              child: Icon(
+                Icons.play_circle_outline,
+                size: 48,
+                color: colors.surface,
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(height: AppSpacing.md),
+        if (ended) ...[
+          Text(
+            'VOD chapters',
+            style: AppTypography.label.copyWith(color: colors.textTertiary),
+          ),
+          for (final chapter in ref.read(goLiveProvider.notifier).vodChapters())
+            Padding(
+              key: ValueKey('vodChapterRow_${chapter.ballIndex}'),
+              padding: const EdgeInsets.symmetric(vertical: AppSpacing.xs),
+              child: Row(
+                children: [
+                  Text(
+                    'Ball ${chapter.ballIndex}',
+                    style: AppTypography.caption.copyWith(
+                      color: colors.textTertiary,
+                    ),
+                  ),
+                  const SizedBox(width: AppSpacing.sm),
+                  Expanded(child: Text(chapter.label)),
+                ],
+              ),
+            ),
+          const SizedBox(height: AppSpacing.md),
+        ],
+        Row(
+          children: [
+            Text(
+              'Live chat',
+              style: AppTypography.label.copyWith(color: colors.textTertiary),
+            ),
+            if (goLive.slowModeEnabled) ...[
+              const SizedBox(width: AppSpacing.sm),
+              Chip(
+                key: const ValueKey('slowModeChip'),
+                label: const Text('Slow mode'),
+                visualDensity: VisualDensity.compact,
+              ),
+            ],
+          ],
+        ),
+        const SizedBox(height: AppSpacing.xs),
+        for (final message in _mockChat)
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: AppSpacing.xs),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                if (message.pinned)
+                  Padding(
+                    padding: const EdgeInsets.only(right: AppSpacing.xs),
+                    child: Icon(
+                      Icons.push_pin,
+                      size: 14,
+                      color: colors.textTertiary,
+                    ),
+                  ),
+                Text(
+                  '${message.author}: ',
+                  style: AppTypography.body.copyWith(
+                    color: colors.textSecondary,
+                  ),
+                ),
+                Expanded(
+                  child: Text(
+                    message.text,
+                    style: AppTypography.body.copyWith(
+                      color: colors.textPrimary,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+      ],
     );
   }
 }
