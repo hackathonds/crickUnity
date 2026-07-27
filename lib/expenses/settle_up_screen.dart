@@ -42,8 +42,10 @@ class _SettleUpScreenState extends ConsumerState<SettleUpScreen> {
   _AmountMode _amountMode = _AmountMode.full;
   final _customController = TextEditingController();
   SettlementMethod _method = SettlementMethod.upi;
+  Currency _currency = homeCurrency;
   bool _viewerIsPayer = true;
   bool _showHandshake = false;
+  String? _currencyError;
 
   @override
   void initState() {
@@ -310,6 +312,50 @@ class _SettleUpScreenState extends ConsumerState<SettleUpScreen> {
                   ),
               ],
             ),
+            const SizedBox(height: AppSpacing.lg),
+            Text(
+              'Currency',
+              style: AppTypography.label.copyWith(color: colors.textTertiary),
+            ),
+            const SizedBox(height: AppSpacing.xs),
+            () {
+              // Backlog addendum (E5-10): "one-agreed-currency-per-pair
+              // settlements" -- once a pair has settled in a currency,
+              // every subsequent settlement between them is locked to it.
+              final established = _counterpart == null
+                  ? null
+                  : establishedPairCurrency(
+                      settlements,
+                      widget.viewerName,
+                      _counterpart!,
+                    );
+              return Wrap(
+                spacing: AppSpacing.xs,
+                children: [
+                  for (final c in Currency.values)
+                    ChoiceChip(
+                      key: ValueKey('currencyChip_${c.name}'),
+                      label: Text(c.name.toUpperCase()),
+                      selected: _currency == c,
+                      onSelected: established != null
+                          ? null
+                          : (_) => setState(() {
+                              _currency = c;
+                              _currencyError = null;
+                            }),
+                    ),
+                ],
+              );
+            }(),
+            if (_currencyError != null)
+              Padding(
+                padding: const EdgeInsets.only(top: AppSpacing.xs),
+                child: Text(
+                  _currencyError!,
+                  key: const ValueKey('currencyErrorText'),
+                  style: AppTypography.caption.copyWith(color: colors.error),
+                ),
+              ),
             const SizedBox(height: AppSpacing.xxl),
             AppButton(
               key: const ValueKey('confirmSettlementButton'),
@@ -319,7 +365,7 @@ class _SettleUpScreenState extends ConsumerState<SettleUpScreen> {
               onPressed: amount <= 0
                   ? null
                   : () {
-                      notifier.proposeSettlement(
+                      final id = notifier.proposeSettlement(
                         fromName: _viewerIsPayer
                             ? widget.viewerName
                             : _counterpart!,
@@ -328,7 +374,16 @@ class _SettleUpScreenState extends ConsumerState<SettleUpScreen> {
                             : widget.viewerName,
                         amount: amount,
                         method: _method,
+                        currency: _currency,
                       );
+                      if (id == null) {
+                        setState(
+                          () => _currencyError =
+                              'This pair already settles in a different '
+                              'currency -- pick that one instead.',
+                        );
+                        return;
+                      }
                       setState(() => _showHandshake = true);
                     },
             ),

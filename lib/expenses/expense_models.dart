@@ -2,6 +2,30 @@ import 'package:flutter/material.dart';
 
 import '../design_system/components/app_expense_card.dart';
 
+/// Backlog addendum (E5-10): "Currency per expense, home-currency
+/// converted display with stored conversion note." Home currency is
+/// fixed at INR, matching every other money surface in this codebase.
+enum Currency { inr, usd, gbp, aud }
+
+const Currency homeCurrency = Currency.inr;
+
+const Map<Currency, String> currencySymbols = {
+  Currency.inr: '₹',
+  Currency.usd: '\$',
+  Currency.gbp: '£',
+  Currency.aud: 'A\$',
+};
+
+/// No real FX-rate API exists in this codebase -- a fixed mock table
+/// stands in, same convention as every other missing-external-service
+/// mock this session.
+const Map<Currency, double> mockFxRatesToInr = {
+  Currency.inr: 1.0,
+  Currency.usd: 83.0,
+  Currency.gbp: 105.0,
+  Currency.aud: 55.0,
+};
+
 /// PRD §11.2: each category is meant to become "a first-class type, not
 /// a mere label" -- but that per-category behavior (ground-fee
 /// auto-draft, ball-purchase losing-team-pays toggle, itemized food,
@@ -237,6 +261,7 @@ class Expense {
   final String? recurrenceSeriesId;
   final DateTime? deletedAt;
   final String? deletedByName;
+  final Currency currency;
 
   const Expense({
     required this.id,
@@ -258,10 +283,24 @@ class Expense {
     this.recurrenceSeriesId,
     this.deletedAt,
     this.deletedByName,
+    this.currency = homeCurrency,
   });
 
   bool get hasActiveDispute => disputes.any((d) => !d.resolved);
   bool get isDeleted => deletedAt != null;
+
+  /// Backlog addendum (E5-10): "home-currency converted display with
+  /// stored conversion note." The rate is captured at read-time from
+  /// the fixed mock table (equivalent to "stored at creation" for this
+  /// in-memory mock, since the table itself never changes).
+  int get homeCurrencyAmount => (amount * mockFxRatesToInr[currency]!).round();
+
+  String? get conversionNote {
+    if (currency == homeCurrency) return null;
+    final rate = mockFxRatesToInr[currency]!;
+    return '1 ${currency.name.toUpperCase()} = ${currencySymbols[homeCurrency]}'
+        '${rate.toStringAsFixed(0)} (mock rate)';
+  }
 
   int get splitTotal => splitAmong.fold(0, (sum, s) => sum + s.amount);
   int get splitRemainder => amount - splitTotal;
@@ -313,6 +352,7 @@ class Expense {
       deletedByName: clearDeleted
           ? null
           : (deletedByName ?? this.deletedByName),
+      currency: currency,
     );
   }
 }

@@ -39,10 +39,16 @@ class ExpensesNotifier extends Notifier<ExpensesState> {
     required bool createdByIsCaptain,
     bool isIncome = false,
     String? recurrenceSeriesId,
+    Currency currency = homeCurrency,
     DateTime Function() now = DateTime.now,
   }) {
     final id = 'expense-${now().millisecondsSinceEpoch}-${_nextId++}';
-    final needsApproval = amount > expenseApprovalThresholdRupees;
+    // Approval threshold is judged in home-currency terms -- amount is
+    // always stored in the expense's own currency, so this converts
+    // first rather than comparing e.g. raw USD against an INR figure.
+    final needsApproval =
+        (amount * mockFxRatesToInr[currency]!).round() >
+        expenseApprovalThresholdRupees;
     state = state.copyWith(
       expenses: [
         Expense(
@@ -67,6 +73,7 @@ class ExpensesNotifier extends Notifier<ExpensesState> {
           },
           isIncome: isIncome,
           recurrenceSeriesId: recurrenceSeriesId,
+          currency: currency,
         ),
         ...state.expenses,
       ],

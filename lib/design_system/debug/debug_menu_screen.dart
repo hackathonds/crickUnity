@@ -1350,6 +1350,39 @@ class DebugMenuScreen extends StatelessWidget {
             },
           ),
           ListTile(
+            title: const Text('Expense detail (multi-currency)'),
+            subtitle: const Text(
+              'E5-10 — currency per expense, home-currency conversion note',
+            ),
+            onTap: () {
+              final container = ProviderScope.containerOf(
+                context,
+                listen: false,
+              );
+              final notifier = container.read(expensesProvider.notifier);
+              final id = notifier.addExpense(
+                title: 'Touring kit (overseas order)',
+                category: ExpenseCategory.equipmentJersey,
+                amount: 60,
+                paidBy: const [PaidByEntry(name: 'Kabir Singh', amount: 60)],
+                splitMethod: SplitMethod.equal,
+                splitAmong: equalSplit(60, mockExpenseParticipants()),
+                createdByName: 'Kabir Singh',
+                createdByIsCaptain: true,
+                currency: Currency.usd,
+              );
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (_) => ExpenseDetailScreen(
+                    expenseId: id,
+                    viewerName: 'Kabir Singh',
+                    viewerIsCaptain: true,
+                  ),
+                ),
+              );
+            },
+          ),
+          ListTile(
             title: const Text('Add expense'),
             subtitle: const Text(
               'E5-01 — category grid, split editor (6 methods), approval note',

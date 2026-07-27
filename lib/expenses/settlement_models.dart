@@ -23,6 +23,7 @@ class Settlement {
   final DateTime createdAt;
   final DateTime? confirmedAt;
   final String? disputeReason;
+  final Currency currency;
 
   const Settlement({
     required this.id,
@@ -34,6 +35,7 @@ class Settlement {
     required this.createdAt,
     this.confirmedAt,
     this.disputeReason,
+    this.currency = homeCurrency,
   });
 
   Settlement copyWith({
@@ -51,11 +53,30 @@ class Settlement {
       createdAt: createdAt,
       confirmedAt: confirmedAt ?? this.confirmedAt,
       disputeReason: disputeReason ?? this.disputeReason,
+      currency: currency,
     );
   }
 
   bool get isOnTime =>
       confirmedAt != null && confirmedAt!.difference(createdAt).inDays <= 7;
+}
+
+/// Backlog addendum (E5-10): "one-agreed-currency-per-pair
+/// settlements." Whatever currency this pair's first settlement used
+/// becomes the agreed currency for every subsequent one between them,
+/// regardless of direction (A->B or B->A).
+Currency? establishedPairCurrency(
+  List<Settlement> settlements,
+  String personA,
+  String personB,
+) {
+  final existing = settlements.where(
+    (s) =>
+        (s.fromName == personA && s.toName == personB) ||
+        (s.fromName == personB && s.toName == personA),
+  );
+  if (existing.isEmpty) return null;
+  return existing.first.currency;
 }
 
 /// PRD §11.6: "Who Owes Whom: graph-simplified net ledger." Each

@@ -110,6 +110,7 @@ class _AddEditExpenseScreenState extends ConsumerState<AddEditExpenseScreen> {
   PrizeDistributionMethod _prizeDistribution = PrizeDistributionMethod.equal;
   RecurrenceCadence _cadence = RecurrenceCadence.off; // DS §11.13
   DateTime? _seriesEndDate;
+  Currency _currency = homeCurrency; // Backlog addendum E5-10
 
   @override
   void dispose() {
@@ -293,6 +294,7 @@ class _AddEditExpenseScreenState extends ConsumerState<AddEditExpenseScreen> {
             hasProof: _hasProof,
             createdByName: widget.viewerName,
             createdByIsCaptain: widget.viewerIsCaptain,
+            currency: _currency,
           );
       Navigator.of(context).pop();
       return;
@@ -329,6 +331,7 @@ class _AddEditExpenseScreenState extends ConsumerState<AddEditExpenseScreen> {
             hasProof: _hasProof,
             createdByName: widget.viewerName,
             createdByIsCaptain: widget.viewerIsCaptain,
+            currency: _currency,
           );
       Navigator.of(context).pop();
       return;
@@ -398,6 +401,7 @@ class _AddEditExpenseScreenState extends ConsumerState<AddEditExpenseScreen> {
           createdByIsCaptain: widget.viewerIsCaptain,
           isIncome: isPrize,
           recurrenceSeriesId: seriesId,
+          currency: _currency,
         );
     Navigator.of(context).pop();
   }
@@ -682,9 +686,35 @@ class _AddEditExpenseScreenState extends ConsumerState<AddEditExpenseScreen> {
       AppCurrencyField(
         key: const ValueKey('expenseAmountField'),
         label: 'Amount',
+        currencySymbol: currencySymbols[_currency]!,
         controller: _amountController,
         onChanged: (_) => setState(() {}),
       ),
+      const SizedBox(height: AppSpacing.xs),
+      Wrap(
+        spacing: AppSpacing.xs,
+        children: [
+          for (final c in Currency.values)
+            ChoiceChip(
+              key: ValueKey('expenseCurrencyChip_${c.name}'),
+              label: Text(c.name.toUpperCase()),
+              selected: _currency == c,
+              onSelected: (_) => setState(() => _currency = c),
+            ),
+        ],
+      ),
+      if (_currency != homeCurrency) ...[
+        const SizedBox(height: AppSpacing.xs),
+        Text(
+          key: const ValueKey('currencyConversionNote'),
+          '≈ ${currencySymbols[homeCurrency]}'
+          '${(_amount * mockFxRatesToInr[_currency]!).round()} -- '
+          '1 ${_currency.name.toUpperCase()} = '
+          '${currencySymbols[homeCurrency]}'
+          '${mockFxRatesToInr[_currency]!.toStringAsFixed(0)} (mock rate)',
+          style: AppTypography.caption.copyWith(color: colors.textTertiary),
+        ),
+      ],
       const SizedBox(height: AppSpacing.sm),
       ..._buildCategoryNote(colors),
       if (!isPrize) ...[
