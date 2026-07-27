@@ -141,6 +141,7 @@ import '../../streaming/go_live_screen.dart';
 import '../../discover/discover_screen.dart';
 import '../../marketplace/gear_exchange_screen.dart';
 import '../../privacy/privacy_center_screen.dart';
+import '../../verification/verification_screen.dart';
 import '../../marketplace/shops_directory_screen.dart';
 import '../../sponsors/sponsor_console_screen.dart';
 import '../../streaming/production_kit_screen.dart';
@@ -603,6 +604,26 @@ class DebugMenuScreen extends StatelessWidget {
             ),
             onTap: () => Navigator.of(context).push(
               MaterialPageRoute(builder: (_) => const PrivacyCenterScreen()),
+            ),
+          ),
+          ListTile(
+            title: const Text('Request verification'),
+            subtitle: const Text(
+              'E16-03 — blue-tick / green verified-record request form',
+            ),
+            onTap: () => Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (_) => const VerificationRequestScreen(),
+              ),
+            ),
+          ),
+          ListTile(
+            title: const Text('Verification queue (Admin)'),
+            subtitle: const Text('E16-03 — approve/reject pending requests'),
+            onTap: () => Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (_) => const AdminVerificationQueueScreen(),
+              ),
             ),
           ),
           ListTile(
