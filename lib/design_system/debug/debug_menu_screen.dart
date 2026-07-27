@@ -142,6 +142,9 @@ import '../../discover/discover_screen.dart';
 import '../../marketplace/gear_exchange_screen.dart';
 import '../../privacy/privacy_center_screen.dart';
 import '../../guardian/guardian_view_screen.dart';
+import '../../medical/captain_medical_view_screen.dart';
+import '../../medical/injury_log_screen.dart';
+import '../../medical/medical_card_screen.dart';
 import '../../verification/verification_screen.dart';
 import '../../marketplace/shops_directory_screen.dart';
 import '../../sponsors/sponsor_console_screen.dart';
@@ -635,6 +638,40 @@ class DebugMenuScreen extends StatelessWidget {
             ),
             onTap: () => Navigator.of(context).push(
               MaterialPageRoute(builder: (_) => const GuardianViewScreen()),
+            ),
+          ),
+          ListTile(
+            title: const Text('Medical & emergency card'),
+            subtitle: const Text(
+              'E16-05 — blood group, allergies, conditions, emergency '
+              'contact, per-team reveal toggle',
+            ),
+            onTap: () => Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => const MedicalCardScreen()),
+            ),
+          ),
+          ListTile(
+            title: const Text('Injury log'),
+            subtitle: const Text(
+              'E16-05 — add-injury, auto-Injured + streak shield, '
+              'return-to-play checklist',
+            ),
+            onTap: () => Navigator.of(
+              context,
+            ).push(MaterialPageRoute(builder: (_) => const InjuryLogScreen())),
+          ),
+          ListTile(
+            title: const Text('Captain medical view'),
+            subtitle: const Text(
+              'E16-05 — event-window-gated, view-only, watermarked',
+            ),
+            onTap: () => Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (_) => const CaptainMedicalViewScreen(
+                  playerName: 'Priya Nair',
+                  teamName: 'Strikers CC',
+                ),
+              ),
             ),
           ),
           ListTile(
