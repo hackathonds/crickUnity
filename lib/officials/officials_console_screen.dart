@@ -136,7 +136,10 @@ class _OfficialsConsoleScreenState extends ConsumerState<OfficialsConsoleScreen>
               ],
             ),
           ),
-          _CredentialTierCard(disputeFreeMatches: state.disputeFreeMatches),
+          _CredentialTierCard(
+            disputeFreeMatches: state.disputeFreeMatches,
+            averageRating: state.averageRating,
+          ),
           Expanded(
             child: TabBarView(
               controller: _tabController,
@@ -170,18 +173,25 @@ class _OfficialsConsoleScreenState extends ConsumerState<OfficialsConsoleScreen>
 
 class _CredentialTierCard extends StatelessWidget {
   final int disputeFreeMatches;
+  final double averageRating;
 
-  const _CredentialTierCard({required this.disputeFreeMatches});
+  const _CredentialTierCard({
+    required this.disputeFreeMatches,
+    required this.averageRating,
+  });
 
   @override
   Widget build(BuildContext context) {
     final colors = Theme.of(context).extension<AppColors>()!;
-    final tier = currentTier(disputeFreeMatches);
+    final tier = currentTier(disputeFreeMatches, averageRating);
     final next = nextTier(disputeFreeMatches);
     final nextThreshold = next == null ? null : credentialTierThresholds[next];
     final progress = nextThreshold == null
         ? 1.0
         : disputeFreeMatches / nextThreshold;
+    final ratingGated =
+        averageRating < minAverageRatingForCredentialTier &&
+        disputeFreeMatches >= credentialTierThresholds[CredentialTier.bronze]!;
 
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
@@ -220,6 +230,17 @@ class _CredentialTierCard extends StatelessWidget {
                     color: colors.textSecondary,
                   ),
                 ),
+                if (ratingGated)
+                  Padding(
+                    padding: const EdgeInsets.only(top: AppSpacing.xs),
+                    child: Text(
+                      'Rating ${averageRating.toStringAsFixed(1)} -- needs '
+                      '$minAverageRatingForCredentialTier+ to hold a tier',
+                      style: AppTypography.caption.copyWith(
+                        color: colors.warning,
+                      ),
+                    ),
+                  ),
               ],
             ),
           ),

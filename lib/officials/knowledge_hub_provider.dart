@@ -173,10 +173,11 @@ class KnowledgeHubNotifier extends Notifier<KnowledgeHubState> {
   }
 
   bool isTierEligible(CertificationTrack track) {
-    final disputeFreeMatches = ref
-        .read(officialsConsoleProvider)
-        .disputeFreeMatches;
-    final tier = currentTier(disputeFreeMatches);
+    final consoleState = ref.read(officialsConsoleProvider);
+    final tier = currentTier(
+      consoleState.disputeFreeMatches,
+      consoleState.averageRating,
+    );
     if (tier == null) return false;
     return tier.index >= track.requiredTier.index;
   }
