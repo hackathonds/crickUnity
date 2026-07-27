@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'fixture_models.dart';
 import 'registration_models.dart';
+import 'tournaments_provider.dart';
 
 class FixturesState {
   final List<Fixture> fixtures;
@@ -214,6 +215,9 @@ class FixturesNotifier extends Notifier<FixturesState> {
             f,
       ],
     );
+    ref
+        .read(tournamentsProvider.notifier)
+        .markOrganizerActive(fixture.tournamentId);
     return warnings;
   }
 

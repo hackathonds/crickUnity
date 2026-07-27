@@ -61,12 +61,33 @@ class TournamentsNotifier extends Notifier<TournamentsState> {
     final published = state.draft.copyWith(
       status: TournamentStatus.published,
       publishedVersion: 1,
+      organizerLastActiveAt: DateTime.now(),
     );
     state = state.copyWith(
       tournaments: [...state.tournaments, published],
       draft: Tournament(id: _newId()),
     );
     return null;
+  }
+
+  /// PRD §8 edge cases: "Organizer abandonment (inactive 14d
+  /// mid-event)." Called from every genuine organizer action across
+  /// the tournament module (fixture edits, results, payouts,
+  /// registration approvals) so isOrganizerInactive() reflects real
+  /// activity, not a manually-poked flag.
+  void markOrganizerActive(
+    String tournamentId, {
+    DateTime Function() now = DateTime.now,
+  }) {
+    state = state.copyWith(
+      tournaments: [
+        for (final t in state.tournaments)
+          if (t.id == tournamentId)
+            t.copyWith(organizerLastActiveAt: now())
+          else
+            t,
+      ],
+    );
   }
 
   /// PRD §8.2: entry-fee escrow credit on registration approval. Not a

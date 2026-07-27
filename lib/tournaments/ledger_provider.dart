@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'ledger_models.dart';
+import 'tournaments_provider.dart';
 
 class LedgerState {
   final Map<String, List<LedgerEntry>> entriesByTournament;
@@ -92,6 +93,7 @@ class LedgerNotifier extends Notifier<LedgerState> {
         ],
       },
     );
+    ref.read(tournamentsProvider.notifier).markOrganizerActive(tournamentId);
   }
 
   /// PRD: "winner confirms receipt."
