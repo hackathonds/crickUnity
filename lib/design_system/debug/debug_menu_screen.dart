@@ -141,6 +141,7 @@ import '../../streaming/go_live_screen.dart';
 import '../../discover/discover_screen.dart';
 import '../../marketplace/gear_exchange_screen.dart';
 import '../../privacy/privacy_center_screen.dart';
+import '../../guardian/guardian_view_screen.dart';
 import '../../verification/verification_screen.dart';
 import '../../marketplace/shops_directory_screen.dart';
 import '../../sponsors/sponsor_console_screen.dart';
@@ -624,6 +625,16 @@ class DebugMenuScreen extends StatelessWidget {
               MaterialPageRoute(
                 builder: (_) => const AdminVerificationQueueScreen(),
               ),
+            ),
+          ),
+          ListTile(
+            title: const Text('Guardian view'),
+            subtitle: const Text(
+              'E16-04 — child cards, read-only followers/messages, '
+              'coach notes, session completion, consents pending queue',
+            ),
+            onTap: () => Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => const GuardianViewScreen()),
             ),
           ),
           ListTile(
