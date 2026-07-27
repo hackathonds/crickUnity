@@ -51,6 +51,7 @@ import '../../rewards/wallet_screen.dart';
 import '../../messaging/chat_list_screen.dart';
 import '../../moderation/moderation_settings_screen.dart';
 import '../../recognition/leaderboard_hub_screen.dart';
+import '../../recognition/challenges_hub_screen.dart';
 import '../../recognition/records_hub_screen.dart';
 import '../../social/events_list_screen.dart';
 import '../../social/feed_screen.dart';
@@ -1714,6 +1715,16 @@ class DebugMenuScreen extends StatelessWidget {
             onTap: () => Navigator.of(
               context,
             ).push(MaterialPageRoute(builder: (_) => const RecordsHubScreen())),
+          ),
+          ListTile(
+            title: const Text('Challenges hub'),
+            subtitle: const Text(
+              'E8-03 — Global/club/friend H2H live bars, stakes cap 50, '
+              'overtaken notifications',
+            ),
+            onTap: () => Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => const ChallengesHubScreen()),
+            ),
           ),
           ListTile(
             title: const Text('Field map tool (captain)'),
