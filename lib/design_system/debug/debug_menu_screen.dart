@@ -131,6 +131,7 @@ import 'profile_screen_demo.dart';
 import 'badge_tile_screen.dart';
 import 'buttons_screen.dart';
 import 'card_screen.dart';
+import '../../analytics/player_analytics_screen.dart';
 import 'chart_gallery_screen.dart';
 import 'chart_shell_screen.dart';
 import 'comment_widget_screen.dart';
@@ -412,6 +413,16 @@ class DebugMenuScreen extends StatelessWidget {
             ),
             onTap: () => Navigator.of(context).push(
               MaterialPageRoute(builder: (_) => const ChartGalleryScreen()),
+            ),
+          ),
+          ListTile(
+            title: const Text('Player analytics'),
+            subtitle: const Text(
+              'E13-02 — phase splits, vs pace/spin, entry points, form '
+              'index, fatigue, insights + recommendations',
+            ),
+            onTap: () => Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => const PlayerAnalyticsScreen()),
             ),
           ),
           ListTile(
