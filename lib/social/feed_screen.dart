@@ -11,6 +11,9 @@ import '../design_system/components/app_tag_chip.dart';
 import '../design_system/tokens/app_colors.dart';
 import '../design_system/tokens/app_spacing.dart';
 import '../design_system/tokens/app_typography.dart';
+import '../moderation/moderation_provider.dart';
+import '../moderation/profanity_filter.dart';
+import '../moderation/report_sheet.dart';
 import 'comments_provider.dart';
 import 'composer_screen.dart';
 import 'feed_models.dart';
@@ -386,7 +389,7 @@ class _FeedScreenState extends ConsumerState<FeedScreen> {
 
 /// The feed card, reused unchanged by post_detail_screen.dart for the
 /// same post at full size.
-class FeedPostCard extends StatelessWidget {
+class FeedPostCard extends ConsumerWidget {
   final FeedPost post;
   final FeedPost? resharedPost;
   final int commentCount;
@@ -423,7 +426,9 @@ class FeedPostCard extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final hideOffensive = ref.watch(moderationProvider).hideOffensiveComments;
+
     return Container(
       margin: const EdgeInsets.only(bottom: AppSpacing.md),
       padding: const EdgeInsets.all(AppSpacing.md),
@@ -485,6 +490,21 @@ class FeedPostCard extends StatelessWidget {
                     PopupMenuItem(value: 'edit', child: Text('Edit')),
                     PopupMenuItem(value: 'delete', child: Text('Delete')),
                   ],
+                )
+              else
+                IconButton(
+                  key: ValueKey('reportPostButton_${post.id}'),
+                  icon: const Icon(Icons.flag_outlined, size: 18),
+                  tooltip: 'Report',
+                  onPressed: () => showReportSheet(
+                    context,
+                    targetType: 'post',
+                    targetLabel: post.contentText.isEmpty
+                        ? '(post by ${post.authorName})'
+                        : post.contentText,
+                    targetUserName: post.authorName,
+                    reporterName: composerViewerName,
+                  ),
                 ),
             ],
           ),
@@ -537,7 +557,7 @@ class FeedPostCard extends StatelessWidget {
           Text.rich(
             TextSpan(
               children: buildRichTextSpans(
-                text: post.contentText,
+                text: maskProfanity(post.contentText, enabled: hideOffensive),
                 baseStyle: AppTypography.body.copyWith(
                   color: colors.textPrimary,
                 ),

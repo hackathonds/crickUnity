@@ -49,6 +49,7 @@ import '../../rewards/rewards_provider.dart';
 import '../../rewards/rewards_summary_screen.dart';
 import '../../rewards/wallet_screen.dart';
 import '../../messaging/chat_list_screen.dart';
+import '../../moderation/moderation_settings_screen.dart';
 import '../../social/events_list_screen.dart';
 import '../../social/feed_screen.dart';
 import '../../social/groups_list_screen.dart';
@@ -1680,6 +1681,17 @@ class DebugMenuScreen extends StatelessWidget {
             onTap: () => Navigator.of(
               context,
             ).push(MaterialPageRoute(builder: (_) => const EventsListScreen())),
+          ),
+          ListTile(
+            title: const Text('Privacy & Moderation'),
+            subtitle: const Text(
+              'E7-07 — Report reason tree, tracker, offender ladder, block',
+            ),
+            onTap: () => Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (_) => const ModerationSettingsScreen(),
+              ),
+            ),
           ),
           ListTile(
             title: const Text('Field map tool (captain)'),

@@ -5,6 +5,8 @@ import '../design_system/components/app_bottom_sheet.dart';
 import '../design_system/components/app_comment_widget.dart';
 import '../design_system/tokens/app_colors.dart';
 import '../design_system/tokens/app_spacing.dart';
+import '../moderation/moderation_provider.dart';
+import '../moderation/profanity_filter.dart';
 import 'comment_models.dart';
 import 'comments_provider.dart';
 import 'composer_screen.dart';
@@ -51,14 +53,18 @@ class PostDetailScreen extends ConsumerWidget {
 
   AppCommentData _toViewData(
     FeedComment comment,
-    Map<AppCommentData, String> idByData,
-  ) {
+    Map<AppCommentData, String> idByData, {
+    required bool hideOffensive,
+  }) {
     final data = AppCommentData(
       authorName: comment.authorName,
       timeAgo: _relativeTime(comment.timestamp),
-      body: comment.body,
+      body: maskProfanity(comment.body, enabled: hideOffensive),
       propsCount: comment.propsCount,
-      replies: [for (final r in comment.replies) _toViewData(r, idByData)],
+      replies: [
+        for (final r in comment.replies)
+          _toViewData(r, idByData, hideOffensive: hideOffensive),
+      ],
     );
     idByData[data] = comment.id;
     return data;
@@ -82,12 +88,14 @@ class PostDetailScreen extends ConsumerWidget {
       return const Scaffold(body: Center(child: Text('Post not found')));
     }
 
+    final hideOffensive = ref.watch(moderationProvider).hideOffensiveComments;
     final isPostAuthor = post.authorName == composerViewerName;
     final threadComments = comments.commentsFor(postId);
     final pinnedId = comments.pinnedCommentIdByPostId[postId];
     final idByData = <AppCommentData, String>{};
     final commentsByAuthorship = <AppCommentData>[
-      for (final c in threadComments) _toViewData(c, idByData),
+      for (final c in threadComments)
+        _toViewData(c, idByData, hideOffensive: hideOffensive),
     ];
 
     return Scaffold(
