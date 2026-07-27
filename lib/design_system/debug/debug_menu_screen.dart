@@ -139,6 +139,8 @@ import '../../officials/commentator_room_screen.dart';
 import '../../officials/knowledge_hub_screen.dart';
 import '../../streaming/go_live_screen.dart';
 import '../../discover/discover_screen.dart';
+import '../../marketplace/gear_exchange_screen.dart';
+import '../../marketplace/shops_directory_screen.dart';
 import '../../sponsors/sponsor_console_screen.dart';
 import '../../streaming/production_kit_screen.dart';
 import '../../officials/conduct_report_screen.dart';
@@ -572,6 +574,25 @@ class DebugMenuScreen extends StatelessWidget {
             onTap: () => Navigator.of(
               context,
             ).push(MaterialPageRoute(builder: (_) => const DiscoverScreen())),
+          ),
+          ListTile(
+            title: const Text('Gear exchange'),
+            subtitle: const Text(
+              'E15-05 — listing grid, seller card + Trusted-Seller '
+              'ladder, chat with seller, mark-sold two-party confirm',
+            ),
+            onTap: () => Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => const GearExchangeScreen()),
+            ),
+          ),
+          ListTile(
+            title: const Text('Shops directory'),
+            subtitle: const Text(
+              'E15-05 — verified shop profiles, catalog strip',
+            ),
+            onTap: () => Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => const ShopsDirectoryScreen()),
+            ),
           ),
           ListTile(
             title: const Text('Onboarding: full pre-tab stack'),

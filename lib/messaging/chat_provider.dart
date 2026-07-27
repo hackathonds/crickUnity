@@ -163,6 +163,32 @@ class ChatsNotifier extends Notifier<ChatsState> {
     );
   }
 
+  /// E15-05 (Gear exchange): "[Chat with seller] (opens Messenger thread
+  /// templated with listing card)." No cross-module "start a DM with
+  /// this person" entry point existed before -- finds an existing
+  /// direct chat with [otherUserName] or creates one.
+  String findOrCreateDirectChat(String otherUserName) {
+    for (final chat in state.chats) {
+      if (chat.type == ChatType.direct &&
+          chat.participantNames.contains(otherUserName)) {
+        return chat.id;
+      }
+    }
+    final id = 'chat-${DateTime.now().microsecondsSinceEpoch}';
+    state = state.copyWith(
+      chats: [
+        Chat(
+          id: id,
+          type: ChatType.direct,
+          name: otherUserName,
+          participantNames: [messengerViewerName, otherUserName],
+        ),
+        ...state.chats,
+      ],
+    );
+    return id;
+  }
+
   void sendObjectCard(
     String chatId, {
     AttachedObject? object,

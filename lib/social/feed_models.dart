@@ -2,8 +2,19 @@ import '../design_system/components/app_reaction_picker.dart';
 
 /// PRD §12.1 (Feed) + §12.2 ("attach cricket object"). DS §7-57's card
 /// anatomy: "author row -> attached-object rich card (match/performance
-/// verified chip) -> media -> reaction bar -> top comment."
-enum AttachedObjectType { match, performance, ground, tournament, achievement }
+/// verified chip) -> media -> reaction bar -> top comment." Also reused
+/// by Messenger's object-cards (chat_provider.dart's sendObjectCard) --
+/// [gearListing] (E15-05, DS §11.12: "[Chat with seller] opens
+/// Messenger thread templated with listing card") is a chat-only card,
+/// never composable from the Feed composer.
+enum AttachedObjectType {
+  match,
+  performance,
+  ground,
+  tournament,
+  achievement,
+  gearListing,
+}
 
 const Map<AttachedObjectType, String> attachedObjectTypeLabels = {
   AttachedObjectType.match: 'Match',
@@ -11,6 +22,7 @@ const Map<AttachedObjectType, String> attachedObjectTypeLabels = {
   AttachedObjectType.ground: 'Ground',
   AttachedObjectType.tournament: 'Tournament',
   AttachedObjectType.achievement: 'Achievement',
+  AttachedObjectType.gearListing: 'Gear listing',
 };
 
 /// "attaching renders a rich live card, e.g., a performance attachment
