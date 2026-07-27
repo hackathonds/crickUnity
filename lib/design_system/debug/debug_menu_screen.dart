@@ -138,6 +138,7 @@ import '../../analytics/team_captain_analytics_screen.dart';
 import '../../officials/commentator_room_screen.dart';
 import '../../officials/knowledge_hub_screen.dart';
 import '../../streaming/go_live_screen.dart';
+import '../../discover/discover_screen.dart';
 import '../../sponsors/sponsor_console_screen.dart';
 import '../../streaming/production_kit_screen.dart';
 import '../../officials/conduct_report_screen.dart';
@@ -561,6 +562,16 @@ class DebugMenuScreen extends StatelessWidget {
             onTap: () => Navigator.of(context).push(
               MaterialPageRoute(builder: (_) => const SponsorConsoleScreen()),
             ),
+          ),
+          ListTile(
+            title: const Text('Discover'),
+            subtitle: const Text(
+              'E15-04 — editorial cards, tip→drill deep-link, '
+              'sponsored-education label',
+            ),
+            onTap: () => Navigator.of(
+              context,
+            ).push(MaterialPageRoute(builder: (_) => const DiscoverScreen())),
           ),
           ListTile(
             title: const Text('Onboarding: full pre-tab stack'),
