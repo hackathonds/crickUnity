@@ -51,6 +51,7 @@ import '../../rewards/wallet_screen.dart';
 import '../../messaging/chat_list_screen.dart';
 import '../../moderation/moderation_settings_screen.dart';
 import '../../recognition/leaderboard_hub_screen.dart';
+import '../../recognition/records_hub_screen.dart';
 import '../../social/events_list_screen.dart';
 import '../../social/feed_screen.dart';
 import '../../social/groups_list_screen.dart';
@@ -1703,6 +1704,16 @@ class DebugMenuScreen extends StatelessWidget {
             onTap: () => Navigator.of(context).push(
               MaterialPageRoute(builder: (_) => const LeaderboardHubScreen()),
             ),
+          ),
+          ListTile(
+            title: const Text('Records hub'),
+            subtitle: const Text(
+              'E8-02 — Vacant "be first", provenance links, live '
+              'approach alerts, record-transfer flow',
+            ),
+            onTap: () => Navigator.of(
+              context,
+            ).push(MaterialPageRoute(builder: (_) => const RecordsHubScreen())),
           ),
           ListTile(
             title: const Text('Field map tool (captain)'),
