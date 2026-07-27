@@ -145,6 +145,7 @@ import '../../guardian/guardian_view_screen.dart';
 import '../../medical/captain_medical_view_screen.dart';
 import '../../medical/injury_log_screen.dart';
 import '../../medical/medical_card_screen.dart';
+import '../../sandbox/sandbox_scoring_screen.dart';
 import '../../settings/data_controls_screen.dart';
 import '../../verification/verification_screen.dart';
 import '../../marketplace/shops_directory_screen.dart';
@@ -683,6 +684,16 @@ class DebugMenuScreen extends StatelessWidget {
             ),
             onTap: () => Navigator.of(context).push(
               MaterialPageRoute(builder: (_) => const DataControlsScreen()),
+            ),
+          ),
+          ListTile(
+            title: const Text('Sandbox tutorial'),
+            subtitle: const Text(
+              'E16-07 — practice offer, SANDBOX watermark, coach-mark '
+              'sequence, zero stat/XP writes banner',
+            ),
+            onTap: () => Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => const SandboxEntryPoint()),
             ),
           ),
           ListTile(
