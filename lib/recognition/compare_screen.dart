@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 
+import '../design_system/components/app_chart_shell.dart';
 import '../design_system/components/app_dropdown_field.dart';
+import '../design_system/components/charts/app_radar_chart.dart';
 import '../design_system/tokens/app_colors.dart';
 import '../design_system/tokens/app_spacing.dart';
 import '../design_system/tokens/app_typography.dart';
@@ -90,21 +92,45 @@ class _CompareScreenState extends State<CompareScreen> {
                       ],
                     ),
                     const SizedBox(height: AppSpacing.lg),
-                    Text(
-                      'Radar (bars stand in for the shared radar-chart '
-                      'primitive, not yet built)',
-                      style: AppTypography.caption.copyWith(
-                        color: colors.textTertiary,
+                    AppChartShell(
+                      title: 'Radar',
+                      chartHeight: 240,
+                      legend: [
+                        AppChartLegendItem(
+                          color: colors.primary,
+                          label: me.name,
+                        ),
+                        AppChartLegendItem(
+                          color: colors.accent,
+                          label: opponent.name,
+                        ),
+                      ],
+                      chart: AppRadarChart(
+                        axes: {
+                          for (final d in RadarDimension.values)
+                            radarDimensionLabels[d]!:
+                                (me.radarScores[d] ?? 0) / 100,
+                        },
+                        comparisonAxes: {
+                          for (final d in RadarDimension.values)
+                            radarDimensionLabels[d]!:
+                                (opponent.radarScores[d] ?? 0) / 100,
+                        },
+                      ),
+                      tableViewBuilder: (context) => Column(
+                        children: [
+                          for (final dimension in RadarDimension.values)
+                            _RadarBarRow(
+                              key: ValueKey('radarRow_${dimension.name}'),
+                              label: radarDimensionLabels[dimension]!,
+                              myValue: me.radarScores[dimension] ?? 0,
+                              opponentValue:
+                                  opponent.radarScores[dimension] ?? 0,
+                              colors: colors,
+                            ),
+                        ],
                       ),
                     ),
-                    for (final dimension in RadarDimension.values)
-                      _RadarBarRow(
-                        key: ValueKey('radarRow_${dimension.name}'),
-                        label: radarDimensionLabels[dimension]!,
-                        myValue: me.radarScores[dimension] ?? 0,
-                        opponentValue: opponent.radarScores[dimension] ?? 0,
-                        colors: colors,
-                      ),
                     const SizedBox(height: AppSpacing.xl),
                     Text(
                       'Stats',

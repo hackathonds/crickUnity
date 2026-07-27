@@ -1,11 +1,10 @@
 /// PRD §14: "Compare tool: me vs a friend/teammate side-by-side (both
 /// must have comparison enabled; comparisons of private profiles
 /// blocked); radar chart across batting/bowling/fielding/consistency/
-/// availability." app_chart_shell.dart's own comment already flags a
-/// real Radar chart primitive as E13-01's future scope -- rather than
-/// hand-roll a duplicate renderer here, this story renders the same 5
-/// dimensions as side-by-side bars, a stand-in until that primitive
-/// exists.
+/// availability." Originally shipped as side-by-side bars (a stand-in
+/// noted here until E13-01 built the real radar primitive); compare_screen.dart
+/// now renders the two profiles as an overlaid [AppRadarChart]
+/// (E13-01 addendum), with the bars kept only as the shell's table view.
 enum RadarDimension { batting, bowling, fielding, consistency, availability }
 
 const Map<RadarDimension, String> radarDimensionLabels = {
