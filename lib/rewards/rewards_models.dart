@@ -103,11 +103,12 @@ double levelProgress(int totalXp) {
   return xpIntoCurrentLevel(totalXp) / needed;
 }
 
-enum CeremonyType { levelUp, badgeUnlock }
+enum CeremonyType { levelUp, badgeUnlock, seasonRollover }
 
 /// DS §5.8's ceremony overlay spec covers both "Achievement/level"
-/// events in one motion spec -- badge unlocks (E6-04) reuse this same
-/// event/queue/suppression mechanism rather than a second parallel one.
+/// events in one motion spec -- badge unlocks (E6-04) and season
+/// rollover (E6-09) reuse this same event/queue/suppression mechanism
+/// rather than a third/fourth parallel one.
 class CeremonyEvent {
   final CeremonyType type;
   final int? level;
