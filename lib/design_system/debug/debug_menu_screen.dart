@@ -131,6 +131,7 @@ import 'profile_screen_demo.dart';
 import 'badge_tile_screen.dart';
 import 'buttons_screen.dart';
 import 'card_screen.dart';
+import 'chart_gallery_screen.dart';
 import 'chart_shell_screen.dart';
 import 'comment_widget_screen.dart';
 import 'chips_screen.dart';
@@ -402,6 +403,16 @@ class DebugMenuScreen extends StatelessWidget {
             onTap: () => Navigator.of(
               context,
             ).push(MaterialPageRoute(builder: (_) => const ChartShellScreen())),
+          ),
+          ListTile(
+            title: const Text('Chart gallery'),
+            subtitle: const Text(
+              'E13-01 — Manhattan, win-prob worm, wagon wheel, radar, '
+              'dot-pressure gauge, race chart, tag-coverage caption',
+            ),
+            onTap: () => Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => const ChartGalleryScreen()),
+            ),
           ),
           ListTile(
             title: const Text('Onboarding: full pre-tab stack'),
