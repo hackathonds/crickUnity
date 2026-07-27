@@ -20,6 +20,7 @@ import '../../grounds/booking_flow_screen.dart';
 import '../../grounds/ground_profile_screen.dart';
 import '../../grounds/grounds_discovery_screen.dart';
 import '../../grounds/caretaker_mode_screen.dart';
+import '../../tournaments/auction_room_screen.dart';
 import '../../tournaments/bracket_screen.dart';
 import '../../tournaments/fixtures_editor_screen.dart';
 import '../../tournaments/points_table_screen.dart';
@@ -1915,6 +1916,15 @@ class DebugMenuScreen extends StatelessWidget {
             onTap: () => Navigator.of(
               context,
             ).push(MaterialPageRoute(builder: (_) => const BracketScreen())),
+          ),
+          ListTile(
+            title: const Text('Auction room'),
+            subtitle: const Text(
+              'E10-06 — Lot/bidding/purse/spectator/reconnect',
+            ),
+            onTap: () => Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => const AuctionRoomScreen()),
+            ),
           ),
           ListTile(
             title: const Text('Points table + NRR + what-if'),
