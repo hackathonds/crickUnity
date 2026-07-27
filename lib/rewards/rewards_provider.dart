@@ -3,14 +3,14 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'rewards_models.dart';
 
 class RewardsState {
-  final int coinBalance;
+  final List<CoinBatch> coinBatches;
   final int xpTotal;
   final List<CeremonyEvent> ceremonyQueue;
   final List<String> log;
   final bool suppressCeremonies;
 
   const RewardsState({
-    this.coinBalance = 0,
+    this.coinBatches = const [],
     this.xpTotal = 0,
     this.ceremonyQueue = const [],
     this.log = const [],
@@ -19,15 +19,18 @@ class RewardsState {
 
   int get level => levelForXp(xpTotal);
 
+  int get coinBalance =>
+      coinBatches.fold(0, (sum, batch) => sum + batch.remaining);
+
   RewardsState copyWith({
-    int? coinBalance,
+    List<CoinBatch>? coinBatches,
     int? xpTotal,
     List<CeremonyEvent>? ceremonyQueue,
     List<String>? log,
     bool? suppressCeremonies,
   }) {
     return RewardsState(
-      coinBalance: coinBalance ?? this.coinBalance,
+      coinBatches: coinBatches ?? this.coinBatches,
       xpTotal: xpTotal ?? this.xpTotal,
       ceremonyQueue: ceremonyQueue ?? this.ceremonyQueue,
       log: log ?? this.log,
@@ -39,7 +42,8 @@ class RewardsState {
 /// PRD §13 -- E6-01's coin/XP engine. "All match-derived earnings
 /// release only after scorecard confirmation" -- callers only ever
 /// invoke [awardActions] from that gated moment (scoring_provider.dart's
-/// _maybeFireRipple), never speculatively.
+/// _maybeFireRipple), never speculatively. E6-05 adds the FIFO coin
+/// ledger (expiry) and spend side (marketplace redemption) on top.
 class RewardsNotifier extends Notifier<RewardsState> {
   @override
   RewardsState build() => const RewardsState();
@@ -47,6 +51,7 @@ class RewardsNotifier extends Notifier<RewardsState> {
   void awardActions(
     List<EarningAction> actions, {
     required String contextLabel,
+    DateTime Function() now = DateTime.now,
   }) {
     var coinsGained = 0;
     var xpGained = 0;
@@ -60,16 +65,25 @@ class RewardsNotifier extends Notifier<RewardsState> {
         '+${reward.coins} coins, +${reward.xp} XP',
       );
     }
-    _applyCoinsAndXp(coinsGained, xpGained, entries);
+    _applyCoinsAndXp(coinsGained, xpGained, entries, now: now);
   }
 
   /// Irregular one-off bonuses that don't fit the fixed per-action
   /// earning table -- streak milestones (E6-02), etc.
-  void awardBonus(int coins, {required String label}) {
-    _applyCoinsAndXp(coins, 0, ['$label: +$coins coins']);
+  void awardBonus(
+    int coins, {
+    required String label,
+    DateTime Function() now = DateTime.now,
+  }) {
+    _applyCoinsAndXp(coins, 0, ['$label: +$coins coins'], now: now);
   }
 
-  void _applyCoinsAndXp(int coins, int xp, List<String> logEntries) {
+  void _applyCoinsAndXp(
+    int coins,
+    int xp,
+    List<String> logEntries, {
+    DateTime Function() now = DateTime.now,
+  }) {
     final beforeLevel = state.level;
     final newXpTotal = state.xpTotal + xp;
     final afterLevel = levelForXp(newXpTotal);
@@ -77,11 +91,73 @@ class RewardsNotifier extends Notifier<RewardsState> {
       for (var lvl = beforeLevel + 1; lvl <= afterLevel; lvl++)
         CeremonyEvent(type: CeremonyType.levelUp, level: lvl),
     ];
+    final newBatches = coins > 0
+        ? [
+            ...state.coinBatches,
+            CoinBatch(amount: coins, remaining: coins, earnedAt: now()),
+          ]
+        : state.coinBatches;
     state = state.copyWith(
-      coinBalance: state.coinBalance + coins,
+      coinBatches: newBatches,
       xpTotal: newXpTotal,
       log: [...state.log, ...logEntries],
       ceremonyQueue: [...state.ceremonyQueue, ...newCeremonies],
+    );
+  }
+
+  /// PRD §13.5's redemption "coin deduction" -- FIFO burn (oldest
+  /// batches first), same burn order expiry uses. Returns false without
+  /// mutating state if the balance can't cover [amount].
+  bool spendCoins(int amount, {required String label}) {
+    if (state.coinBalance < amount) return false;
+    var toSpend = amount;
+    final updated = <CoinBatch>[];
+    for (final batch in state.coinBatches) {
+      if (toSpend <= 0 || batch.remaining == 0) {
+        if (batch.remaining > 0) updated.add(batch);
+        continue;
+      }
+      if (batch.remaining <= toSpend) {
+        toSpend -= batch.remaining;
+      } else {
+        updated.add(batch.copyWith(remaining: batch.remaining - toSpend));
+        toSpend = 0;
+      }
+    }
+    state = state.copyWith(
+      coinBatches: updated,
+      log: [...state.log, '$label: -$amount coins'],
+    );
+    return true;
+  }
+
+  /// PRD §13.5's redemption auto-refund: "failed fulfillment auto-
+  /// refunds coins with apology bonus (+10)."
+  void refundWithApology(int amount, {required String label}) {
+    _applyCoinsAndXp(amount + 10, 0, [
+      '$label: refunded $amount coins + 10 apology bonus',
+    ]);
+  }
+
+  /// PRD §13.1: "expire 12 months after earning, FIFO burn." Callers
+  /// (debug controls / a real periodic sweep once one exists) invoke
+  /// this to burn any batch whose 12-month window has passed.
+  void sweepExpiredCoins({DateTime Function() now = DateTime.now}) {
+    final n = now();
+    final kept = <CoinBatch>[];
+    final expiredEntries = <String>[];
+    for (final batch in state.coinBatches) {
+      if (batch.remaining <= 0) continue;
+      if (!n.isBefore(batch.expiresAt)) {
+        expiredEntries.add('${batch.remaining} coins expired (FIFO burn)');
+      } else {
+        kept.add(batch);
+      }
+    }
+    if (expiredEntries.isEmpty) return;
+    state = state.copyWith(
+      coinBatches: kept,
+      log: [...state.log, ...expiredEntries],
     );
   }
 

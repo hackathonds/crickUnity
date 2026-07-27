@@ -113,3 +113,41 @@ class CeremonyEvent {
     this.tierLabel,
   });
 }
+
+/// PRD §13.1: "Coins (spendable; expire 12 months after earning, FIFO
+/// burn; expiry warnings at 30/7 days)." Coins are tracked as dated
+/// batches rather than one flat int so FIFO burn/expiry is real, not
+/// just a balance decrement.
+class CoinBatch {
+  final int amount;
+  final int remaining;
+  final DateTime earnedAt;
+
+  const CoinBatch({
+    required this.amount,
+    required this.remaining,
+    required this.earnedAt,
+  });
+
+  DateTime get expiresAt =>
+      DateTime(earnedAt.year, earnedAt.month + 12, earnedAt.day);
+
+  CoinBatch copyWith({int? remaining}) => CoinBatch(
+    amount: amount,
+    remaining: remaining ?? this.remaining,
+    earnedAt: earnedAt,
+  );
+}
+
+/// PRD §13.1's "expiry warnings at 30/7 days" -- coins from the
+/// earliest (FIFO) batches whose 12-month expiry falls within [days].
+int coinsExpiringWithin(
+  List<CoinBatch> batches,
+  int days, {
+  DateTime Function() now = DateTime.now,
+}) {
+  final cutoff = now().add(Duration(days: days));
+  return batches
+      .where((b) => b.remaining > 0 && !b.expiresAt.isAfter(cutoff))
+      .fold(0, (sum, b) => sum + b.remaining);
+}
