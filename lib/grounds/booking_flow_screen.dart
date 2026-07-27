@@ -12,8 +12,9 @@ import 'booking_ticket_screen.dart';
 import 'bookings_provider.dart';
 import 'ground_models.dart';
 import 'grounds_provider.dart';
+import 'owner_console_provider.dart';
 
-enum _SlotState { available, held, booked }
+enum _SlotState { available, held, booked, maintenance }
 
 /// PRD §10.2: "Availability calendar (green/amber-held/red). Flow: pick
 /// slot -> party size & purpose (match/practice) -> price quote incl.
@@ -45,7 +46,14 @@ class _BookingFlowScreenState extends ConsumerState<BookingFlowScreen> {
       DateTime(day.year, day.month, day.day, hour),
   ];
 
-  _SlotState _stateFor(DateTime slot, Ground ground, List<Booking> bookings) {
+  _SlotState _stateFor(
+    DateTime slot,
+    Ground ground,
+    List<Booking> bookings,
+    OwnerConsoleState ownerConsole,
+  ) {
+    // PRD §10.6: "public sees 'Maintenance'" on an owner-blocked slot.
+    if (ownerConsole.isBlocked(ground.id, slot)) return _SlotState.maintenance;
     final overlapping = bookings.where(
       (b) => b.groundId == ground.id && b.slotStart == slot && b.isActive,
     );
@@ -66,6 +74,7 @@ class _BookingFlowScreenState extends ConsumerState<BookingFlowScreen> {
     final ground = ref.watch(groundsProvider).groundById(widget.groundId);
     ref.read(bookingsProvider.notifier).expireStaleHolds();
     final bookings = ref.watch(bookingsProvider).bookings;
+    final ownerConsole = ref.watch(ownerConsoleProvider);
 
     if (ground == null) {
       return Scaffold(
@@ -106,7 +115,7 @@ class _BookingFlowScreenState extends ConsumerState<BookingFlowScreen> {
                   _SlotChip(
                     key: ValueKey('slotChip_${slot.toIso8601String()}'),
                     slot: slot,
-                    state: _stateFor(slot, ground, bookings),
+                    state: _stateFor(slot, ground, bookings, ownerConsole),
                     selected: _selectedSlot == slot,
                     colors: colors,
                     onTap: () => setState(() => _selectedSlot = slot),
@@ -232,6 +241,7 @@ class _SlotChip extends StatelessWidget {
       _SlotState.available => colors.success,
       _SlotState.held => colors.warning,
       _SlotState.booked => colors.error,
+      _SlotState.maintenance => colors.textTertiary,
     };
     return GestureDetector(
       onTap: state == _SlotState.available ? onTap : null,
@@ -246,7 +256,9 @@ class _SlotChip extends StatelessWidget {
           border: selected ? Border.all(color: color, width: 2) : null,
         ),
         child: Text(
-          '${slot.hour.toString().padLeft(2, '0')}:00',
+          state == _SlotState.maintenance
+              ? '${slot.hour.toString().padLeft(2, '0')}:00 · Maintenance'
+              : '${slot.hour.toString().padLeft(2, '0')}:00',
           style: AppTypography.body.copyWith(color: colors.textPrimary),
         ),
       ),
