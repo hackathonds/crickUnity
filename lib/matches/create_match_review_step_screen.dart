@@ -7,6 +7,8 @@ import '../design_system/components/app_segmented_control.dart';
 import '../design_system/tokens/app_colors.dart';
 import '../design_system/tokens/app_spacing.dart';
 import '../design_system/tokens/app_typography.dart';
+import '../officials/gig_board_models.dart' show OfficialRole;
+import '../officials/gig_board_screen.dart';
 import 'create_match_basics_step_screen.dart';
 import 'create_match_provider.dart';
 import 'match_models.dart';
@@ -19,6 +21,17 @@ import 'matches_provider.dart';
 /// the draft is shown as a read-only recap -- reopening earlier steps
 /// isn't this screen's job, keeping the happy-path touch count low (DS
 /// §1.5).
+///
+/// E4-17 (PRD §2.6/§2.7/§7.1): "Hire from Gig Board" used to dead-end
+/// with "Gig Board (E14-01) isn't built yet" -- now opens the real
+/// GigBoardScreen since E14-01 shipped. The self-scoring-block/
+/// umpire-conflict dual-captain approval flow E4-17 also names was
+/// already fully built (match_detail_screen.dart's selfScoringOverrideApproved
+/// / _DualCaptainConflictCard, matches_provider.dart's
+/// approveSelfScoringOverride/waiveUmpireConflict) -- that's a
+/// post-creation, two-captain-signoff flow on the confirmed
+/// MatchRecord, not a single-checkbox gate at creation time, so this
+/// screen doesn't duplicate it.
 class CreateMatchReviewStepScreen extends ConsumerWidget {
   final String composerTeamName;
   final ValueChanged<String> onSend;
@@ -160,12 +173,15 @@ class CreateMatchReviewStepScreen extends ConsumerWidget {
                   if (draft.scorerAssignment ==
                       ScorerAssignment.hireFromGigBoard) ...[
                     const SizedBox(height: AppSpacing.xs),
-                    Text(
-                      'Gig Board (E14-01) isn\'t built yet -- no scorer '
-                      'will actually be hired.',
-                      style: AppTypography.caption.copyWith(
-                        color: colors.textTertiary,
+                    OutlinedButton(
+                      key: const ValueKey('browseGigBoardButton'),
+                      onPressed: () => Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) =>
+                              const GigBoardScreen(role: OfficialRole.scorer),
+                        ),
                       ),
+                      child: const Text('Browse Gig Board'),
                     ),
                   ],
                   const SizedBox(height: AppSpacing.sm),
