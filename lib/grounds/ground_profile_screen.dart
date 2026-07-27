@@ -7,11 +7,16 @@ import '../design_system/components/app_tag_chip.dart';
 import '../design_system/tokens/app_colors.dart';
 import '../design_system/tokens/app_spacing.dart';
 import '../design_system/tokens/app_typography.dart';
+import '../moderation/report_sheet.dart';
 import '../recognition/record_models.dart';
 import '../recognition/records_provider.dart';
+import '../social/composer_screen.dart' show composerViewerName;
 import 'booking_flow_screen.dart';
 import 'ground_models.dart';
 import 'grounds_provider.dart';
+import 'review_composer_screen.dart';
+import 'review_models.dart';
+import 'reviews_provider.dart';
 
 /// Backlog E9-02: "Ground profile (facilities/pitch/boundary/records
 /// shelf/par-score stats -- PRD §10.1, §19.8)." §19.8 does not exist --
@@ -23,13 +28,17 @@ import 'grounds_provider.dart';
 /// PRD §20 screen-list item 50 additionally names: gallery, facilities,
 /// calendar, records | book/follow/review | fully-booked state. This
 /// story builds the profile itself plus the Follow toggle and the
-/// fully-booked banner; "Book" now opens the real E9-03 booking flow
-/// (grounds/booking_flow_screen.dart). Reviews (E9-04) is still a
-/// separate not-yet-built story, so "Write a review" remains a
-/// disabled stub noting that. Weather strip and "upcoming public
-/// matches here" (also under §10.4) are out of this story's backlog
-/// line and are not built here -- flagged rather than silently scoped
-/// in.
+/// fully-booked banner; "Book" opens the real E9-03 booking flow
+/// (grounds/booking_flow_screen.dart) and "Write a review" opens the
+/// real E9-04 review composer (grounds/review_composer_screen.dart).
+/// Rating and facet bars now compute from reviewsProvider's actual
+/// reviews (weighted recent-first average per PRD §10.3) once any
+/// exist for this ground, falling back to the seeded static value
+/// otherwise -- same "wire the real module once it exists" convention
+/// as every other cross-story integration this session. Weather strip
+/// and "upcoming public matches here" (also under §10.4) are out of
+/// this story's backlog line and are not built here -- flagged rather
+/// than silently scoped in.
 class GroundProfileScreen extends ConsumerWidget {
   final String groundId;
 
@@ -61,6 +70,13 @@ class GroundProfileScreen extends ConsumerWidget {
           (r) => r.scope == RecordScope.ground && r.scopeLabel == ground.name,
         )
         .toList();
+    final reviews = ref.watch(reviewsProvider).forGround(ground.id);
+    final liveRating = reviews.isEmpty
+        ? ground.rating
+        : weightedRecentFirstAverage(reviews);
+    final liveFacets = reviews.isEmpty
+        ? ground.facetRatings
+        : averageFacetStars(reviews);
 
     return Scaffold(
       appBar: AppBar(
@@ -113,7 +129,7 @@ class GroundProfileScreen extends ConsumerWidget {
                 ),
               ),
               Text(
-                '${ground.rating}★',
+                '${liveRating.toStringAsFixed(1)}★',
                 style: AppTypography.stat.copyWith(color: colors.textPrimary),
               ),
             ],
@@ -151,7 +167,11 @@ class GroundProfileScreen extends ConsumerWidget {
                   variant: AppButtonVariant.secondary,
                   label: 'Write a review',
                   fullWidth: true,
-                  onPressed: () => _showNotYetBuilt(context, 'Reviews (E9-04)'),
+                  onPressed: () => Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (_) => ReviewComposerScreen(groundId: ground.id),
+                    ),
+                  ),
                 ),
               ),
             ],
@@ -236,7 +256,7 @@ class GroundProfileScreen extends ConsumerWidget {
           for (final facet in ReviewFacet.values)
             _FacetBar(
               label: reviewFacetLabels[facet]!,
-              value: ground.facetRatings[facet] ?? 0,
+              value: liveFacets[facet] ?? 0,
               colors: colors,
             ),
           const SizedBox(height: AppSpacing.xl),
@@ -283,14 +303,26 @@ class GroundProfileScreen extends ConsumerWidget {
                   ],
                 ),
               ),
+          const SizedBox(height: AppSpacing.xl),
+          Text(
+            'Reviews',
+            style: AppTypography.label.copyWith(color: colors.textTertiary),
+          ),
+          const SizedBox(height: AppSpacing.xs),
+          if (reviews.isEmpty)
+            Text(
+              "Reviews come from teams who've played here.",
+              style: AppTypography.body.copyWith(color: colors.textSecondary),
+            )
+          else
+            for (final review in reviews)
+              _ReviewCard(
+                key: ValueKey('reviewCard_${review.id}'),
+                review: review,
+                colors: colors,
+              ),
         ],
       ),
-    );
-  }
-
-  void _showNotYetBuilt(BuildContext context, String story) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('$story is a separate story -- not yet built.')),
     );
   }
 }
@@ -381,6 +413,105 @@ class _InfoRow extends StatelessWidget {
                       .copyWith(color: colors.textPrimary),
             ),
           ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ReviewCard extends ConsumerWidget {
+  final Review review;
+  final AppColors colors;
+
+  const _ReviewCard({super.key, required this.review, required this.colors});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: AppSpacing.sm),
+      padding: const EdgeInsets.all(AppSpacing.md),
+      decoration: BoxDecoration(
+        color: colors.surfaceAlt,
+        borderRadius: BorderRadius.circular(14),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  review.reviewerName,
+                  style: AppTypography.subtitle.copyWith(
+                    color: colors.textPrimary,
+                  ),
+                ),
+              ),
+              Text('${review.overallStars}★'),
+              IconButton(
+                key: ValueKey('reportReviewButton_${review.id}'),
+                icon: const Icon(Icons.flag_outlined, size: 18),
+                tooltip: 'Report review',
+                onPressed: () => showReportSheet(
+                  context,
+                  targetType: 'review',
+                  targetLabel: 'Review by ${review.reviewerName}',
+                  reporterName: composerViewerName,
+                ),
+              ),
+            ],
+          ),
+          if (review.text.isNotEmpty)
+            Text(
+              review.text,
+              style: AppTypography.body.copyWith(color: colors.textSecondary),
+            ),
+          if (review.photoCount > 0)
+            Padding(
+              padding: const EdgeInsets.only(top: AppSpacing.xs),
+              child: Text(
+                '${review.photoCount} photo${review.photoCount == 1 ? '' : 's'}',
+                style: AppTypography.caption.copyWith(
+                  color: colors.textTertiary,
+                ),
+              ),
+            ),
+          if (review.hasOwnerReply) ...[
+            const SizedBox(height: AppSpacing.sm),
+            Container(
+              padding: const EdgeInsets.all(AppSpacing.sm),
+              decoration: BoxDecoration(
+                color: colors.surface,
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Owner reply',
+                    style: AppTypography.label.copyWith(
+                      color: colors.textTertiary,
+                    ),
+                  ),
+                  Text(review.ownerReplyText!, style: AppTypography.body),
+                ],
+              ),
+            ),
+          ] else
+            // PRD §10.3: "Owner single reply per review." No Owner
+            // Console exists yet (E9-05) to author this from -- a debug
+            // control stands in so the single-reply rule can be
+            // exercised now.
+            TextButton(
+              key: ValueKey('debugOwnerReplyButton_${review.id}'),
+              onPressed: () => ref
+                  .read(reviewsProvider.notifier)
+                  .replyAsOwner(
+                    review.id,
+                    'Thanks for the feedback! (debug reply)',
+                  ),
+              child: const Text('Reply as owner (debug)'),
+            ),
         ],
       ),
     );

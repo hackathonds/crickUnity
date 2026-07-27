@@ -19,6 +19,7 @@ import '../../expenses/wallet_payouts_provider.dart';
 import '../../grounds/booking_flow_screen.dart';
 import '../../grounds/ground_profile_screen.dart';
 import '../../grounds/grounds_discovery_screen.dart';
+import '../../grounds/review_composer_screen.dart';
 import '../../guest/guest_live_match_preview_screen.dart';
 import '../../matches/awards_screen.dart';
 import '../../matches/create_match_flow.dart';
@@ -1864,6 +1865,18 @@ class DebugMenuScreen extends StatelessWidget {
               MaterialPageRoute(
                 builder: (_) =>
                     const BookingFlowScreen(groundId: 'ground-green-valley'),
+              ),
+            ),
+          ),
+          ListTile(
+            title: const Text('Write a review (sample)'),
+            subtitle: const Text(
+              'E9-04 — Verified-booker gate, facet stars, single owner reply',
+            ),
+            onTap: () => Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (_) =>
+                    const ReviewComposerScreen(groundId: 'ground-green-valley'),
               ),
             ),
           ),
