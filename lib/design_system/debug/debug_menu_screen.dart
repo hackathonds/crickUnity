@@ -23,6 +23,7 @@ import '../../coaching/compliance_vault_screen.dart';
 import '../../coaching/personal_training_log_screen.dart';
 import '../../grounds/booking_flow_screen.dart';
 import '../../search/global_search_screen.dart';
+import '../../search/qr_scanner_screen.dart';
 import '../../grounds/ground_profile_screen.dart';
 import '../../grounds/grounds_discovery_screen.dart';
 import '../../grounds/caretaker_mode_screen.dart';
@@ -1873,6 +1874,15 @@ class DebugMenuScreen extends StatelessWidget {
             onTap: () => Navigator.of(context).push(
               MaterialPageRoute(builder: (_) => const GlobalSearchScreen()),
             ),
+          ),
+          ListTile(
+            title: const Text('QR search / scanner'),
+            subtitle: const Text(
+              'E12-03 — Jump to object, reads booking check-in QRs',
+            ),
+            onTap: () => Navigator.of(
+              context,
+            ).push(MaterialPageRoute(builder: (_) => const QrScannerScreen())),
           ),
           ListTile(
             title: const Text('Club home + console'),
