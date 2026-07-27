@@ -48,6 +48,7 @@ import '../../rewards/referral_screen.dart';
 import '../../rewards/rewards_provider.dart';
 import '../../rewards/rewards_summary_screen.dart';
 import '../../rewards/wallet_screen.dart';
+import '../../messaging/chat_list_screen.dart';
 import '../../social/feed_screen.dart';
 import '../../rewards/streaks_summary_screen.dart';
 import '../../profile/achievement_models.dart';
@@ -1650,6 +1651,15 @@ class DebugMenuScreen extends StatelessWidget {
             onTap: () => Navigator.of(
               context,
             ).push(MaterialPageRoute(builder: (_) => const FeedScreen())),
+          ),
+          ListTile(
+            title: const Text('Messenger'),
+            subtitle: const Text(
+              'E7-05 — Chat list, thread, requests, voice notes, object cards',
+            ),
+            onTap: () => Navigator.of(
+              context,
+            ).push(MaterialPageRoute(builder: (_) => const ChatListScreen())),
           ),
           ListTile(
             title: const Text('Field map tool (captain)'),
