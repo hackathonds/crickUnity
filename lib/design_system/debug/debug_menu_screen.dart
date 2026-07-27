@@ -22,6 +22,7 @@ import '../../grounds/grounds_discovery_screen.dart';
 import '../../grounds/caretaker_mode_screen.dart';
 import '../../tournaments/auction_room_screen.dart';
 import '../../tournaments/organizer_console_screen.dart';
+import '../../tournaments/stats_hub_screen.dart';
 import '../../tournaments/bracket_screen.dart';
 import '../../tournaments/fixtures_editor_screen.dart';
 import '../../tournaments/points_table_screen.dart';
@@ -1935,6 +1936,15 @@ class DebugMenuScreen extends StatelessWidget {
             onTap: () => Navigator.of(context).push(
               MaterialPageRoute(builder: (_) => const OrganizerConsoleScreen()),
             ),
+          ),
+          ListTile(
+            title: const Text('Stats hub + awards + records'),
+            subtitle: const Text(
+              'E10-08 — Orange/purple lists, awards minting, hall of champions',
+            ),
+            onTap: () => Navigator.of(
+              context,
+            ).push(MaterialPageRoute(builder: (_) => const StatsHubScreen())),
           ),
           ListTile(
             title: const Text('Points table + NRR + what-if'),
