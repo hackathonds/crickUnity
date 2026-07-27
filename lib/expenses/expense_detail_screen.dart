@@ -109,13 +109,28 @@ class ExpenseDetailScreen extends ConsumerWidget {
               ),
             ),
           Center(
-            child: AppMoneyText(
-              key: const ValueKey('amountHero'),
-              symbol: '₹',
-              amount: '${expense.amount}',
-              numeralStyle: AppTypography.display.copyWith(
-                color: colors.textPrimary,
-              ),
+            child: Column(
+              children: [
+                AppMoneyText(
+                  key: const ValueKey('amountHero'),
+                  symbol: currencySymbols[expense.currency]!,
+                  amount: '${expense.amount}',
+                  numeralStyle: AppTypography.display.copyWith(
+                    color: colors.textPrimary,
+                  ),
+                ),
+                if (expense.conversionNote != null) ...[
+                  const SizedBox(height: AppSpacing.xs),
+                  Text(
+                    key: const ValueKey('homeCurrencyConversionText'),
+                    '≈ ${currencySymbols[homeCurrency]}'
+                    '${expense.homeCurrencyAmount} -- ${expense.conversionNote}',
+                    style: AppTypography.caption.copyWith(
+                      color: colors.textTertiary,
+                    ),
+                  ),
+                ],
+              ],
             ),
           ),
           const SizedBox(height: AppSpacing.xxl),
