@@ -16,6 +16,7 @@ import '../../expenses/reports_screen.dart';
 import '../../expenses/settle_up_screen.dart';
 import '../../expenses/treasury_screen.dart';
 import '../../expenses/wallet_payouts_provider.dart';
+import '../../clubs/club_home_screen.dart';
 import '../../grounds/booking_flow_screen.dart';
 import '../../grounds/ground_profile_screen.dart';
 import '../../grounds/grounds_discovery_screen.dart';
@@ -1858,6 +1859,15 @@ class DebugMenuScreen extends StatelessWidget {
             onTap: () => Navigator.of(context).push(
               MaterialPageRoute(builder: (_) => const ProgressRingsScreen()),
             ),
+          ),
+          ListTile(
+            title: const Text('Club home + console'),
+            subtitle: const Text(
+              'E11-01 — Members/dues grid, tiers/grace, inter-team scheduler, wall of fame',
+            ),
+            onTap: () => Navigator.of(
+              context,
+            ).push(MaterialPageRoute(builder: (_) => const ClubHomeScreen())),
           ),
           ListTile(
             title: const Text('Grounds discovery'),
