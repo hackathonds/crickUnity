@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'premium_provider.dart';
 import 'rewards_models.dart';
 
 class RewardsState {
@@ -75,7 +76,11 @@ class RewardsNotifier extends Notifier<RewardsState> {
         '+${reward.coins} coins, +${reward.xp} XP',
       );
     }
-    _applyCoinsAndXp(coinsGained, xpGained, entries, now: now);
+    final proBonus = _proBonusFor(coinsGained);
+    if (proBonus > 0) {
+      entries.add('CricUnity Pro bonus: +$proBonus coins');
+    }
+    _applyCoinsAndXp(coinsGained + proBonus, xpGained, entries, now: now);
   }
 
   /// Irregular one-off bonuses that don't fit the fixed per-action
@@ -85,7 +90,23 @@ class RewardsNotifier extends Notifier<RewardsState> {
     required String label,
     DateTime Function() now = DateTime.now,
   }) {
-    _applyCoinsAndXp(coins, 0, ['$label: +$coins coins'], now: now);
+    final proBonus = _proBonusFor(coins);
+    final entries = [
+      '$label: +$coins coins',
+      if (proBonus > 0) 'CricUnity Pro bonus: +$proBonus coins',
+    ];
+    _applyCoinsAndXp(coins + proBonus, 0, entries, now: now);
+  }
+
+  /// PRD §13.6: "1.25x coin multiplier (capped)." No cap value is
+  /// given -- capping the bonus itself (not the total) at +50 coins per
+  /// award is a flagged judgment call. Never applied to refunds
+  /// (refundWithApology bypasses this, calling _applyCoinsAndXp
+  /// directly) -- multiplying a failed-fulfillment refund would be a
+  /// reward for the failure, not an earning.
+  int _proBonusFor(int coins) {
+    if (coins <= 0 || !ref.read(premiumProvider).isPro) return 0;
+    return ((coins * 0.25).round()).clamp(0, 50);
   }
 
   /// Pure-XP awards (E6-06's spin wheel XP segment) -- no coin batch.

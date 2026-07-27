@@ -43,6 +43,8 @@ import '../../rewards/luck_provider.dart';
 import '../../rewards/missions_board_screen.dart';
 import '../../rewards/missions_models.dart';
 import '../../rewards/missions_provider.dart';
+import '../../rewards/pro_paywall_screen.dart';
+import '../../rewards/referral_screen.dart';
 import '../../rewards/rewards_provider.dart';
 import '../../rewards/rewards_summary_screen.dart';
 import '../../rewards/wallet_screen.dart';
@@ -1619,6 +1621,24 @@ class DebugMenuScreen extends StatelessWidget {
                 MaterialPageRoute(builder: (_) => const LuckLayerScreen()),
               );
             },
+          ),
+          ListTile(
+            title: const Text('Refer a friend'),
+            subtitle: const Text(
+              'E6-07 (1/2) — Code card, referee rows, terms',
+            ),
+            onTap: () => Navigator.of(
+              context,
+            ).push(MaterialPageRoute(builder: (_) => const ReferralScreen())),
+          ),
+          ListTile(
+            title: const Text('CricUnity Pro'),
+            subtitle: const Text(
+              'E6-07 (2/2) — Paywall, integrity note, Family manager',
+            ),
+            onTap: () => Navigator.of(
+              context,
+            ).push(MaterialPageRoute(builder: (_) => const ProPaywallScreen())),
           ),
           ListTile(
             title: const Text('Field map tool (captain)'),

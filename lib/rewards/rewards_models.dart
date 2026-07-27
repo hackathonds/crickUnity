@@ -18,6 +18,7 @@ enum EarningAction {
   organizeMatch,
   volunteerDuty,
   dailyLogin,
+  referral,
 }
 
 class EarningReward {
@@ -42,6 +43,7 @@ const Map<EarningAction, EarningReward> earningTable = {
   EarningAction.organizeMatch: EarningReward(15, 30),
   EarningAction.volunteerDuty: EarningReward(5, 10),
   EarningAction.dailyLogin: EarningReward(2, 2),
+  EarningAction.referral: EarningReward(100, 100),
 };
 
 const Map<EarningAction, String> earningActionLabels = {
@@ -59,6 +61,7 @@ const Map<EarningAction, String> earningActionLabels = {
   EarningAction.organizeMatch: 'Organized the match',
   EarningAction.volunteerDuty: 'Volunteer duty',
   EarningAction.dailyLogin: 'Daily login',
+  EarningAction.referral: 'Referral bonus',
 };
 
 /// PRD §13: "Level (1-60, curve steepens)." No exact formula is given
