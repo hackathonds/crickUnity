@@ -27,6 +27,9 @@ double withdrawalRefundFraction(DateTime tournamentStart, DateTime now) {
   return 0.0;
 }
 
+/// PRD §8.3: "team blackout dates (teams may submit up to 2)."
+const int maxBlackoutDates = 2;
+
 class TeamRegistration {
   final String id;
   final String tournamentId;
@@ -36,6 +39,7 @@ class TeamRegistration {
   final RegistrationStatus status;
   final DateTime createdAt;
   final int? waitlistPosition;
+  final List<DateTime> blackoutDates;
 
   const TeamRegistration({
     required this.id,
@@ -46,6 +50,7 @@ class TeamRegistration {
     this.status = RegistrationStatus.pending,
     required this.createdAt,
     this.waitlistPosition,
+    this.blackoutDates = const [],
   });
 
   bool get docsComplete =>
@@ -55,6 +60,7 @@ class TeamRegistration {
     RegistrationStatus? status,
     int? waitlistPosition,
     bool clearWaitlistPosition = false,
+    List<DateTime>? blackoutDates,
   }) {
     return TeamRegistration(
       id: id,
@@ -67,6 +73,7 @@ class TeamRegistration {
       waitlistPosition: clearWaitlistPosition
           ? null
           : (waitlistPosition ?? this.waitlistPosition),
+      blackoutDates: blackoutDates ?? this.blackoutDates,
     );
   }
 }
