@@ -21,6 +21,7 @@ import '../../grounds/ground_profile_screen.dart';
 import '../../grounds/grounds_discovery_screen.dart';
 import '../../grounds/caretaker_mode_screen.dart';
 import '../../tournaments/fixtures_editor_screen.dart';
+import '../../tournaments/points_table_screen.dart';
 import '../../tournaments/tournament_creation_wizard_screen.dart';
 import '../../tournaments/tournament_registration_screen.dart';
 import '../../grounds/owner_console_screen.dart';
@@ -1903,6 +1904,15 @@ class DebugMenuScreen extends StatelessWidget {
             ),
             onTap: () => Navigator.of(context).push(
               MaterialPageRoute(builder: (_) => const FixturesEditorScreen()),
+            ),
+          ),
+          ListTile(
+            title: const Text('Points table + NRR + what-if'),
+            subtitle: const Text(
+              'E10-04 — Tap-formula NRR, adjusted badges, savable scenarios',
+            ),
+            onTap: () => Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => const PointsTableScreen()),
             ),
           ),
           ListTile(
