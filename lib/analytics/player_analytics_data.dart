@@ -1,5 +1,6 @@
 import '../matches/scoring_models.dart' show Delivery, DismissalType;
 import '../onboarding/profile_wizard_provider.dart' show BattingStyle;
+import '../teams/team_models.dart' show TeamFormat;
 import 'player_analytics_models.dart';
 
 /// One synthetic match's worth of this player's involvement. No
@@ -42,6 +43,15 @@ class MatchPerformance {
   final double teamAvgRuns;
   final double cityAvgRuns;
 
+  /// E2-03 (Career Statistics, PRD §5.3) additions: "Split by format
+  /// tabs" reuses the real [TeamFormat] enum; the "dual-confirmed vs
+  /// self-scored" verified split and "pre-app career entry ...
+  /// permanently labeled 'Self-reported' and excluded from rankings"
+  /// rule both need per-match flags this dataset didn't carry before.
+  final TeamFormat format;
+  final bool verified;
+  final bool isPreApp;
+
   const MatchPerformance({
     required this.label,
     required this.date,
@@ -54,6 +64,9 @@ class MatchPerformance {
     required this.respondedEarly,
     required this.teamAvgRuns,
     required this.cityAvgRuns,
+    this.format = TeamFormat.t20,
+    this.verified = true,
+    this.isPreApp = false,
   });
 
   int get runsScored =>
@@ -238,6 +251,7 @@ List<MatchPerformance> mockCareerMatches(DateTime now) {
       respondedEarly: true,
       teamAvgRuns: 149,
       cityAvgRuns: 128,
+      format: TeamFormat.thirtyOver,
     ),
     MatchPerformance(
       label: 'vs Strikers CC',
@@ -289,6 +303,9 @@ List<MatchPerformance> mockCareerMatches(DateTime now) {
       respondedEarly: true,
       teamAvgRuns: 172,
       cityAvgRuns: 128,
+      format: TeamFormat.thirtyOver,
+      verified: false,
+      isPreApp: true,
     ),
   ];
 }
