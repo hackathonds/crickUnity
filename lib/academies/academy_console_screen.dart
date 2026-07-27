@@ -101,8 +101,17 @@ class _AcademyConsoleScreenState extends ConsumerState<AcademyConsoleScreen> {
                     ),
                   ),
                   TextButton(
-                    onPressed: () =>
-                        notifier.assignCoach(batch.id, 'Coach Ramesh'),
+                    onPressed: () {
+                      final error = notifier.assignCoach(
+                        batch.id,
+                        'Coach Ramesh',
+                      );
+                      if (error != null) {
+                        ScaffoldMessenger.of(
+                          context,
+                        ).showSnackBar(SnackBar(content: Text(error)));
+                      }
+                    },
                     child: const Text('Assign Coach Ramesh (debug)'),
                   ),
                 ],
