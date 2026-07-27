@@ -13,6 +13,7 @@ import '../design_system/tokens/app_spacing.dart';
 import '../design_system/tokens/app_typography.dart';
 import '../matches/matches_provider.dart';
 import 'add_edit_expense_screen.dart';
+import 'expense_detail_screen.dart';
 import 'expense_models.dart';
 import 'expenses_provider.dart';
 import 'reminders_provider.dart';
@@ -326,14 +327,28 @@ class _ExpensesHomeScreenState extends ConsumerState<ExpensesHomeScreen> {
                           key: ValueKey('expenseRow_${expense.id}'),
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            AppExpenseRow(
-                              title: expense.title,
-                              contextCaption: _contextCaption(expense),
-                              amount: expense.amount,
-                              state:
-                                  expense.settlementStates[widget.viewerName] ??
-                                  AppExpenseRowState.pending,
-                              categoryIcon: AppIconId.receipt,
+                            GestureDetector(
+                              key: ValueKey('expenseRowTap_${expense.id}'),
+                              onTap: () => Navigator.of(context).push(
+                                MaterialPageRoute(
+                                  builder: (_) => ExpenseDetailScreen(
+                                    expenseId: expense.id,
+                                    viewerName: widget.viewerName,
+                                    viewerIsCaptain: widget.viewerIsCaptain,
+                                  ),
+                                ),
+                              ),
+                              child: AppExpenseRow(
+                                title: expense.title,
+                                contextCaption: _contextCaption(expense),
+                                amount: expense.amount,
+                                state: expense.hasActiveDispute
+                                    ? AppExpenseRowState.disputed
+                                    : (expense.settlementStates[widget
+                                              .viewerName] ??
+                                          AppExpenseRowState.pending),
+                                categoryIcon: AppIconId.receipt,
+                              ),
                             ),
                             _reminderRow(colors, ref, expense),
                             if (expense.approvalState ==
