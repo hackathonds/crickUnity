@@ -20,6 +20,7 @@ import '../../grounds/booking_flow_screen.dart';
 import '../../grounds/ground_profile_screen.dart';
 import '../../grounds/grounds_discovery_screen.dart';
 import '../../grounds/caretaker_mode_screen.dart';
+import '../../tournaments/fixtures_editor_screen.dart';
 import '../../tournaments/tournament_creation_wizard_screen.dart';
 import '../../tournaments/tournament_registration_screen.dart';
 import '../../grounds/owner_console_screen.dart';
@@ -1893,6 +1894,15 @@ class DebugMenuScreen extends StatelessWidget {
               MaterialPageRoute(
                 builder: (_) => const TournamentCreationWizardScreen(),
               ),
+            ),
+          ),
+          ListTile(
+            title: const Text('Fixtures generator + editor'),
+            subtitle: const Text(
+              'E10-03 — Constraints honored, drag-adjust conflicts, change-records',
+            ),
+            onTap: () => Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => const FixturesEditorScreen()),
             ),
           ),
           ListTile(

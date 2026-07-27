@@ -179,6 +179,14 @@ class RegistrationsNotifier extends Notifier<RegistrationsState> {
     );
   }
 
+  /// PRD §8.3: "team blackout dates (teams may submit up to 2)."
+  void setBlackoutDates(String registrationId, List<DateTime> dates) {
+    _update(
+      registrationId,
+      (r) => r.copyWith(blackoutDates: dates.take(maxBlackoutDates).toList()),
+    );
+  }
+
   /// Organizer conflict-resolution action: remove a player from one
   /// side of a flagged duplicate.
   void removePlayerFromSquad(String registrationId, String playerName) {
@@ -199,6 +207,7 @@ class RegistrationsNotifier extends Notifier<RegistrationsState> {
               status: r.status,
               createdAt: r.createdAt,
               waitlistPosition: r.waitlistPosition,
+              blackoutDates: r.blackoutDates,
             )
           else
             r,
