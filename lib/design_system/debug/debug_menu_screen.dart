@@ -1870,7 +1870,7 @@ class DebugMenuScreen extends StatelessWidget {
           ListTile(
             title: const Text('Notification center'),
             subtitle: const Text(
-              'E12-04 — Tabs, entity rollups, inline actions, swipe done/snooze',
+              'E12-04/05 — Tabs, rollups, channels, quiet hours, mute ladder, follow-ups',
             ),
             onTap: () => Navigator.of(context).push(
               MaterialPageRoute(

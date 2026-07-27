@@ -7,7 +7,8 @@ import '../design_system/tokens/app_typography.dart';
 import 'notification_models.dart';
 import 'notification_provider.dart';
 
-/// PRD §3.7 (Notification Center) + §3.13 (Swipe Actions). See
+/// PRD §3.7 (Notification Center) + §3.13 (Swipe Actions) + §15
+/// (Channels/priorities/quiet hours/mute ladder/follow-ups). See
 /// notification_models.dart's top-of-file note for the exact quotes
 /// and the E12-04/E12-05 scope split.
 class NotificationCenterScreen extends ConsumerStatefulWidget {
@@ -22,7 +23,7 @@ class _NotificationCenterScreenState
     extends ConsumerState<NotificationCenterScreen>
     with SingleTickerProviderStateMixin {
   late final TabController _tabController;
-  NotificationFilter _filter = NotificationFilter.all;
+  NotificationChannel _channel = NotificationChannel.all;
   final Set<String> _expandedEntities = {};
 
   @override
@@ -54,6 +55,12 @@ class _NotificationCenterScreenState
           ],
         ),
         actions: [
+          IconButton(
+            key: const ValueKey('quietHoursButton'),
+            tooltip: 'Quiet hours',
+            icon: const Icon(Icons.bedtime_outlined),
+            onPressed: () => _showQuietHoursSheet(context, notifier),
+          ),
           TextButton(
             key: const ValueKey('clearAllReadButton'),
             onPressed: () =>
@@ -72,12 +79,12 @@ class _NotificationCenterScreenState
             child: Wrap(
               spacing: AppSpacing.sm,
               children: [
-                for (final filter in NotificationFilter.values)
+                for (final channel in NotificationChannel.values)
                   ChoiceChip(
-                    key: ValueKey('notificationFilterChip_${filter.name}'),
-                    label: Text(notificationFilterLabels[filter]!),
-                    selected: _filter == filter,
-                    onSelected: (_) => setState(() => _filter = filter),
+                    key: ValueKey('notificationChannelChip_${channel.name}'),
+                    label: Text(notificationChannelLabels[channel]!),
+                    selected: _channel == channel,
+                    onSelected: (_) => setState(() => _channel = channel),
                   ),
               ],
             ),
@@ -88,7 +95,7 @@ class _NotificationCenterScreenState
               children: [
                 _NotificationList(
                   tab: NotificationTab.forYou,
-                  filter: _filter,
+                  channel: _channel,
                   colors: colors,
                   notifier: notifier,
                   expandedEntities: _expandedEntities,
@@ -100,7 +107,7 @@ class _NotificationCenterScreenState
                 ),
                 _NotificationList(
                   tab: NotificationTab.following,
-                  filter: _filter,
+                  channel: _channel,
                   colors: colors,
                   notifier: notifier,
                   expandedEntities: _expandedEntities,
@@ -117,11 +124,63 @@ class _NotificationCenterScreenState
       ),
     );
   }
+
+  /// PRD §15: "Quiet hours: user-set (default 23:00–07:00)."
+  void _showQuietHoursSheet(
+    BuildContext context,
+    NotificationNotifier notifier,
+  ) {
+    final quietHours = ref.read(notificationProvider).quietHours;
+    showModalBottomSheet<void>(
+      context: context,
+      builder: (sheetContext) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            SwitchListTile(
+              key: const ValueKey('quietHoursEnabledSwitch'),
+              title: const Text('Quiet hours'),
+              subtitle: Text(
+                '${quietHours.startHour.toString().padLeft(2, '0')}:00 - '
+                '${quietHours.endHour.toString().padLeft(2, '0')}:00',
+              ),
+              value: quietHours.enabled,
+              onChanged: (value) => notifier.setQuietHours(enabled: value),
+            ),
+            ListTile(
+              title: const Text('Start hour'),
+              trailing: DropdownButton<int>(
+                key: const ValueKey('quietHoursStartDropdown'),
+                value: quietHours.startHour,
+                items: [
+                  for (var h = 0; h < 24; h++)
+                    DropdownMenuItem(value: h, child: Text('$h:00')),
+                ],
+                onChanged: (value) => notifier.setQuietHours(startHour: value),
+              ),
+            ),
+            ListTile(
+              title: const Text('End hour'),
+              trailing: DropdownButton<int>(
+                key: const ValueKey('quietHoursEndDropdown'),
+                value: quietHours.endHour,
+                items: [
+                  for (var h = 0; h < 24; h++)
+                    DropdownMenuItem(value: h, child: Text('$h:00')),
+                ],
+                onChanged: (value) => notifier.setQuietHours(endHour: value),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 }
 
 class _NotificationList extends ConsumerWidget {
   final NotificationTab tab;
-  final NotificationFilter filter;
+  final NotificationChannel channel;
   final AppColors colors;
   final NotificationNotifier notifier;
   final Set<String> expandedEntities;
@@ -129,7 +188,7 @@ class _NotificationList extends ConsumerWidget {
 
   const _NotificationList({
     required this.tab,
-    required this.filter,
+    required this.channel,
     required this.colors,
     required this.notifier,
     required this.expandedEntities,
@@ -139,7 +198,7 @@ class _NotificationList extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final state = ref.watch(notificationProvider);
-    final cards = state.visibleFor(tab, filter, DateTime.now());
+    final cards = state.visibleFor(tab, channel, DateTime.now());
 
     if (cards.isEmpty) {
       return Center(
@@ -192,7 +251,7 @@ class _NotificationList extends ConsumerWidget {
                     ),
                     TextButton(
                       onPressed: () =>
-                          notifier.markAllReadInSection(tab, filter),
+                          notifier.markAllReadInSection(tab, channel),
                       child: const Text('Mark read'),
                     ),
                     Icon(
@@ -282,11 +341,36 @@ class _NotificationRow extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                card.entityName,
-                style: AppTypography.caption.copyWith(
-                  color: colors.textTertiary,
-                ),
+              Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      card.entityName,
+                      style: AppTypography.caption.copyWith(
+                        color: colors.textTertiary,
+                      ),
+                    ),
+                  ),
+                  // PRD §15: "unactioned decision notifications
+                  // auto-follow-up once at 24h."
+                  if (card.followedUpAt != null)
+                    Container(
+                      key: ValueKey('followUpBadge_${card.id}'),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: AppSpacing.xs,
+                      ),
+                      decoration: BoxDecoration(
+                        color: colors.warning.withValues(alpha: 0.15),
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      child: Text(
+                        'Reminder',
+                        style: AppTypography.caption.copyWith(
+                          color: colors.warning,
+                        ),
+                      ),
+                    ),
+                ],
               ),
               Text(
                 card.title,
@@ -362,7 +446,8 @@ class _NotificationRow extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             ListTile(
-              title: const Text('Mute this type'),
+              title: const Text('Mute this channel'),
+              enabled: !unmutableNotificationChannels.contains(card.channel),
               onTap: () {
                 Navigator.of(sheetContext).pop();
                 _showMuteDurationSheet(outerContext, isEntity: false);
@@ -399,14 +484,14 @@ class _NotificationRow extends StatelessWidget {
             for (final duration in MuteDuration.values)
               ListTile(
                 key: ValueKey(
-                  'muteDurationOption_${isEntity ? 'entity' : 'type'}_${duration.name}',
+                  'muteDurationOption_${isEntity ? 'entity' : 'channel'}_${duration.name}',
                 ),
                 title: Text(muteDurationLabels[duration]!),
                 onTap: () {
                   if (isEntity) {
                     notifier.muteEntity(card.entityName, duration);
                   } else {
-                    notifier.muteType(card.filter, duration);
+                    notifier.muteChannel(card.channel, duration);
                   }
                   Navigator.of(sheetContext).pop();
                 },
