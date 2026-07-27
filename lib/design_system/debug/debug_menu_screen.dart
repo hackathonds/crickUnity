@@ -53,6 +53,7 @@ import '../../moderation/moderation_settings_screen.dart';
 import '../../recognition/leaderboard_hub_screen.dart';
 import '../../recognition/challenges_hub_screen.dart';
 import '../../recognition/compare_screen.dart';
+import '../../recognition/goals_screen.dart';
 import '../../recognition/grounds_heatmap_screen.dart';
 import '../../recognition/personal_bests_screen.dart';
 import '../../recognition/records_hub_screen.dart';
@@ -1756,6 +1757,16 @@ class DebugMenuScreen extends StatelessWidget {
             onTap: () => Navigator.of(context).push(
               MaterialPageRoute(builder: (_) => const PersonalBestsScreen()),
             ),
+          ),
+          ListTile(
+            title: const Text('Goals'),
+            subtitle: const Text(
+              'E8-05 — Pace ring + on/off-track chip, coach-proposed '
+              'accept/decline',
+            ),
+            onTap: () => Navigator.of(
+              context,
+            ).push(MaterialPageRoute(builder: (_) => const GoalsScreen())),
           ),
           ListTile(
             title: const Text('Field map tool (captain)'),
