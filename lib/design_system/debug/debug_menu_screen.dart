@@ -138,6 +138,7 @@ import '../../analytics/team_captain_analytics_screen.dart';
 import '../../officials/commentator_room_screen.dart';
 import '../../officials/knowledge_hub_screen.dart';
 import '../../streaming/go_live_screen.dart';
+import '../../streaming/production_kit_screen.dart';
 import '../../officials/conduct_report_screen.dart';
 import '../../officials/gig_board_models.dart' show OfficialRole;
 import '../../officials/gig_board_screen.dart';
@@ -539,6 +540,16 @@ class DebugMenuScreen extends StatelessWidget {
             onTap: () => Navigator.of(
               context,
             ).push(MaterialPageRoute(builder: (_) => const GoLiveScreen())),
+          ),
+          ListTile(
+            title: const Text('Production kit'),
+            subtitle: const Text(
+              'E15-02 — overlay theme, lower-third editor + live '
+              'preview, destination checklist, commentator-assign',
+            ),
+            onTap: () => Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => const ProductionKitScreen()),
+            ),
           ),
           ListTile(
             title: const Text('Onboarding: full pre-tab stack'),
