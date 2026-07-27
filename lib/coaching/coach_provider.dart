@@ -1,0 +1,184 @@
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+import 'coach_models.dart';
+
+class CoachState {
+  final List<Drill> drills;
+  final List<TemplateSession> templates;
+  final List<AssignedSession> assignedSessions;
+  final List<DrillPersonalBest> personalBests;
+  final List<ProgressCard> progressCards;
+
+  const CoachState({
+    this.drills = const [],
+    this.templates = const [],
+    this.assignedSessions = const [],
+    this.personalBests = const [],
+    this.progressCards = const [],
+  });
+
+  CoachState copyWith({
+    List<Drill>? drills,
+    List<TemplateSession>? templates,
+    List<AssignedSession>? assignedSessions,
+    List<DrillPersonalBest>? personalBests,
+    List<ProgressCard>? progressCards,
+  }) {
+    return CoachState(
+      drills: drills ?? this.drills,
+      templates: templates ?? this.templates,
+      assignedSessions: assignedSessions ?? this.assignedSessions,
+      personalBests: personalBests ?? this.personalBests,
+      progressCards: progressCards ?? this.progressCards,
+    );
+  }
+
+  List<AssignedSession> sessionsThisWeekFor(String studentName, DateTime now) {
+    final weekStart = now.subtract(Duration(days: now.weekday - 1));
+    final weekEnd = weekStart.add(const Duration(days: 7));
+    return assignedSessions
+        .where(
+          (s) =>
+              s.studentName == studentName &&
+              !s.date.isBefore(weekStart) &&
+              s.date.isBefore(weekEnd),
+        )
+        .toList();
+  }
+
+  List<DrillPersonalBest> personalBestsFor(
+    String studentName,
+    String drillId,
+  ) =>
+      personalBests
+          .where((p) => p.studentName == studentName && p.drillId == drillId)
+          .toList()
+        ..sort((a, b) => a.recordedAt.compareTo(b.recordedAt));
+}
+
+/// Backlog E11-03 -- Coach console + drill library + homework engine.
+/// See coach_models.dart's top-of-file note for the exact DS §7-46
+/// quote and the flagged phantom "Appx E" citation.
+class CoachNotifier extends Notifier<CoachState> {
+  @override
+  CoachState build() => CoachState(
+    drills: const [
+      Drill(
+        id: 'drill-cover-drive',
+        name: 'Cover drive repetitions',
+        category: DrillCategory.batting,
+        baseSets: 4,
+        baseReps: 15,
+      ),
+      Drill(
+        id: 'drill-yorker',
+        name: 'Yorker accuracy',
+        category: DrillCategory.bowling,
+        baseSets: 3,
+        baseReps: 12,
+      ),
+      Drill(
+        id: 'drill-slip-catching',
+        name: 'Slip catching',
+        category: DrillCategory.fielding,
+        baseSets: 3,
+        baseReps: 20,
+      ),
+    ],
+    templates: const [
+      TemplateSession(
+        id: 'template-batting-basics',
+        name: 'Batting basics',
+        drillIds: ['drill-cover-drive'],
+      ),
+      TemplateSession(
+        id: 'template-all-round',
+        name: 'All-round session',
+        drillIds: ['drill-cover-drive', 'drill-yorker', 'drill-slip-catching'],
+      ),
+    ],
+  );
+
+  /// DS §7-46: "session planner (template picker grid from Drill
+  /// Library, drill cards showing prescription)." Backlog: "workload
+  /// caps." Returns null on success, or a rejection message.
+  String? assignSession(
+    String studentName,
+    String templateId,
+    DateTime date, {
+    DateTime Function() now = DateTime.now,
+  }) {
+    final sessionsThisWeek = sessionsThisWeekFor(studentName, now());
+    if (sessionsThisWeek.length >= maxSessionsPerWeek) {
+      return '$studentName has already reached the $maxSessionsPerWeek session/week workload cap.';
+    }
+    state = state.copyWith(
+      assignedSessions: [
+        ...state.assignedSessions,
+        AssignedSession(
+          id: 'session-${now().microsecondsSinceEpoch}',
+          studentName: studentName,
+          templateId: templateId,
+          date: date,
+        ),
+      ],
+    );
+    return null;
+  }
+
+  List<AssignedSession> sessionsThisWeekFor(String studentName, DateTime now) =>
+      state.sessionsThisWeekFor(studentName, now);
+
+  /// Backlog: "drill PB graphs."
+  void recordPersonalBest(
+    String studentName,
+    String drillId,
+    int value, {
+    DateTime Function() now = DateTime.now,
+  }) {
+    state = state.copyWith(
+      personalBests: [
+        ...state.personalBests,
+        DrillPersonalBest(
+          studentName: studentName,
+          drillId: drillId,
+          value: value,
+          recordedAt: now(),
+        ),
+      ],
+    );
+  }
+
+  /// DS §7-46: "progress-card composer (approve -> send)."
+  void composeProgressCard(
+    String studentName,
+    String monthLabel,
+    String notes, {
+    DateTime Function() now = DateTime.now,
+  }) {
+    state = state.copyWith(
+      progressCards: [
+        ...state.progressCards,
+        ProgressCard(
+          id: 'progress-${now().microsecondsSinceEpoch}',
+          studentName: studentName,
+          monthLabel: monthLabel,
+          notes: notes,
+        ),
+      ],
+    );
+  }
+
+  void approveAndSend(String cardId, {DateTime Function() now = DateTime.now}) {
+    state = state.copyWith(
+      progressCards: [
+        for (final c in state.progressCards)
+          if (c.id == cardId) c.copyWith(approved: true, sentAt: now()) else c,
+      ],
+    );
+  }
+}
+
+final coachProvider = NotifierProvider<CoachNotifier, CoachState>(
+  CoachNotifier.new,
+);
