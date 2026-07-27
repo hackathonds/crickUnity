@@ -6,6 +6,8 @@ import '../expenses/settlement_models.dart';
 import '../expenses/settlements_provider.dart';
 import '../grounds/booking_models.dart';
 import '../grounds/bookings_provider.dart';
+import '../grounds/ground_models.dart';
+import '../grounds/grounds_provider.dart';
 import '../matches/match_models.dart';
 import '../matches/matches_provider.dart';
 import '../matches/scoring_provider.dart';
@@ -45,6 +47,7 @@ List<NotificationCard> generateCatalogCards(Ref ref, DateTime now) {
   cards.addAll(_teamCards(ref, now));
   cards.addAll(_tournamentCards(ref, now));
   cards.addAll(_bookingCards(ref, now));
+  cards.addAll(_followedGroundCards(ref, now));
   cards.addAll(_rewardsCards(ref, now));
   cards.addAll(_moderationCards(ref, now));
   cards.addAll(_unwiredCatalogRows(now));
@@ -467,6 +470,40 @@ List<NotificationCard> _bookingCards(Ref ref, DateTime now) {
     }
   }
   return cards;
+}
+
+/// Backlog addendum: "E9-02: followed grounds emit new-slot and
+/// price-drop notifications (PRD §10.4) -- add rows to E12-05 catalog
+/// config." PRD §10.4: "Follow a ground -> new-slot alerts, price-drop
+/// alerts, review-milestone digest." E9-02 already built the real
+/// follow relationship ([GroundsState.followedGroundIds] -- its own
+/// doc comment there explicitly deferred the alert-firing to this
+/// story). The relationship is real; a genuine trigger isn't, since no
+/// slot-availability calendar or historical price series exists on
+/// [Ground] to detect an actual new slot or a real price drop from
+/// (flagged, same convention as every other missing-signal gap this
+/// session) -- one representative flagged-mock card per followed
+/// ground stands in for whichever of the two PRD names would fire.
+List<NotificationCard> _followedGroundCards(Ref ref, DateTime now) {
+  final groundsState = ref.read(groundsProvider);
+  final followed = groundsState.grounds.where(
+    (g) => groundsState.followedGroundIds.contains(g.id),
+  );
+  return [
+    for (final Ground g in followed)
+      NotificationCard(
+        id: 'ground-followed-alert-${g.id}',
+        tab: NotificationTab.following,
+        entityName: g.name,
+        title:
+            'New slot opened up at ${g.name} this week (mock alert -- '
+            'no real slot-calendar/price-history signal exists yet)',
+        priority: NotificationPriority.p2,
+        channel: NotificationChannel.bookings,
+        actions: const [NotificationActionType.view],
+        createdAt: now.subtract(const Duration(hours: 12)),
+      ),
+  ];
 }
 
 /// PRD §15 rows: "Coins credited / badge earned," "Streak at risk,"
