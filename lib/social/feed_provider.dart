@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../design_system/components/app_reaction_picker.dart';
 import 'feed_models.dart';
 
 const Duration recentlyDeletedPostRetention = Duration(days: 30);
@@ -13,6 +14,13 @@ class FeedState {
     this.lastUsedAudience = PostAudience.public,
   });
 
+  FeedPost? postById(String id) {
+    for (final post in posts) {
+      if (post.id == id) return post;
+    }
+    return null;
+  }
+
   FeedState copyWith({List<FeedPost>? posts, PostAudience? lastUsedAudience}) {
     return FeedState(
       posts: posts ?? this.posts,
@@ -21,19 +29,15 @@ class FeedState {
   }
 }
 
-/// PRD §12.1/§12.2 -- E7-01/E7-02's feed engine. Reactions/edits/
-/// deletes/poll votes here are genuine local interactions; the full
-/// reaction-picker/comment-thread/share/mention system is E7-03's
-/// separate, larger scope.
+/// PRD §12.1/§12.2/§12.6 -- E7-01/E7-02/E7-03's feed engine. Reactions/
+/// edits/deletes/poll votes/reshares are genuine local interactions.
 class FeedNotifier extends Notifier<FeedState> {
   @override
   FeedState build() => FeedState(posts: mockFeedPosts(now: DateTime.now()));
 
-  void toggleReaction(String postId) {
-    _updatePost(
-      postId,
-      (post) => post.copyWith(reactionCount: post.reactionCount + 1),
-    );
+  /// DS §3.14: tapping the same reaction again clears it (pass null).
+  void setReaction(String postId, AppReactionType? reaction) {
+    _updatePost(postId, (post) => post.withReaction(reaction));
   }
 
   /// PRD §12.2: "audience is per-post sticky-default" -- remembers the

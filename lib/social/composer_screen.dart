@@ -21,7 +21,14 @@ const String composerViewerName = 'Deepak Sharma';
 class ComposerScreen extends ConsumerStatefulWidget {
   final FeedPost? editingPost;
 
-  const ComposerScreen({super.key, this.editingPost});
+  /// PRD §12.6: "Shares: reshare to feed (with commentary)." Set when
+  /// opened from the feed card's Share sheet -- a reshare is text +
+  /// nested post only (no object-attach/poll/media of its own), a
+  /// simplification against real reshare UIs that keeps this composer
+  /// as the one screen for both flows.
+  final FeedPost? resharePost;
+
+  const ComposerScreen({super.key, this.editingPost, this.resharePost});
 
   @override
   ConsumerState<ComposerScreen> createState() => _ComposerScreenState();
@@ -40,6 +47,7 @@ class _ComposerScreenState extends ConsumerState<ComposerScreen> {
   ];
 
   bool get _isEditing => widget.editingPost != null;
+  bool get _isResharing => widget.resharePost != null;
 
   @override
   void initState() {
@@ -62,6 +70,7 @@ class _ComposerScreenState extends ConsumerState<ComposerScreen> {
   }
 
   bool get _hasContent =>
+      _isResharing ||
       _textController.text.trim().isNotEmpty ||
       _attachedObject != null ||
       (_showPollBuilder && _pollQuestionController.text.trim().isNotEmpty);
@@ -98,14 +107,15 @@ class _ComposerScreenState extends ConsumerState<ComposerScreen> {
         id: 'post-${DateTime.now().microsecondsSinceEpoch}',
         authorName: composerViewerName,
         contentText: _textController.text.trim(),
-        attachedObject: _attachedObject,
-        mediaCount: _mediaCount,
+        attachedObject: _isResharing ? null : _attachedObject,
+        mediaCount: _isResharing ? 0 : _mediaCount,
         timestamp: DateTime.now(),
         isFollowed: true,
         relationshipScore: 1.0,
         cricketRelevanceScore: 1.0,
         audience: _audience,
-        poll: poll,
+        poll: _isResharing ? null : poll,
+        resharedPostId: widget.resharePost?.id,
       ),
     );
     Navigator.of(context).pop();
@@ -117,7 +127,9 @@ class _ComposerScreenState extends ConsumerState<ComposerScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(_isEditing ? 'Edit post' : 'New post'),
+        title: Text(
+          _isEditing ? 'Edit post' : (_isResharing ? 'Reshare' : 'New post'),
+        ),
         actions: [
           Padding(
             padding: const EdgeInsets.symmetric(
@@ -144,70 +156,104 @@ class _ComposerScreenState extends ConsumerState<ComposerScreen> {
             maxLength: 2000,
             onChanged: (_) => setState(() {}),
             style: AppTypography.body.copyWith(color: colors.textPrimary),
-            decoration: const InputDecoration(
+            decoration: InputDecoration(
               border: InputBorder.none,
-              hintText: "What's happening on the pitch?",
+              hintText: _isResharing
+                  ? 'Add a comment (optional)'
+                  : "What's happening on the pitch?",
             ),
           ),
-          const SizedBox(height: AppSpacing.sm),
-          Text(
-            'Attach',
-            style: AppTypography.label.copyWith(color: colors.textTertiary),
-          ),
-          const SizedBox(height: AppSpacing.xs),
-          Wrap(
-            spacing: AppSpacing.sm,
-            children: [
-              for (final object in mockAttachableObjects)
-                ChoiceChip(
-                  key: ValueKey('attachObjectChip_${object.title}'),
-                  label: Text(object.title),
-                  selected: _attachedObject?.title == object.title,
-                  onSelected: (selected) => setState(
-                    () => _attachedObject = selected ? object : null,
+          if (_isResharing) ...[
+            const SizedBox(height: AppSpacing.sm),
+            Container(
+              key: const ValueKey('composerReshareNestedPreview'),
+              padding: const EdgeInsets.all(AppSpacing.sm),
+              decoration: BoxDecoration(
+                color: colors.surfaceAlt,
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(color: colors.border),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    widget.resharePost!.authorName,
+                    style: AppTypography.subtitle.copyWith(
+                      color: colors.textPrimary,
+                    ),
+                  ),
+                  const SizedBox(height: AppSpacing.xs),
+                  Text(
+                    widget.resharePost!.contentText,
+                    style: AppTypography.caption.copyWith(
+                      color: colors.textSecondary,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+          if (!_isResharing) ...[
+            const SizedBox(height: AppSpacing.sm),
+            Text(
+              'Attach',
+              style: AppTypography.label.copyWith(color: colors.textTertiary),
+            ),
+            const SizedBox(height: AppSpacing.xs),
+            Wrap(
+              spacing: AppSpacing.sm,
+              children: [
+                for (final object in mockAttachableObjects)
+                  ChoiceChip(
+                    key: ValueKey('attachObjectChip_${object.title}'),
+                    label: Text(object.title),
+                    selected: _attachedObject?.title == object.title,
+                    onSelected: (selected) => setState(
+                      () => _attachedObject = selected ? object : null,
+                    ),
+                  ),
+                ActionChip(
+                  key: const ValueKey('addMediaChip'),
+                  avatar: const Icon(Icons.photo_outlined, size: 16),
+                  label: Text('Media ($_mediaCount)'),
+                  onPressed: () => setState(() => _mediaCount++),
+                ),
+                if (!_isEditing)
+                  ChoiceChip(
+                    key: const ValueKey('addPollChip'),
+                    label: const Text('Poll'),
+                    selected: _showPollBuilder,
+                    onSelected: (selected) =>
+                        setState(() => _showPollBuilder = selected),
+                  ),
+              ],
+            ),
+            if (_showPollBuilder) ...[
+              const SizedBox(height: AppSpacing.md),
+              AppTextField(
+                key: const ValueKey('pollQuestionField'),
+                label: 'Poll question',
+                controller: _pollQuestionController,
+                onChanged: (_) => setState(() {}),
+              ),
+              const SizedBox(height: AppSpacing.sm),
+              for (var i = 0; i < _pollOptionControllers.length; i++)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: AppSpacing.sm),
+                  child: AppTextField(
+                    key: ValueKey('pollOptionField_$i'),
+                    label: 'Option ${i + 1}',
+                    controller: _pollOptionControllers[i],
                   ),
                 ),
-              ActionChip(
-                key: const ValueKey('addMediaChip'),
-                avatar: const Icon(Icons.photo_outlined, size: 16),
-                label: Text('Media ($_mediaCount)'),
-                onPressed: () => setState(() => _mediaCount++),
-              ),
-              if (!_isEditing)
-                ChoiceChip(
-                  key: const ValueKey('addPollChip'),
-                  label: const Text('Poll'),
-                  selected: _showPollBuilder,
-                  onSelected: (selected) =>
-                      setState(() => _showPollBuilder = selected),
+              if (_pollOptionControllers.length < 4)
+                AppButton(
+                  key: const ValueKey('addPollOptionButton'),
+                  variant: AppButtonVariant.tertiary,
+                  label: 'Add option',
+                  onPressed: _addPollOption,
                 ),
             ],
-          ),
-          if (_showPollBuilder) ...[
-            const SizedBox(height: AppSpacing.md),
-            AppTextField(
-              key: const ValueKey('pollQuestionField'),
-              label: 'Poll question',
-              controller: _pollQuestionController,
-              onChanged: (_) => setState(() {}),
-            ),
-            const SizedBox(height: AppSpacing.sm),
-            for (var i = 0; i < _pollOptionControllers.length; i++)
-              Padding(
-                padding: const EdgeInsets.only(bottom: AppSpacing.sm),
-                child: AppTextField(
-                  key: ValueKey('pollOptionField_$i'),
-                  label: 'Option ${i + 1}',
-                  controller: _pollOptionControllers[i],
-                ),
-              ),
-            if (_pollOptionControllers.length < 4)
-              AppButton(
-                key: const ValueKey('addPollOptionButton'),
-                variant: AppButtonVariant.tertiary,
-                label: 'Add option',
-                onPressed: _addPollOption,
-              ),
           ],
           const SizedBox(height: AppSpacing.xxl),
           Text(

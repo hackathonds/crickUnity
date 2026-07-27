@@ -1,3 +1,5 @@
+import '../design_system/components/app_reaction_picker.dart';
+
 /// PRD §12.1 (Feed) + §12.2 ("attach cricket object"). DS §7-57's card
 /// anatomy: "author row -> attached-object rich card (match/performance
 /// verified chip) -> media -> reaction bar -> top comment."
@@ -97,7 +99,8 @@ class FeedPost {
   final String contentText;
   final AttachedObject? attachedObject;
   final int mediaCount;
-  final int reactionCount;
+  final Map<AppReactionType, int> reactions;
+  final AppReactionType? myReaction;
   final String? topCommentAuthor;
   final String? topCommentText;
   final DateTime timestamp;
@@ -110,6 +113,7 @@ class FeedPost {
   final List<String> editHistory;
   final DateTime? editedAt;
   final DateTime? deletedAt;
+  final String? resharedPostId;
 
   const FeedPost({
     required this.id,
@@ -117,7 +121,8 @@ class FeedPost {
     required this.contentText,
     this.attachedObject,
     this.mediaCount = 0,
-    this.reactionCount = 0,
+    this.reactions = const {},
+    this.myReaction,
     this.topCommentAuthor,
     this.topCommentText,
     required this.timestamp,
@@ -130,18 +135,22 @@ class FeedPost {
     this.editHistory = const [],
     this.editedAt,
     this.deletedAt,
+    this.resharedPostId,
   });
 
   bool get isEdited => editHistory.isNotEmpty;
 
-  FeedPost copyWith({int? reactionCount}) {
+  int get totalReactionCount => reactions.values.fold(0, (sum, v) => sum + v);
+
+  FeedPost copyWith() {
     return FeedPost(
       id: id,
       authorName: authorName,
       contentText: contentText,
       attachedObject: attachedObject,
       mediaCount: mediaCount,
-      reactionCount: reactionCount ?? this.reactionCount,
+      reactions: reactions,
+      myReaction: myReaction,
       topCommentAuthor: topCommentAuthor,
       topCommentText: topCommentText,
       timestamp: timestamp,
@@ -154,6 +163,46 @@ class FeedPost {
       editHistory: editHistory,
       editedAt: editedAt,
       deletedAt: deletedAt,
+      resharedPostId: resharedPostId,
+    );
+  }
+
+  /// DS §3.14: tapping a reaction already chosen removes it (toggle
+  /// off); tapping a different one replaces the count.
+  FeedPost withReaction(AppReactionType? newReaction) {
+    final updated = {...reactions};
+    if (myReaction != null) {
+      final current = updated[myReaction] ?? 0;
+      if (current <= 1) {
+        updated.remove(myReaction);
+      } else {
+        updated[myReaction!] = current - 1;
+      }
+    }
+    if (newReaction != null) {
+      updated[newReaction] = (updated[newReaction] ?? 0) + 1;
+    }
+    return FeedPost(
+      id: id,
+      authorName: authorName,
+      contentText: contentText,
+      attachedObject: attachedObject,
+      mediaCount: mediaCount,
+      reactions: updated,
+      myReaction: newReaction,
+      topCommentAuthor: topCommentAuthor,
+      topCommentText: topCommentText,
+      timestamp: timestamp,
+      isFollowed: isFollowed,
+      relationshipScore: relationshipScore,
+      cricketRelevanceScore: cricketRelevanceScore,
+      sponsoredLabel: sponsoredLabel,
+      audience: audience,
+      poll: poll,
+      editHistory: editHistory,
+      editedAt: editedAt,
+      deletedAt: deletedAt,
+      resharedPostId: resharedPostId,
     );
   }
 
@@ -164,7 +213,8 @@ class FeedPost {
       contentText: newText,
       attachedObject: attachedObject,
       mediaCount: mediaCount,
-      reactionCount: reactionCount,
+      reactions: reactions,
+      myReaction: myReaction,
       topCommentAuthor: topCommentAuthor,
       topCommentText: topCommentText,
       timestamp: timestamp,
@@ -177,6 +227,7 @@ class FeedPost {
       editHistory: [...editHistory, contentText],
       editedAt: now,
       deletedAt: deletedAt,
+      resharedPostId: resharedPostId,
     );
   }
 
@@ -187,7 +238,8 @@ class FeedPost {
       contentText: contentText,
       attachedObject: attachedObject,
       mediaCount: mediaCount,
-      reactionCount: reactionCount,
+      reactions: reactions,
+      myReaction: myReaction,
       topCommentAuthor: topCommentAuthor,
       topCommentText: topCommentText,
       timestamp: timestamp,
@@ -200,6 +252,7 @@ class FeedPost {
       editHistory: editHistory,
       editedAt: editedAt,
       deletedAt: now,
+      resharedPostId: resharedPostId,
     );
   }
 
@@ -210,7 +263,8 @@ class FeedPost {
       contentText: contentText,
       attachedObject: attachedObject,
       mediaCount: mediaCount,
-      reactionCount: reactionCount,
+      reactions: reactions,
+      myReaction: myReaction,
       topCommentAuthor: topCommentAuthor,
       topCommentText: topCommentText,
       timestamp: timestamp,
@@ -223,6 +277,7 @@ class FeedPost {
       editHistory: editHistory,
       editedAt: editedAt,
       deletedAt: null,
+      resharedPostId: resharedPostId,
     );
   }
 
@@ -234,7 +289,8 @@ class FeedPost {
       contentText: contentText,
       attachedObject: attachedObject,
       mediaCount: mediaCount,
-      reactionCount: reactionCount,
+      reactions: reactions,
+      myReaction: myReaction,
       topCommentAuthor: topCommentAuthor,
       topCommentText: topCommentText,
       timestamp: timestamp,
@@ -247,6 +303,7 @@ class FeedPost {
       editHistory: editHistory,
       editedAt: editedAt,
       deletedAt: deletedAt,
+      resharedPostId: resharedPostId,
     );
   }
 }
@@ -321,7 +378,12 @@ List<FeedPost> mockFeedPosts({required DateTime now}) => [
       verified: true,
     ),
     mediaCount: 2,
-    reactionCount: 18,
+    reactions: const {
+      AppReactionType.clap: 10,
+      AppReactionType.heart: 5,
+      AppReactionType.fire: 3,
+    },
+    myReaction: AppReactionType.clap,
     topCommentAuthor: 'Priya Nair',
     topCommentText: 'That last over was insane 🔥',
     timestamp: now.subtract(const Duration(minutes: 20)),
@@ -340,7 +402,11 @@ List<FeedPost> mockFeedPosts({required DateTime now}) => [
       verified: true,
     ),
     mediaCount: 1,
-    reactionCount: 32,
+    reactions: const {
+      AppReactionType.clap: 20,
+      AppReactionType.heart: 8,
+      AppReactionType.fire: 4,
+    },
     topCommentAuthor: 'Kabir Singh',
     topCommentText: 'Legend!',
     timestamp: now.subtract(const Duration(hours: 3)),
@@ -358,7 +424,7 @@ List<FeedPost> mockFeedPosts({required DateTime now}) => [
       subtitle: '4.6 ★ · 120 matches hosted',
     ),
     mediaCount: 3,
-    reactionCount: 9,
+    reactions: const {AppReactionType.clap: 6, AppReactionType.heart: 3},
     timestamp: now.subtract(const Duration(hours: 6)),
     isFollowed: false,
     relationshipScore: 0.2,
@@ -374,7 +440,11 @@ List<FeedPost> mockFeedPosts({required DateTime now}) => [
       subtitle: 'Semi-finals this weekend',
       verified: true,
     ),
-    reactionCount: 41,
+    reactions: const {
+      AppReactionType.clap: 25,
+      AppReactionType.heart: 10,
+      AppReactionType.wow: 6,
+    },
     timestamp: now.subtract(const Duration(hours: 10)),
     isFollowed: false,
     relationshipScore: 0.1,
@@ -391,7 +461,7 @@ List<FeedPost> mockFeedPosts({required DateTime now}) => [
       subtitle: '50 dispute-free scored matches',
       verified: true,
     ),
-    reactionCount: 12,
+    reactions: const {AppReactionType.clap: 8, AppReactionType.heart: 4},
     topCommentAuthor: 'Ananya Iyer',
     topCommentText: 'Well deserved!',
     timestamp: now.subtract(const Duration(hours: 14)),
@@ -403,7 +473,7 @@ List<FeedPost> mockFeedPosts({required DateTime now}) => [
     id: 'post-6',
     authorName: 'Kabir Singh',
     contentText: 'Anyone up for a nets session this Sunday morning?',
-    reactionCount: 5,
+    reactions: const {AppReactionType.clap: 5},
     timestamp: now.subtract(const Duration(hours: 20)),
     isFollowed: true,
     relationshipScore: 0.5,
@@ -413,7 +483,7 @@ List<FeedPost> mockFeedPosts({required DateTime now}) => [
     id: 'post-7',
     authorName: 'Nearby: Riverside CC',
     contentText: 'Looking for a free-agent keeper for Saturday.',
-    reactionCount: 3,
+    reactions: const {AppReactionType.clap: 3},
     timestamp: now.subtract(const Duration(hours: 30)),
     isFollowed: false,
     relationshipScore: 0.1,
@@ -424,7 +494,11 @@ List<FeedPost> mockFeedPosts({required DateTime now}) => [
     authorName: 'Ananya Iyer',
     contentText: 'Throwback to last season\'s final. What a day.',
     mediaCount: 4,
-    reactionCount: 27,
+    reactions: const {
+      AppReactionType.clap: 15,
+      AppReactionType.heart: 9,
+      AppReactionType.laugh: 3,
+    },
     topCommentAuthor: 'Arjun Rao',
     topCommentText: 'Miss this team 🥲',
     timestamp: now.subtract(const Duration(days: 2)),
