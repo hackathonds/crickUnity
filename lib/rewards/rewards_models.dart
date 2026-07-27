@@ -1,3 +1,5 @@
+import 'dart:math';
+
 /// PRD §13.1: "Earning table (canonical, Super-Admin tunable; values
 /// indicative)." Only the match-derived rows are in scope for E6-01 --
 /// "release gated on scorecard confirmation" ties this story
@@ -64,12 +66,15 @@ const Map<EarningAction, String> earningActionLabels = {
   EarningAction.referral: 'Referral bonus',
 };
 
-/// PRD §13: "Level (1-60, curve steepens)." No exact formula is given
-/// (the earning table itself is explicitly "indicative, Super-Admin
-/// tunable") -- a standard steepening curve stands in, documented as a
-/// judgment call: level n requires n*(n+1)/2*50 cumulative XP (each
-/// level costs 50 XP more than the last).
-int _cumulativeXpForLevel(int level) => 50 * level * (level + 1) ~/ 2;
+/// PRD §18: "Level N requires 100xN^1.35 cumulative XP (tunable)." E6-01
+/// originally stood in a different judgment-call curve here because
+/// this exact formula lives in §18 (XP sources & curve), not §13 where
+/// E6-01's research was scoped -- corrected during E6-08 (Ranks) once
+/// re-reading §18 surfaced the exact PRD answer. No level-gated content
+/// (perk unlocks, ceremonies) depended on the old curve's specific
+/// thresholds, only on the derived level number, so this is a
+/// same-shape swap, not a breaking change.
+int _cumulativeXpForLevel(int level) => (100 * pow(level, 1.35)).round();
 
 const int maxLevel = 60;
 
