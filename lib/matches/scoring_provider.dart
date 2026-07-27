@@ -6,6 +6,8 @@ import '../recognition/record_models.dart';
 import '../rewards/achievements_provider.dart';
 import '../rewards/rewards_models.dart';
 import '../rewards/rewards_provider.dart';
+import '../recognition/progress_ring_models.dart';
+import '../recognition/progress_rings_provider.dart';
 import '../rewards/streaks_provider.dart';
 import '../social/fan_provider.dart';
 import 'scoring_models.dart';
@@ -393,6 +395,9 @@ class InningsNotifier extends Notifier<InningsState> {
           '${state.battingTeamName} vs ${state.bowlingTeamName}',
           state.finalMvp,
         );
+    // E8-08's Progress Rings -- a completed match is real "Play"
+    // activity, same scorer-scoped identity used above (flagged there).
+    ref.read(progressRingsProvider.notifier).recordProgress(RingType.play, 1);
     state = state.copyWith(
       rippleFired: true,
       rippleLog: const [
