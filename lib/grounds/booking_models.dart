@@ -69,6 +69,17 @@ class Booking {
   final String qrCode;
   final DateTime createdAt;
 
+  /// DS §11.17 Caretaker mode: "[Check in] scan button per row." No
+  /// camera/QR-scanning package exists (flagged, same convention as
+  /// booking_ticket_screen.dart's QR display) -- check-in is a tap that
+  /// records the real timestamp.
+  final bool checkedIn;
+  final DateTime? checkedInAt;
+
+  /// DS §11.17: "[Mark no-show] (enabled after 30-min grace, reason
+  /// sheet)."
+  final String? noShowReason;
+
   const Booking({
     required this.id,
     required this.groundId,
@@ -85,6 +96,9 @@ class Booking {
     this.policyAcknowledged = false,
     required this.qrCode,
     required this.createdAt,
+    this.checkedIn = false,
+    this.checkedInAt,
+    this.noShowReason,
   });
 
   bool isHoldExpired(DateTime now) =>
@@ -101,6 +115,7 @@ class Booking {
 
   bool noShowEligible(DateTime now) =>
       status == BookingStatus.confirmed &&
+      !checkedIn &&
       now.isAfter(slotStart.add(noShowGraceDuration));
 
   bool ownerCancellationTriggersPenalty(DateTime now) =>
@@ -113,6 +128,9 @@ class Booking {
     DateTime? heldUntil,
     bool clearHeldUntil = false,
     bool? policyAcknowledged,
+    bool? checkedIn,
+    DateTime? checkedInAt,
+    String? noShowReason,
   }) {
     return Booking(
       id: id,
@@ -130,6 +148,9 @@ class Booking {
       policyAcknowledged: policyAcknowledged ?? this.policyAcknowledged,
       qrCode: qrCode,
       createdAt: createdAt,
+      checkedIn: checkedIn ?? this.checkedIn,
+      checkedInAt: checkedInAt ?? this.checkedInAt,
+      noShowReason: noShowReason ?? this.noShowReason,
     );
   }
 }
