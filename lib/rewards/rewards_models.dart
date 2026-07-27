@@ -1,0 +1,102 @@
+/// PRD §13.1: "Earning table (canonical, Super-Admin tunable; values
+/// indicative)." Only the match-derived rows are in scope for E6-01 --
+/// "release gated on scorecard confirmation" ties this story
+/// specifically to match completion; daily logins/missions/practice
+/// attendance are E6-02/E6-03's separate stories.
+enum EarningAction {
+  playVerifiedMatch,
+  benchOrTwelfth,
+  winBonus,
+  fifty,
+  century,
+  threeWickets,
+  fiveWickets,
+  mvp,
+  scorerMatch,
+  scorerZeroDisputes,
+  umpireMatch,
+  organizeMatch,
+  volunteerDuty,
+}
+
+class EarningReward {
+  final int coins;
+  final int xp;
+
+  const EarningReward(this.coins, this.xp);
+}
+
+const Map<EarningAction, EarningReward> earningTable = {
+  EarningAction.playVerifiedMatch: EarningReward(20, 50),
+  EarningAction.benchOrTwelfth: EarningReward(10, 25),
+  EarningAction.winBonus: EarningReward(10, 20),
+  EarningAction.fifty: EarningReward(25, 60),
+  EarningAction.century: EarningReward(75, 150),
+  EarningAction.threeWickets: EarningReward(25, 60),
+  EarningAction.fiveWickets: EarningReward(75, 150),
+  EarningAction.mvp: EarningReward(40, 100),
+  EarningAction.scorerMatch: EarningReward(30, 60),
+  EarningAction.scorerZeroDisputes: EarningReward(10, 0),
+  EarningAction.umpireMatch: EarningReward(30, 60),
+  EarningAction.organizeMatch: EarningReward(15, 30),
+  EarningAction.volunteerDuty: EarningReward(5, 10),
+};
+
+const Map<EarningAction, String> earningActionLabels = {
+  EarningAction.playVerifiedMatch: 'Played a verified match',
+  EarningAction.benchOrTwelfth: 'Bench/12th man',
+  EarningAction.winBonus: 'Win bonus',
+  EarningAction.fifty: 'Fifty',
+  EarningAction.century: 'Century',
+  EarningAction.threeWickets: '3-wicket haul',
+  EarningAction.fiveWickets: '5-wicket haul',
+  EarningAction.mvp: 'MVP',
+  EarningAction.scorerMatch: 'Scored the match',
+  EarningAction.scorerZeroDisputes: 'Zero-dispute scoring bonus',
+  EarningAction.umpireMatch: 'Umpired the match',
+  EarningAction.organizeMatch: 'Organized the match',
+  EarningAction.volunteerDuty: 'Volunteer duty',
+};
+
+/// PRD §13: "Level (1-60, curve steepens)." No exact formula is given
+/// (the earning table itself is explicitly "indicative, Super-Admin
+/// tunable") -- a standard steepening curve stands in, documented as a
+/// judgment call: level n requires n*(n+1)/2*50 cumulative XP (each
+/// level costs 50 XP more than the last).
+int _cumulativeXpForLevel(int level) => 50 * level * (level + 1) ~/ 2;
+
+const int maxLevel = 60;
+
+int levelForXp(int totalXp) {
+  var level = 1;
+  while (level < maxLevel && totalXp >= _cumulativeXpForLevel(level + 1)) {
+    level++;
+  }
+  return level;
+}
+
+int xpIntoCurrentLevel(int totalXp) {
+  final level = levelForXp(totalXp);
+  return totalXp - _cumulativeXpForLevel(level);
+}
+
+int xpNeededForNextLevel(int totalXp) {
+  final level = levelForXp(totalXp);
+  if (level >= maxLevel) return 0;
+  return _cumulativeXpForLevel(level + 1) - _cumulativeXpForLevel(level);
+}
+
+double levelProgress(int totalXp) {
+  final needed = xpNeededForNextLevel(totalXp);
+  if (needed == 0) return 1.0;
+  return xpIntoCurrentLevel(totalXp) / needed;
+}
+
+enum CeremonyType { levelUp }
+
+class CeremonyEvent {
+  final CeremonyType type;
+  final int level;
+
+  const CeremonyEvent({required this.type, required this.level});
+}

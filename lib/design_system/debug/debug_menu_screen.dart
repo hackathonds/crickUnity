@@ -36,6 +36,7 @@ import '../../matches/scoring_provider.dart';
 import '../../matches/matches_provider.dart';
 import '../../matches/toss_screen.dart';
 import '../../onboarding/onboarding_flow.dart';
+import '../../rewards/rewards_summary_screen.dart';
 import '../../profile/achievement_models.dart';
 import '../../profile/achievements_wall_screen.dart';
 import '../../profile/activity_calendar_models.dart';
@@ -1496,6 +1497,28 @@ class DebugMenuScreen extends StatelessWidget {
                   builder: (_) => const PostMatchSummaryScreen(
                     viewerPlayerName: 'Rohan Verma',
                   ),
+                ),
+              );
+            },
+          ),
+          ListTile(
+            title: const Text('Rewards summary (coin/XP engine)'),
+            subtitle: const Text(
+              'E6-01 — real coin/XP award on scorecard confirm, level-up ceremony',
+            ),
+            onTap: () {
+              final container = ProviderScope.containerOf(
+                context,
+                listen: false,
+              );
+              final notifier = container.read(inningsProvider.notifier);
+              notifier.confirmScorecard(ConfirmerRole.composerCaptain);
+              notifier.confirmScorecard(ConfirmerRole.opponentCaptain);
+              notifier.confirmScorecard(ConfirmerRole.scorer);
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (_) =>
+                      const RewardsSummaryScreen(viewerName: 'Deepak Sharma'),
                 ),
               );
             },

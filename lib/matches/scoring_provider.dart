@@ -1,6 +1,8 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../offline/queued_action.dart';
+import '../rewards/rewards_models.dart';
+import '../rewards/rewards_provider.dart';
 import 'scoring_models.dart';
 
 /// PRD §7.7 / DS §7-27 -- E4-04's full 4-way split (see
@@ -338,13 +340,25 @@ class InningsNotifier extends Notifier<InningsState> {
   /// PRD Pillar 1: "One completed match updates 9 systems
   /// automatically." AC: "the full Match Ripple fires exactly once" --
   /// [InningsState.rippleFired] guards against firing twice even if
-  /// confirmation state is touched again afterward. No E5 (Expenses) or
-  /// E6 (Rewards) module exists yet to genuinely call into, so this is
-  /// a log of what *would* fire, not real cross-module writes.
+  /// confirmation state is touched again afterward. E6-01's coin/XP
+  /// engine now genuinely exists -- "Coins/XP/badges awarded" is a real
+  /// [RewardsNotifier.awardActions] call, not just a log line, same
+  /// quality bar as E5-07's Team Wallet integration. Scoped to the
+  /// scorer (the one concrete named identity [InningsState] always
+  /// carries -- there's no real multi-account system to award every
+  /// participant individually against, flagged). No E5/E6 module exists
+  /// for the other 8 ripple lines, so those stay a log of what would
+  /// fire.
   void _maybeFireRipple() {
     if (state.rippleFired || state.isDisputed || !state.isFullyConfirmed) {
       return;
     }
+    ref
+        .read(rewardsProvider.notifier)
+        .awardActions(
+          _matchEarningActionsFor(state.scorerName),
+          contextLabel: '${state.battingTeamName} vs ${state.bowlingTeamName}',
+        );
     state = state.copyWith(
       rippleFired: true,
       rippleLog: const [
@@ -359,6 +373,35 @@ class InningsNotifier extends Notifier<InningsState> {
         'AI insights & analytics fed',
       ],
     );
+  }
+
+  List<EarningAction> _matchEarningActionsFor(String name) {
+    final actions = <EarningAction>[EarningAction.scorerMatch];
+    final everCorrected = state.deliveries.any((d) => d.isCorrected);
+    if (!everCorrected && state.pendingCorrections.isEmpty) {
+      actions.add(EarningAction.scorerZeroDisputes);
+    }
+    final batting = state.batters[name];
+    if (batting != null) {
+      actions.add(EarningAction.playVerifiedMatch);
+      if (batting.runs >= 100) {
+        actions.add(EarningAction.century);
+      } else if (batting.runs >= 50) {
+        actions.add(EarningAction.fifty);
+      }
+    }
+    final bowling = state.bowlers[name];
+    if (bowling != null) {
+      if (bowling.wickets >= 5) {
+        actions.add(EarningAction.fiveWickets);
+      } else if (bowling.wickets >= 3) {
+        actions.add(EarningAction.threeWickets);
+      }
+    }
+    if (state.finalMvp == name) {
+      actions.add(EarningAction.mvp);
+    }
+    return actions;
   }
 
   /// PRD §7.16: "decided by: opposing captain pick (preferred, prompts
