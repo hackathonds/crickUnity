@@ -10,6 +10,7 @@ import '../design_system/tokens/app_colors.dart';
 import '../design_system/tokens/app_money_text.dart';
 import '../design_system/tokens/app_spacing.dart';
 import '../design_system/tokens/app_typography.dart';
+import 'expense_comments_provider.dart';
 import 'expense_models.dart';
 import 'expenses_provider.dart';
 import 'recurring_series_provider.dart';
@@ -22,11 +23,10 @@ import 'settlements_provider.dart';
 /// proof gallery -> comments thread -> activity log accordion ->
 /// actions [Pay/Remind/Dispute]. Frozen-in-dispute banner." PRD §11.7.
 ///
-/// Comments thread is explicitly out of scope here -- the backlog
-/// calls out E5-11 ("Expense comments") as its own later story,
-/// deliberately made explicit rather than left implied by this one.
-/// Proof gallery stays the E5-01 hasProof flag (no real photo capture/
-/// storage pipeline exists in this codebase).
+/// Comments thread is E5-11 (backlog addendum): participant-only,
+/// with @mentions and a dispute-link from each comment. Proof gallery
+/// stays the E5-01 hasProof flag (no real photo capture/storage
+/// pipeline exists in this codebase).
 class ExpenseDetailScreen extends ConsumerWidget {
   final String expenseId;
   final String viewerName;
@@ -185,6 +185,72 @@ class ExpenseDetailScreen extends ConsumerWidget {
             ],
           ),
           const SizedBox(height: AppSpacing.xxl),
+          if (isParticipant) ...[
+            Text(
+              'Comments',
+              style: AppTypography.label.copyWith(color: colors.textTertiary),
+            ),
+            const SizedBox(height: AppSpacing.xs),
+            for (final c
+                in ref.watch(expenseCommentsProvider).commentsFor(expenseId))
+              Container(
+                key: ValueKey('commentRow_${c.id}'),
+                margin: const EdgeInsets.only(bottom: AppSpacing.sm),
+                padding: const EdgeInsets.all(AppSpacing.sm),
+                decoration: BoxDecoration(
+                  color: colors.surfaceAlt,
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      c.authorName,
+                      style: AppTypography.caption.copyWith(
+                        color: colors.textTertiary,
+                      ),
+                    ),
+                    Text(
+                      c.text,
+                      style: AppTypography.body.copyWith(
+                        color: colors.textPrimary,
+                      ),
+                    ),
+                    if (c.mentionedNames.isNotEmpty)
+                      Text(
+                        c.mentionedNames.map((n) => '@$n').join(' '),
+                        style: AppTypography.caption.copyWith(
+                          color: colors.primary,
+                        ),
+                      ),
+                    if (!viewerHasActiveDispute)
+                      Padding(
+                        padding: const EdgeInsets.only(top: AppSpacing.xs),
+                        child: GestureDetector(
+                          key: ValueKey('disputeFromCommentButton_${c.id}'),
+                          onTap: () => notifier.disputeExpense(
+                            expenseId,
+                            viewerName,
+                            c.text,
+                          ),
+                          child: Text(
+                            'Dispute from this',
+                            style: AppTypography.caption.copyWith(
+                              color: colors.error,
+                            ),
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+            _CommentComposer(
+              expenseId: expenseId,
+              viewerName: viewerName,
+              participantNames: participantNames.toList(),
+            ),
+            const SizedBox(height: AppSpacing.xxl),
+          ],
           ExpansionTile(
             key: const ValueKey('activityLogAccordion'),
             title: Text(
@@ -513,6 +579,65 @@ class ExpenseDetailScreen extends ConsumerWidget {
           ),
         ),
       ),
+    );
+  }
+}
+
+class _CommentComposer extends ConsumerStatefulWidget {
+  final String expenseId;
+  final String viewerName;
+  final List<String> participantNames;
+
+  const _CommentComposer({
+    required this.expenseId,
+    required this.viewerName,
+    required this.participantNames,
+  });
+
+  @override
+  ConsumerState<_CommentComposer> createState() => _CommentComposerState();
+}
+
+class _CommentComposerState extends ConsumerState<_CommentComposer> {
+  final _controller = TextEditingController();
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Expanded(
+          child: AppTextField(
+            key: const ValueKey('commentField'),
+            label: 'Add a comment (@mention with a name)',
+            controller: _controller,
+          ),
+        ),
+        const SizedBox(width: AppSpacing.sm),
+        AppButton(
+          key: const ValueKey('sendCommentButton'),
+          variant: AppButtonVariant.primary,
+          label: 'Send',
+          onPressed: () {
+            final text = _controller.text.trim();
+            if (text.isEmpty) return;
+            ref
+                .read(expenseCommentsProvider.notifier)
+                .addComment(
+                  expenseId: widget.expenseId,
+                  authorName: widget.viewerName,
+                  text: text,
+                  participantNames: widget.participantNames,
+                );
+            _controller.clear();
+          },
+        ),
+      ],
     );
   }
 }

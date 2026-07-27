@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../expenses/add_edit_expense_screen.dart';
 import '../../expenses/auto_split_review_screen.dart';
 import '../../expenses/collections_provider.dart';
+import '../../expenses/expense_comments_provider.dart';
 import '../../expenses/expense_detail_screen.dart';
 import '../../expenses/expense_models.dart';
 import '../../expenses/expenses_home_screen.dart';
@@ -1371,6 +1372,48 @@ class DebugMenuScreen extends StatelessWidget {
                 createdByIsCaptain: true,
                 currency: Currency.usd,
               );
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (_) => ExpenseDetailScreen(
+                    expenseId: id,
+                    viewerName: 'Kabir Singh',
+                    viewerIsCaptain: true,
+                  ),
+                ),
+              );
+            },
+          ),
+          ListTile(
+            title: const Text('Expense detail (comments)'),
+            subtitle: const Text(
+              'E5-11 — participant-only thread, @mentions, dispute-link',
+            ),
+            onTap: () {
+              final container = ProviderScope.containerOf(
+                context,
+                listen: false,
+              );
+              final expensesNotifier = container.read(
+                expensesProvider.notifier,
+              );
+              final id = expensesNotifier.addExpense(
+                title: 'Ground fee',
+                category: ExpenseCategory.groundFees,
+                amount: 800,
+                paidBy: const [PaidByEntry(name: 'Kabir Singh', amount: 800)],
+                splitMethod: SplitMethod.equal,
+                splitAmong: equalSplit(800, mockExpenseParticipants()),
+                createdByName: 'Kabir Singh',
+                createdByIsCaptain: true,
+              );
+              container
+                  .read(expenseCommentsProvider.notifier)
+                  .addComment(
+                    expenseId: id,
+                    authorName: 'Priya Nair',
+                    text: '@Kabir Singh wasn\'t this ₹700 last time?',
+                    participantNames: mockExpenseParticipants(),
+                  );
               Navigator.of(context).push(
                 MaterialPageRoute(
                   builder: (_) => ExpenseDetailScreen(
