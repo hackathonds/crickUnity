@@ -48,7 +48,6 @@ class RewardsNotifier extends Notifier<RewardsState> {
     List<EarningAction> actions, {
     required String contextLabel,
   }) {
-    final beforeLevel = state.level;
     var coinsGained = 0;
     var xpGained = 0;
     final entries = <String>[];
@@ -61,18 +60,27 @@ class RewardsNotifier extends Notifier<RewardsState> {
         '+${reward.coins} coins, +${reward.xp} XP',
       );
     }
-    final newXpTotal = state.xpTotal + xpGained;
-    final afterLevel = levelForXp(newXpTotal);
+    _applyCoinsAndXp(coinsGained, xpGained, entries);
+  }
 
+  /// Irregular one-off bonuses that don't fit the fixed per-action
+  /// earning table -- streak milestones (E6-02), etc.
+  void awardBonus(int coins, {required String label}) {
+    _applyCoinsAndXp(coins, 0, ['$label: +$coins coins']);
+  }
+
+  void _applyCoinsAndXp(int coins, int xp, List<String> logEntries) {
+    final beforeLevel = state.level;
+    final newXpTotal = state.xpTotal + xp;
+    final afterLevel = levelForXp(newXpTotal);
     final newCeremonies = [
       for (var lvl = beforeLevel + 1; lvl <= afterLevel; lvl++)
         CeremonyEvent(type: CeremonyType.levelUp, level: lvl),
     ];
-
     state = state.copyWith(
-      coinBalance: state.coinBalance + coinsGained,
+      coinBalance: state.coinBalance + coins,
       xpTotal: newXpTotal,
-      log: [...state.log, ...entries],
+      log: [...state.log, ...logEntries],
       ceremonyQueue: [...state.ceremonyQueue, ...newCeremonies],
     );
   }

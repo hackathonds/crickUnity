@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../offline/queued_action.dart';
 import '../rewards/rewards_models.dart';
 import '../rewards/rewards_provider.dart';
+import '../rewards/streaks_provider.dart';
 import 'scoring_models.dart';
 
 /// PRD §7.7 / DS §7-27 -- E4-04's full 4-way split (see
@@ -359,6 +360,10 @@ class InningsNotifier extends Notifier<InningsState> {
           _matchEarningActionsFor(state.scorerName),
           contextLabel: '${state.battingTeamName} vs ${state.bowlingTeamName}',
         );
+    // PRD §13.2: "Playing streak: consecutive weeks with >=1 cricket
+    // activity." A completed, confirmed match is real cricket activity
+    // -- same scorer-scoped identity used above (flagged there).
+    ref.read(streaksProvider.notifier).recordActivity();
     state = state.copyWith(
       rippleFired: true,
       rippleLog: const [

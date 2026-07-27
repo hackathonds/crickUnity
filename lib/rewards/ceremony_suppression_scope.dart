@@ -26,8 +26,9 @@ class _CeremonySuppressionScopeState
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted)
+      if (mounted) {
         ref.read(rewardsProvider.notifier).setSuppressCeremonies(true);
+      }
     });
   }
 
