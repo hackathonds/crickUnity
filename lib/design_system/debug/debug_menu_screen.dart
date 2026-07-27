@@ -136,6 +136,7 @@ import '../../analytics/entity_analytics_screen.dart';
 import '../../analytics/player_analytics_screen.dart';
 import '../../analytics/team_captain_analytics_screen.dart';
 import '../../officials/commentator_room_screen.dart';
+import '../../officials/knowledge_hub_screen.dart';
 import '../../officials/conduct_report_screen.dart';
 import '../../officials/gig_board_models.dart' show OfficialRole;
 import '../../officials/gig_board_screen.dart';
@@ -516,6 +517,16 @@ class DebugMenuScreen extends StatelessWidget {
             ),
             onTap: () => Navigator.of(context).push(
               MaterialPageRoute(builder: (_) => const CommentatorRoomScreen()),
+            ),
+          ),
+          ListTile(
+            title: const Text('Knowledge hub'),
+            subtitle: const Text(
+              'E14-05 — daily trivia, quiz packs, certification exam '
+              'mode + tier-gated certificate mint',
+            ),
+            onTap: () => Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => const KnowledgeHubScreen()),
             ),
           ),
           ListTile(
