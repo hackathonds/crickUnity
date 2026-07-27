@@ -9,8 +9,10 @@ import '../design_system/components/app_tag_chip.dart';
 import '../design_system/tokens/app_colors.dart';
 import '../design_system/tokens/app_spacing.dart';
 import '../design_system/tokens/app_typography.dart';
+import 'composer_screen.dart';
 import 'feed_models.dart';
 import 'feed_provider.dart';
+import 'recently_deleted_posts_screen.dart';
 
 enum _FeedMode { forYou, latest }
 
@@ -68,6 +70,38 @@ class _FeedScreenState extends ConsumerState<FeedScreen> {
     );
   }
 
+  void _showEditHistory(FeedPost post) {
+    showAppBottomSheet<void>(
+      context: context,
+      title: 'Edit history',
+      contentBuilder: (context) {
+        final colors = Theme.of(context).extension<AppColors>()!;
+        return Padding(
+          padding: const EdgeInsets.only(bottom: AppSpacing.lg),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              for (final version in post.editHistory)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: AppSpacing.sm),
+                  child: Text(
+                    version,
+                    style: AppTypography.caption.copyWith(
+                      color: colors.textTertiary,
+                    ),
+                  ),
+                ),
+              Text(
+                post.contentText,
+                style: AppTypography.body.copyWith(color: colors.textPrimary),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final colors = Theme.of(context).extension<AppColors>()!;
@@ -75,7 +109,7 @@ class _FeedScreenState extends ConsumerState<FeedScreen> {
     final notifier = ref.read(feedProvider.notifier);
     final now = DateTime.now();
 
-    final sorted = [...feed.posts];
+    final sorted = feed.posts.where((p) => p.deletedAt == null).toList();
     if (_mode == _FeedMode.forYou) {
       sorted.sort((a, b) => rankedScore(b, now).compareTo(rankedScore(a, now)));
     } else {
@@ -93,8 +127,27 @@ class _FeedScreenState extends ConsumerState<FeedScreen> {
         .toList();
 
     return Scaffold(
+      floatingActionButton: FloatingActionButton(
+        key: const ValueKey('composerFab'),
+        onPressed: () => Navigator.of(
+          context,
+        ).push(MaterialPageRoute(builder: (_) => const ComposerScreen())),
+        child: const Icon(Icons.add),
+      ),
       appBar: AppBar(
         title: const Text('Feed'),
+        actions: [
+          IconButton(
+            key: const ValueKey('recentlyDeletedPostsButton'),
+            icon: const Icon(Icons.restore_from_trash_outlined),
+            tooltip: 'Recently deleted',
+            onPressed: () => Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (_) => const RecentlyDeletedPostsScreen(),
+              ),
+            ),
+          ),
+        ],
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(56),
           child: Padding(
@@ -123,6 +176,14 @@ class _FeedScreenState extends ConsumerState<FeedScreen> {
               colors: colors,
               onReact: () => notifier.toggleReaction(post.id),
               onWhy: () => _showWhyAmISeeingThis(post),
+              onEditHistory: () => _showEditHistory(post),
+              onVote: (index) => notifier.votePoll(post.id, index),
+              onEdit: () => Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (_) => ComposerScreen(editingPost: post),
+                ),
+              ),
+              onDelete: () => notifier.deletePost(post.id),
             ),
           if (earlierPosts.isNotEmpty) ...[
             Padding(
@@ -160,6 +221,14 @@ class _FeedScreenState extends ConsumerState<FeedScreen> {
                 colors: colors,
                 onReact: () => notifier.toggleReaction(post.id),
                 onWhy: () => _showWhyAmISeeingThis(post),
+                onEditHistory: () => _showEditHistory(post),
+                onVote: (index) => notifier.votePoll(post.id, index),
+                onEdit: () => Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (_) => ComposerScreen(editingPost: post),
+                  ),
+                ),
+                onDelete: () => notifier.deletePost(post.id),
               ),
           ],
         ],
@@ -174,6 +243,10 @@ class _FeedPostCard extends StatelessWidget {
   final AppColors colors;
   final VoidCallback onReact;
   final VoidCallback onWhy;
+  final VoidCallback onEditHistory;
+  final ValueChanged<int> onVote;
+  final VoidCallback onEdit;
+  final VoidCallback onDelete;
 
   const _FeedPostCard({
     super.key,
@@ -182,6 +255,10 @@ class _FeedPostCard extends StatelessWidget {
     required this.colors,
     required this.onReact,
     required this.onWhy,
+    required this.onEditHistory,
+    required this.onVote,
+    required this.onEdit,
+    required this.onDelete,
   });
 
   @override
@@ -219,12 +296,34 @@ class _FeedPostCard extends StatelessWidget {
                   ],
                 ),
               ),
+              if (post.isEdited)
+                GestureDetector(
+                  key: ValueKey('editedLabel_${post.id}'),
+                  onTap: onEditHistory,
+                  child: Text(
+                    'Edited',
+                    style: AppTypography.caption.copyWith(
+                      color: colors.textTertiary,
+                      decoration: TextDecoration.underline,
+                    ),
+                  ),
+                ),
               if (!post.isFollowed)
                 IconButton(
                   key: ValueKey('whyAmISeeingThisButton_${post.id}'),
                   icon: const Icon(Icons.info_outline, size: 18),
                   tooltip: 'Why am I seeing this?',
                   onPressed: onWhy,
+                ),
+              if (post.authorName == composerViewerName)
+                PopupMenuButton<String>(
+                  key: ValueKey('feedPostMenuButton_${post.id}'),
+                  onSelected: (value) =>
+                      value == 'edit' ? onEdit() : onDelete(),
+                  itemBuilder: (context) => const [
+                    PopupMenuItem(value: 'edit', child: Text('Edit')),
+                    PopupMenuItem(value: 'delete', child: Text('Delete')),
+                  ],
                 ),
             ],
           ),
@@ -278,6 +377,15 @@ class _FeedPostCard extends StatelessWidget {
             post.contentText,
             style: AppTypography.body.copyWith(color: colors.textPrimary),
           ),
+          if (post.poll != null) ...[
+            const SizedBox(height: AppSpacing.sm),
+            _PollCard(
+              key: ValueKey('feedPoll_${post.id}'),
+              poll: post.poll!,
+              colors: colors,
+              onVote: onVote,
+            ),
+          ],
           if (post.mediaCount > 0) ...[
             const SizedBox(height: AppSpacing.sm),
             Row(
@@ -331,6 +439,90 @@ class _FeedPostCard extends StatelessWidget {
               ),
             ),
           ],
+        ],
+      ),
+    );
+  }
+}
+
+class _PollCard extends StatelessWidget {
+  final Poll poll;
+  final AppColors colors;
+  final ValueChanged<int> onVote;
+
+  const _PollCard({
+    super.key,
+    required this.poll,
+    required this.colors,
+    required this.onVote,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final voted = poll.votedOptionIndex != null;
+    final total = poll.totalVotes;
+
+    return Container(
+      padding: const EdgeInsets.all(AppSpacing.sm),
+      decoration: BoxDecoration(
+        color: colors.surface,
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: colors.border),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            poll.question,
+            style: AppTypography.body.copyWith(color: colors.textPrimary),
+          ),
+          const SizedBox(height: AppSpacing.xs),
+          for (var i = 0; i < poll.options.length; i++)
+            Padding(
+              padding: const EdgeInsets.only(bottom: AppSpacing.xs),
+              child: GestureDetector(
+                key: ValueKey('pollOptionTap_$i'),
+                onTap: voted ? null : () => onVote(i),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            poll.options[i].text,
+                            style: AppTypography.caption.copyWith(
+                              color: colors.textPrimary,
+                            ),
+                          ),
+                        ),
+                        if (voted)
+                          Text(
+                            total == 0
+                                ? '0%'
+                                : '${(poll.options[i].votes * 100 / total).round()}%',
+                            style: AppTypography.caption.copyWith(
+                              color: colors.textTertiary,
+                            ),
+                          ),
+                      ],
+                    ),
+                    if (voted) ...[
+                      const SizedBox(height: 2),
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(4),
+                        child: LinearProgressIndicator(
+                          value: total == 0 ? 0 : poll.options[i].votes / total,
+                          minHeight: 6,
+                          backgroundColor: colors.border,
+                          color: colors.primary,
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+            ),
         ],
       ),
     );

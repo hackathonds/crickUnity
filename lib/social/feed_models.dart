@@ -28,10 +28,69 @@ class AttachedObject {
   });
 }
 
+/// PRD §12.2: "audience selector (Public / Followers / Teams (pick) /
+/// Only me) -- audience is per-post sticky-default."
+enum PostAudience { public, followers, teams, onlyMe }
+
+const Map<PostAudience, String> postAudienceLabels = {
+  PostAudience.public: 'Public',
+  PostAudience.followers: 'Followers',
+  PostAudience.teams: 'Teams',
+  PostAudience.onlyMe: 'Only me',
+};
+
+/// DS §7-58's attach rail includes "poll" alongside media/object/
+/// feeling -- PRD §12.2's own prose doesn't detail poll mechanics (that
+/// lives conceptually under §12.5's Polls/Events section), so vote
+/// counts/percentages here are this story's own minimal, genuine
+/// interaction rather than a full separate poll module.
+class PollOption {
+  final String text;
+  final int votes;
+
+  const PollOption({required this.text, this.votes = 0});
+
+  PollOption withVote() => PollOption(text: text, votes: votes + 1);
+}
+
+class Poll {
+  final String question;
+  final List<PollOption> options;
+  final int? votedOptionIndex;
+
+  const Poll({
+    required this.question,
+    required this.options,
+    this.votedOptionIndex,
+  });
+
+  int get totalVotes => options.fold(0, (sum, o) => sum + o.votes);
+
+  Poll withVote(int optionIndex) {
+    if (votedOptionIndex != null) return this;
+    return Poll(
+      question: question,
+      options: [
+        for (var i = 0; i < options.length; i++)
+          i == optionIndex ? options[i].withVote() : options[i],
+      ],
+      votedOptionIndex: optionIndex,
+    );
+  }
+}
+
 /// PRD §12.1: "Ranking = relationship closeness x cricket relevance x
 /// recency." [relationshipScore]/[cricketRelevanceScore] stand in for
 /// the 2 non-recency inputs (no real social graph/interest model
 /// exists yet) -- 0.0-1.0, mock-authored per post for variety.
+///
+/// PRD §12.2: "Edit window: unlimited, 'Edited' label with version
+/// history viewable by tapper. Delete: soft (author) with 30-day
+/// self-restore." [editHistory] holds every prior content version (not
+/// just the latest), [deletedAt] non-null means soft-deleted --
+/// callers filter those out of the main feed and list them in a
+/// recently-deleted screen instead (same convention as expenses'
+/// recently_deleted_screen.dart, E5-09).
 class FeedPost {
   final String id;
   final String authorName;
@@ -46,6 +105,11 @@ class FeedPost {
   final double relationshipScore;
   final double cricketRelevanceScore;
   final String? sponsoredLabel;
+  final PostAudience audience;
+  final Poll? poll;
+  final List<String> editHistory;
+  final DateTime? editedAt;
+  final DateTime? deletedAt;
 
   const FeedPost({
     required this.id,
@@ -61,7 +125,14 @@ class FeedPost {
     this.relationshipScore = 0.5,
     this.cricketRelevanceScore = 0.5,
     this.sponsoredLabel,
+    this.audience = PostAudience.public,
+    this.poll,
+    this.editHistory = const [],
+    this.editedAt,
+    this.deletedAt,
   });
+
+  bool get isEdited => editHistory.isNotEmpty;
 
   FeedPost copyWith({int? reactionCount}) {
     return FeedPost(
@@ -78,6 +149,104 @@ class FeedPost {
       relationshipScore: relationshipScore,
       cricketRelevanceScore: cricketRelevanceScore,
       sponsoredLabel: sponsoredLabel,
+      audience: audience,
+      poll: poll,
+      editHistory: editHistory,
+      editedAt: editedAt,
+      deletedAt: deletedAt,
+    );
+  }
+
+  FeedPost withEdit(String newText, DateTime now) {
+    return FeedPost(
+      id: id,
+      authorName: authorName,
+      contentText: newText,
+      attachedObject: attachedObject,
+      mediaCount: mediaCount,
+      reactionCount: reactionCount,
+      topCommentAuthor: topCommentAuthor,
+      topCommentText: topCommentText,
+      timestamp: timestamp,
+      isFollowed: isFollowed,
+      relationshipScore: relationshipScore,
+      cricketRelevanceScore: cricketRelevanceScore,
+      sponsoredLabel: sponsoredLabel,
+      audience: audience,
+      poll: poll,
+      editHistory: [...editHistory, contentText],
+      editedAt: now,
+      deletedAt: deletedAt,
+    );
+  }
+
+  FeedPost withDeleted(DateTime now) {
+    return FeedPost(
+      id: id,
+      authorName: authorName,
+      contentText: contentText,
+      attachedObject: attachedObject,
+      mediaCount: mediaCount,
+      reactionCount: reactionCount,
+      topCommentAuthor: topCommentAuthor,
+      topCommentText: topCommentText,
+      timestamp: timestamp,
+      isFollowed: isFollowed,
+      relationshipScore: relationshipScore,
+      cricketRelevanceScore: cricketRelevanceScore,
+      sponsoredLabel: sponsoredLabel,
+      audience: audience,
+      poll: poll,
+      editHistory: editHistory,
+      editedAt: editedAt,
+      deletedAt: now,
+    );
+  }
+
+  FeedPost withRestored() {
+    return FeedPost(
+      id: id,
+      authorName: authorName,
+      contentText: contentText,
+      attachedObject: attachedObject,
+      mediaCount: mediaCount,
+      reactionCount: reactionCount,
+      topCommentAuthor: topCommentAuthor,
+      topCommentText: topCommentText,
+      timestamp: timestamp,
+      isFollowed: isFollowed,
+      relationshipScore: relationshipScore,
+      cricketRelevanceScore: cricketRelevanceScore,
+      sponsoredLabel: sponsoredLabel,
+      audience: audience,
+      poll: poll,
+      editHistory: editHistory,
+      editedAt: editedAt,
+      deletedAt: null,
+    );
+  }
+
+  FeedPost withPollVote(int optionIndex) {
+    if (poll == null) return this;
+    return FeedPost(
+      id: id,
+      authorName: authorName,
+      contentText: contentText,
+      attachedObject: attachedObject,
+      mediaCount: mediaCount,
+      reactionCount: reactionCount,
+      topCommentAuthor: topCommentAuthor,
+      topCommentText: topCommentText,
+      timestamp: timestamp,
+      isFollowed: isFollowed,
+      relationshipScore: relationshipScore,
+      cricketRelevanceScore: cricketRelevanceScore,
+      sponsoredLabel: sponsoredLabel,
+      audience: audience,
+      poll: poll!.withVote(optionIndex),
+      editHistory: editHistory,
+      editedAt: editedAt,
+      deletedAt: deletedAt,
     );
   }
 }
@@ -113,6 +282,30 @@ String whyAmISeeingThis(FeedPost post, DateTime now) {
   final dominant = scores.entries.reduce((a, b) => a.value >= b.value ? a : b);
   return "You're seeing this mostly because of ${dominant.key}.";
 }
+
+/// Composer's object-attach rail (PRD §12.2): no real picker over the
+/// viewer's own matches/performances/achievements exists yet -- a fixed
+/// "your recent objects" mock list stands in.
+const List<AttachedObject> mockAttachableObjects = [
+  AttachedObject(
+    type: AttachedObjectType.match,
+    title: 'Strikers vs Warriors',
+    subtitle: 'Won by 4 wickets',
+    verified: true,
+  ),
+  AttachedObject(
+    type: AttachedObjectType.performance,
+    title: '54* (38)',
+    subtitle: 'vs Riverside CC',
+    verified: true,
+  ),
+  AttachedObject(
+    type: AttachedObjectType.achievement,
+    title: 'Scorer Supreme -- Silver',
+    subtitle: '50 dispute-free scored matches',
+    verified: true,
+  ),
+];
 
 /// No real social graph/content pipeline exists -- a fixed mock feed
 /// stands in, same convention as every other missing-backend gap.
