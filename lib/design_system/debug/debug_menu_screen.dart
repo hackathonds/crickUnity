@@ -41,7 +41,9 @@ import '../../rewards/badge_engine_screen.dart';
 import '../../rewards/missions_board_screen.dart';
 import '../../rewards/missions_models.dart';
 import '../../rewards/missions_provider.dart';
+import '../../rewards/rewards_provider.dart';
 import '../../rewards/rewards_summary_screen.dart';
+import '../../rewards/wallet_screen.dart';
 import '../../rewards/streaks_summary_screen.dart';
 import '../../profile/achievement_models.dart';
 import '../../profile/achievements_wall_screen.dart';
@@ -1574,6 +1576,25 @@ class DebugMenuScreen extends StatelessWidget {
               Navigator.of(context).push(
                 MaterialPageRoute(builder: (_) => const BadgeEngineScreen()),
               );
+            },
+          ),
+          ListTile(
+            title: const Text('Wallet & Coins'),
+            subtitle: const Text(
+              'E6-05 — Expiring FIFO coin strip, Marketplace, redemption, '
+              'My Rewards',
+            ),
+            onTap: () {
+              final container = ProviderScope.containerOf(
+                context,
+                listen: false,
+              );
+              container
+                  .read(rewardsProvider.notifier)
+                  .awardBonus(500, label: 'Debug seed');
+              Navigator.of(
+                context,
+              ).push(MaterialPageRoute(builder: (_) => const WalletScreen()));
             },
           ),
           ListTile(
