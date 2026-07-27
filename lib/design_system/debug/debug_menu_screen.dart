@@ -19,6 +19,7 @@ import '../../expenses/wallet_payouts_provider.dart';
 import '../../academies/academy_console_screen.dart';
 import '../../clubs/club_home_screen.dart';
 import '../../coaching/coach_console_screen.dart';
+import '../../coaching/compliance_vault_screen.dart';
 import '../../grounds/booking_flow_screen.dart';
 import '../../grounds/ground_profile_screen.dart';
 import '../../grounds/grounds_discovery_screen.dart';
@@ -1887,6 +1888,15 @@ class DebugMenuScreen extends StatelessWidget {
             ),
             onTap: () => Navigator.of(context).push(
               MaterialPageRoute(builder: (_) => const CoachConsoleScreen()),
+            ),
+          ),
+          ListTile(
+            title: const Text('Compliance vault'),
+            subtitle: const Text(
+              'E11-04 — Cert/first-aid expiries, signed-status matrix',
+            ),
+            onTap: () => Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => const ComplianceVaultScreen()),
             ),
           ),
           ListTile(

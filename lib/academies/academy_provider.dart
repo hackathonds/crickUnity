@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../coaching/compliance_provider.dart';
 import 'academy_models.dart';
 
 class AcademyState {
@@ -77,13 +78,25 @@ class AcademyNotifier extends Notifier<AcademyState> {
     );
   }
 
-  void assignCoach(String batchId, String coachName) {
+  /// Backlog E11-04: "signed-status matrix blocking registration."
+  /// Returns null on success, or a rejection message if the coach's
+  /// compliance vault (certifications, first-aid, background check)
+  /// isn't fully signed and unexpired.
+  String? assignCoach(
+    String batchId,
+    String coachName, {
+    DateTime Function() now = DateTime.now,
+  }) {
+    if (!ref.read(complianceProvider).isCoachCompliant(coachName, now())) {
+      return '$coachName cannot be assigned -- compliance vault has a missing, unsigned, or expired document.';
+    }
     state = state.copyWith(
       batches: [
         for (final b in state.batches)
           if (b.id == batchId) b.copyWith(coachName: coachName) else b,
       ],
     );
+    return null;
   }
 
   /// PRD: "enroll students (guardian consent flow for minors)."
