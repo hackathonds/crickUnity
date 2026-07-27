@@ -8,6 +8,7 @@ class ClubState {
   final Map<MembershipTierType, MembershipTierDefinition> tiers;
   final List<InterTeamFriendly> friendlies;
   final List<WallOfFameEntry> wallOfFame;
+  final List<InterWalletTransferRequest> transferRequests;
 
   const ClubState({
     required this.club,
@@ -15,6 +16,7 @@ class ClubState {
     this.tiers = const {},
     this.friendlies = const [],
     this.wallOfFame = const [],
+    this.transferRequests = const [],
   });
 
   ClubState copyWith({
@@ -23,6 +25,7 @@ class ClubState {
     Map<MembershipTierType, MembershipTierDefinition>? tiers,
     List<InterTeamFriendly>? friendlies,
     List<WallOfFameEntry>? wallOfFame,
+    List<InterWalletTransferRequest>? transferRequests,
   }) {
     return ClubState(
       club: club ?? this.club,
@@ -30,6 +33,7 @@ class ClubState {
       tiers: tiers ?? this.tiers,
       friendlies: friendlies ?? this.friendlies,
       wallOfFame: wallOfFame ?? this.wallOfFame,
+      transferRequests: transferRequests ?? this.transferRequests,
     );
   }
 
@@ -51,6 +55,7 @@ class ClubNotifier extends Notifier<ClubState> {
       linkedTeamNames: ['Strikers CC', 'Riverside Warriors'],
       upcomingEventsCount: 1,
       pendingJoinRequests: 2,
+      treasuryBalance: 5000,
     ),
     members: [
       ClubMember(
@@ -176,6 +181,64 @@ class ClubNotifier extends Notifier<ClubState> {
           citation: citation,
           addedAt: now(),
         ),
+      ],
+    );
+  }
+
+  /// Backlog addendum (PRD §2.13): "inter-wallet transfers between
+  /// club and team treasuries require both treasurers' confirmation."
+  void requestTransfer(
+    TransferDirection direction,
+    String teamName,
+    int amount, {
+    DateTime Function() now = DateTime.now,
+  }) {
+    state = state.copyWith(
+      transferRequests: [
+        ...state.transferRequests,
+        InterWalletTransferRequest(
+          id: 'transfer-${now().microsecondsSinceEpoch}',
+          direction: direction,
+          teamName: teamName,
+          amount: amount,
+        ),
+      ],
+    );
+  }
+
+  void confirmAsClubTreasurer(String requestId) =>
+      _confirm(requestId, asClub: true);
+
+  void confirmAsTeamTreasurer(String requestId) =>
+      _confirm(requestId, asClub: false);
+
+  void _confirm(String requestId, {required bool asClub}) {
+    final request = state.transferRequests
+        .where((r) => r.id == requestId)
+        .firstOrNull;
+    if (request == null || request.completed) return;
+    final updated = asClub
+        ? request.copyWith(clubTreasurerConfirmed: true)
+        : request.copyWith(teamTreasurerConfirmed: true);
+
+    if (updated.bothConfirmed) {
+      final delta = updated.direction == TransferDirection.clubToTeam
+          ? -updated.amount
+          : updated.amount;
+      state = state.copyWith(
+        club: state.club.copyWith(
+          treasuryBalance: state.club.treasuryBalance + delta,
+        ),
+      );
+    }
+
+    state = state.copyWith(
+      transferRequests: [
+        for (final r in state.transferRequests)
+          if (r.id == requestId)
+            updated.copyWith(completed: updated.bothConfirmed)
+          else
+            r,
       ],
     );
   }

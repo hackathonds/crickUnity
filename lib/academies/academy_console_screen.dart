@@ -332,6 +332,23 @@ class _StudentRow extends ConsumerWidget {
               ),
             ],
           ),
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  'Analytics consent (coach view)',
+                  style: AppTypography.caption.copyWith(
+                    color: colors.textTertiary,
+                  ),
+                ),
+              ),
+              Switch(
+                key: ValueKey('analyticsConsentSwitch_${student.id}'),
+                value: student.analyticsConsentEnabled,
+                onChanged: (_) => notifier.toggleAnalyticsConsent(student.id),
+              ),
+            ],
+          ),
           for (final fee in ledger)
             Row(
               children: [

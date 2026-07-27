@@ -319,6 +319,13 @@ class _CoachConsoleScreenState extends ConsumerState<CoachConsoleScreen> {
                             color: colors.textTertiary,
                           ),
                         ),
+                        if (card.visibleToGuardian)
+                          Text(
+                            'Visible to guardian account',
+                            style: AppTypography.caption.copyWith(
+                              color: colors.warning,
+                            ),
+                          ),
                       ],
                     ),
                   ),

@@ -195,6 +195,20 @@ class AcademyNotifier extends Notifier<AcademyState> {
       ],
     );
   }
+
+  /// Backlog addendum (PRD §2.8): "player consent toggle, default ON
+  /// for academy students, OFF for adult team attachments."
+  void toggleAnalyticsConsent(String studentId) {
+    state = state.copyWith(
+      students: [
+        for (final s in state.students)
+          if (s.id == studentId)
+            s.copyWith(analyticsConsentEnabled: !s.analyticsConsentEnabled)
+          else
+            s,
+      ],
+    );
+  }
 }
 
 final academyProvider = NotifierProvider<AcademyNotifier, AcademyState>(

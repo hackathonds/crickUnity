@@ -54,6 +54,14 @@ class Student {
   final String batchId;
   final bool talentShowcaseOptIn;
 
+  /// Backlog addendum (PRD §2.8, Coach): "view attached players' full
+  /// analytics (with player consent toggle, default ON for academy
+  /// students, OFF for adult team attachments)." Every Student here is
+  /// an academy enrollee, so the default is ON per that rule; "adult
+  /// team attachments" is a different, non-academy coach-player
+  /// relationship with no model in this codebase yet -- flagged.
+  final bool analyticsConsentEnabled;
+
   const Student({
     required this.id,
     required this.name,
@@ -62,9 +70,10 @@ class Student {
     this.guardianConsentGiven = false,
     required this.batchId,
     this.talentShowcaseOptIn = false,
+    this.analyticsConsentEnabled = true,
   });
 
-  Student copyWith({bool? talentShowcaseOptIn}) {
+  Student copyWith({bool? talentShowcaseOptIn, bool? analyticsConsentEnabled}) {
     return Student(
       id: id,
       name: name,
@@ -72,6 +81,8 @@ class Student {
       guardianName: guardianName,
       guardianConsentGiven: guardianConsentGiven,
       batchId: batchId,
+      analyticsConsentEnabled:
+          analyticsConsentEnabled ?? this.analyticsConsentEnabled,
       talentShowcaseOptIn: talentShowcaseOptIn ?? this.talentShowcaseOptIn,
     );
   }

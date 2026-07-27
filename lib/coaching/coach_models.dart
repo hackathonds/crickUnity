@@ -123,6 +123,10 @@ class ProgressCard {
   final bool approved;
   final DateTime? sentAt;
 
+  /// Backlog addendum (PRD §2.8): "progress notes for minors visible
+  /// to guardian account."
+  final bool visibleToGuardian;
+
   const ProgressCard({
     required this.id,
     required this.studentName,
@@ -130,6 +134,7 @@ class ProgressCard {
     required this.notes,
     this.approved = false,
     this.sentAt,
+    this.visibleToGuardian = false,
   });
 
   ProgressCard copyWith({bool? approved, DateTime? sentAt}) {
@@ -140,6 +145,7 @@ class ProgressCard {
       notes: notes,
       approved: approved ?? this.approved,
       sentAt: sentAt ?? this.sentAt,
+      visibleToGuardian: visibleToGuardian,
     );
   }
 }
