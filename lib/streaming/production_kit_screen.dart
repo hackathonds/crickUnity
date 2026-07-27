@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../design_system/components/app_sponsored_badge.dart';
 import '../design_system/tokens/app_colors.dart';
 import '../design_system/tokens/app_spacing.dart';
 import '../design_system/tokens/app_typography.dart';
 import '../officials/commentator_room_provider.dart';
+import '../sponsors/sponsor_provider.dart';
 import 'go_live_models.dart';
 import 'go_live_provider.dart';
 import 'production_kit_models.dart';
@@ -25,6 +27,9 @@ class ProductionKitScreen extends ConsumerWidget {
     final goLiveNotifier = ref.read(goLiveProvider.notifier);
     final kit = ref.watch(productionKitProvider);
     final kitNotifier = ref.read(productionKitProvider.notifier);
+    final hasStreamSponsorship = ref.watch(
+      sponsorProvider.select((s) => s.hasAcceptedStreamSponsorship),
+    );
     final commentatorAssigned = ref.watch(
       commentatorRoomProvider.select((s) => s.isAssigned),
     );
@@ -96,20 +101,39 @@ class ProductionKitScreen extends ConsumerWidget {
               color: colors.textPrimary,
               borderRadius: BorderRadius.circular(12),
             ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.end,
               children: [
-                Text(
-                  kit.lowerThird.topText.isEmpty ? ' ' : kit.lowerThird.topText,
-                  style: AppTypography.subtitle.copyWith(color: colors.surface),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        kit.lowerThird.topText.isEmpty
+                            ? ' '
+                            : kit.lowerThird.topText,
+                        style: AppTypography.subtitle.copyWith(
+                          color: colors.surface,
+                        ),
+                      ),
+                      Text(
+                        kit.lowerThird.bottomText.isEmpty
+                            ? ' '
+                            : kit.lowerThird.bottomText,
+                        style: AppTypography.caption.copyWith(
+                          color: colors.surface,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
-                Text(
-                  kit.lowerThird.bottomText.isEmpty
-                      ? ' '
-                      : kit.lowerThird.bottomText,
-                  style: AppTypography.caption.copyWith(color: colors.surface),
-                ),
+                if (hasStreamSponsorship)
+                  const AppSponsoredBadge(
+                    key: ValueKey('streamLowerThirdSponsoredBadge'),
+                    sponsorName: 'CricGear Co.',
+                    zone: SponsoredZoneSize.streamLowerThird,
+                  ),
               ],
             ),
           ),
