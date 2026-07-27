@@ -54,6 +54,7 @@ import '../../recognition/leaderboard_hub_screen.dart';
 import '../../recognition/challenges_hub_screen.dart';
 import '../../recognition/compare_screen.dart';
 import '../../recognition/goals_screen.dart';
+import '../../recognition/ranks_screen.dart';
 import '../../recognition/year_in_review_screen.dart';
 import '../../recognition/grounds_heatmap_screen.dart';
 import '../../recognition/personal_bests_screen.dart';
@@ -1777,6 +1778,16 @@ class DebugMenuScreen extends StatelessWidget {
             onTap: () => Navigator.of(context).push(
               MaterialPageRoute(builder: (_) => const YearInReviewScreen()),
             ),
+          ),
+          ListTile(
+            title: const Text('Ranks'),
+            subtitle: const Text(
+              'E6-08 — Percentile bands, 60-day soft decay, rank vs '
+              'level explainer',
+            ),
+            onTap: () => Navigator.of(
+              context,
+            ).push(MaterialPageRoute(builder: (_) => const RanksScreen())),
           ),
           ListTile(
             title: const Text('Field map tool (captain)'),
