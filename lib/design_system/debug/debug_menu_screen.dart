@@ -132,6 +132,7 @@ import 'badge_tile_screen.dart';
 import 'buttons_screen.dart';
 import 'card_screen.dart';
 import '../../analytics/custom_stats_explorer_screen.dart';
+import '../../analytics/entity_analytics_screen.dart';
 import '../../analytics/player_analytics_screen.dart';
 import '../../analytics/team_captain_analytics_screen.dart';
 import 'chart_gallery_screen.dart';
@@ -449,6 +450,16 @@ class DebugMenuScreen extends StatelessWidget {
               MaterialPageRoute(
                 builder: (_) => const CustomStatsExplorerScreen(),
               ),
+            ),
+          ),
+          ListTile(
+            title: const Text('Entity analytics'),
+            subtitle: const Text(
+              'E13-05 — Ground/Expense (link out) + Social/Rewards/'
+              'Attendance analytics',
+            ),
+            onTap: () => Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => const EntityAnalyticsScreen()),
             ),
           ),
           ListTile(
