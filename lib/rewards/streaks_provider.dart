@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'achievements_provider.dart';
 import 'rewards_models.dart';
 import 'rewards_provider.dart';
 
@@ -137,10 +138,13 @@ class StreaksNotifier extends Notifier<StreakState> {
     }
 
     if (_playingStreakMilestoneWeeks.contains(newStreak)) {
-      note += ' -- milestone chest (badge minting is E6-04 scope, flagged)';
+      note += ' -- milestone chest';
       ref
           .read(rewardsProvider.notifier)
           .awardBonus(50, label: 'Playing streak milestone: $newStreak weeks');
+      ref
+          .read(achievementsProvider.notifier)
+          .recordPlayingStreakWeeks(newStreak);
     }
 
     state = state.copyWith(

@@ -36,6 +36,8 @@ import '../../matches/scoring_provider.dart';
 import '../../matches/matches_provider.dart';
 import '../../matches/toss_screen.dart';
 import '../../onboarding/onboarding_flow.dart';
+import '../../rewards/achievements_provider.dart';
+import '../../rewards/badge_engine_screen.dart';
 import '../../rewards/missions_board_screen.dart';
 import '../../rewards/missions_models.dart';
 import '../../rewards/missions_provider.dart';
@@ -1552,6 +1554,25 @@ class DebugMenuScreen extends StatelessWidget {
               notifier.recordAction(MissionActionType.takeWicket);
               Navigator.of(context).push(
                 MaterialPageRoute(builder: (_) => const MissionsBoardScreen()),
+              );
+            },
+          ),
+          ListTile(
+            title: const Text('Badge engine'),
+            subtitle: const Text(
+              'E6-04 — Iron Player/Scorer Supreme/Ground Collector tiers, '
+              'ceremonies, achievements wall',
+            ),
+            onTap: () {
+              final container = ProviderScope.containerOf(
+                context,
+                listen: false,
+              );
+              container.read(achievementsProvider.notifier)
+                ..recordDisputeFreeMatchScored()
+                ..recordPlayingStreakWeeks(4);
+              Navigator.of(context).push(
+                MaterialPageRoute(builder: (_) => const BadgeEngineScreen()),
               );
             },
           ),

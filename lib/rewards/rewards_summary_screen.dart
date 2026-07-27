@@ -108,7 +108,7 @@ class RewardsSummaryScreen extends ConsumerWidget {
               onPressed: () {
                 final next = notifier.dequeueNextCeremony();
                 if (next != null) {
-                  showLevelUpCeremony(context, level: next.level);
+                  showCeremony(context, next);
                 }
               },
             ),

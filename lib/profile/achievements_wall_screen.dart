@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import '../design_system/components/app_avatar.dart';
 import '../design_system/components/app_badge_tile.dart';
@@ -115,6 +116,16 @@ class _AchievementsWallScreenState extends State<AchievementsWallScreen> {
             const SizedBox(width: AppSpacing.xs),
           ],
         ],
+        onShare: badge.earned
+            ? () {
+                Clipboard.setData(
+                  ClipboardData(text: '${badge.name} -- ${badge.criteria}'),
+                );
+                ScaffoldMessenger.of(
+                  context,
+                ).showSnackBar(const SnackBar(content: Text('Badge copied')));
+              }
+            : null,
       ),
     );
   }

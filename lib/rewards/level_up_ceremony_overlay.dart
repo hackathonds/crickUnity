@@ -6,6 +6,7 @@ import '../design_system/tokens/app_colors.dart';
 import '../design_system/tokens/app_motion.dart';
 import '../design_system/tokens/app_spacing.dart';
 import '../design_system/tokens/app_typography.dart';
+import 'rewards_models.dart';
 
 /// DS §5.8 (Achievement/level ceremony): "full overlay -- dim 60%,
 /// badge scales 0.6->1 spring, Arc rays sweep, name letters cascade
@@ -13,29 +14,39 @@ import '../design_system/tokens/app_typography.dart';
 /// queues if multiple (never stacks); suppressed during Live Scoring &
 /// money confirmations, delivered after." Reuses the existing
 /// `AppArcRing` primitive (E0-07/E0-08) for the "Arc rays sweep" rather
-/// than a new painter.
-Future<void> showLevelUpCeremony(BuildContext context, {required int level}) {
+/// than a new painter. One spec covers both level-ups (E6-01) and badge
+/// unlocks (E6-04) -- a single generalized function branching on
+/// [CeremonyEvent.type], not two parallel overlays.
+Future<void> showCeremony(BuildContext context, CeremonyEvent event) {
+  final label = switch (event.type) {
+    CeremonyType.levelUp => 'Level ${event.level}',
+    CeremonyType.badgeUnlock => '${event.badgeName} · ${event.tierLabel}',
+  };
+  final icon = switch (event.type) {
+    CeremonyType.levelUp => Icons.military_tech,
+    CeremonyType.badgeUnlock => Icons.emoji_events,
+  };
   return showGeneralDialog<void>(
     context: context,
     barrierDismissible: true,
     barrierColor: Colors.black.withValues(alpha: 0.6),
-    barrierLabel: 'Level up',
+    barrierLabel: 'Ceremony',
     transitionDuration: const Duration(milliseconds: 240),
     pageBuilder: (context, animation, secondaryAnimation) =>
-        _LevelUpCeremonyContent(level: level),
+        _CeremonyContent(label: label, icon: icon),
   );
 }
 
-class _LevelUpCeremonyContent extends StatelessWidget {
-  final int level;
+class _CeremonyContent extends StatelessWidget {
+  final String label;
+  final IconData icon;
 
-  const _LevelUpCeremonyContent({required this.level});
+  const _CeremonyContent({required this.label, required this.icon});
 
   @override
   Widget build(BuildContext context) {
     final colors = Theme.of(context).extension<AppColors>()!;
     final reduced = AppMotion.isReduced(context);
-    final label = 'Level $level';
 
     return GestureDetector(
       key: const ValueKey('levelUpCeremonyOverlay'),
@@ -68,7 +79,7 @@ class _LevelUpCeremonyContent extends StatelessWidget {
                         trackColor: colors.coin.withValues(alpha: 0.2),
                         fillColor: colors.coin,
                       ),
-                      Icon(Icons.military_tech, size: 40, color: colors.coin),
+                      Icon(icon, size: 40, color: colors.coin),
                     ],
                   ),
                 ),
