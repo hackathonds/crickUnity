@@ -54,6 +54,7 @@ import '../../recognition/leaderboard_hub_screen.dart';
 import '../../recognition/challenges_hub_screen.dart';
 import '../../recognition/compare_screen.dart';
 import '../../recognition/goals_screen.dart';
+import '../../recognition/awards_screen.dart';
 import '../../recognition/ranks_screen.dart';
 import '../../rewards/season_screen.dart';
 import '../../recognition/year_in_review_screen.dart';
@@ -1820,6 +1821,16 @@ class DebugMenuScreen extends StatelessWidget {
             onTap: () => Navigator.of(
               context,
             ).push(MaterialPageRoute(builder: (_) => const SeasonScreen())),
+          ),
+          ListTile(
+            title: const Text('Periodic awards'),
+            subtitle: const Text(
+              'E8-07 — Auto-nominee computation, winner announcements, '
+              'certificate cards',
+            ),
+            onTap: () => Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => const PeriodicAwardsScreen()),
+            ),
           ),
           ListTile(
             title: const Text('Field map tool (captain)'),
