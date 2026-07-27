@@ -55,6 +55,7 @@ import '../../recognition/challenges_hub_screen.dart';
 import '../../recognition/compare_screen.dart';
 import '../../recognition/goals_screen.dart';
 import '../../recognition/ranks_screen.dart';
+import '../../rewards/season_screen.dart';
 import '../../recognition/year_in_review_screen.dart';
 import '../../recognition/grounds_heatmap_screen.dart';
 import '../../recognition/personal_bests_screen.dart';
@@ -1788,6 +1789,16 @@ class DebugMenuScreen extends StatelessWidget {
             onTap: () => Navigator.of(
               context,
             ).push(MaterialPageRoute(builder: (_) => const RanksScreen())),
+          ),
+          ListTile(
+            title: const Text('Season rewards'),
+            subtitle: const Text(
+              'E6-09 — Bronze-to-Legend season-XP tiers, exclusive '
+              'frames, rollover ceremony',
+            ),
+            onTap: () => Navigator.of(
+              context,
+            ).push(MaterialPageRoute(builder: (_) => const SeasonScreen())),
           ),
           ListTile(
             title: const Text('Field map tool (captain)'),

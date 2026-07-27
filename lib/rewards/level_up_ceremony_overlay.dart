@@ -14,17 +14,19 @@ import 'rewards_models.dart';
 /// queues if multiple (never stacks); suppressed during Live Scoring &
 /// money confirmations, delivered after." Reuses the existing
 /// `AppArcRing` primitive (E0-07/E0-08) for the "Arc rays sweep" rather
-/// than a new painter. One spec covers both level-ups (E6-01) and badge
-/// unlocks (E6-04) -- a single generalized function branching on
-/// [CeremonyEvent.type], not two parallel overlays.
+/// than a new painter. One spec covers level-ups (E6-01), badge unlocks
+/// (E6-04), and season rollover (E6-09) -- a single generalized function
+/// branching on [CeremonyEvent.type], not parallel overlays per type.
 Future<void> showCeremony(BuildContext context, CeremonyEvent event) {
   final label = switch (event.type) {
     CeremonyType.levelUp => 'Level ${event.level}',
     CeremonyType.badgeUnlock => '${event.badgeName} · ${event.tierLabel}',
+    CeremonyType.seasonRollover => '${event.tierLabel} Season',
   };
   final icon = switch (event.type) {
     CeremonyType.levelUp => Icons.military_tech,
     CeremonyType.badgeUnlock => Icons.emoji_events,
+    CeremonyType.seasonRollover => Icons.auto_awesome,
   };
   return showGeneralDialog<void>(
     context: context,

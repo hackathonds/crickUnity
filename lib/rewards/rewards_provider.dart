@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'premium_provider.dart';
 import 'rewards_models.dart';
+import 'season_models.dart';
 
 class RewardsState {
   final List<CoinBatch> coinBatches;
@@ -11,6 +12,7 @@ class RewardsState {
   final bool suppressCeremonies;
   final int coinsEarnedThisMonth;
   final int? coinsEarnedMonthKey;
+  final int seasonXp;
 
   const RewardsState({
     this.coinBatches = const [],
@@ -20,12 +22,15 @@ class RewardsState {
     this.suppressCeremonies = false,
     this.coinsEarnedThisMonth = 0,
     this.coinsEarnedMonthKey,
+    this.seasonXp = 0,
   });
 
   int get level => levelForXp(xpTotal);
 
   int get coinBalance =>
       coinBatches.fold(0, (sum, batch) => sum + batch.remaining);
+
+  SeasonTier get seasonTier => seasonTierForXp(seasonXp);
 
   RewardsState copyWith({
     List<CoinBatch>? coinBatches,
@@ -35,6 +40,7 @@ class RewardsState {
     bool? suppressCeremonies,
     int? coinsEarnedThisMonth,
     int? coinsEarnedMonthKey,
+    int? seasonXp,
   }) {
     return RewardsState(
       coinBatches: coinBatches ?? this.coinBatches,
@@ -44,6 +50,7 @@ class RewardsState {
       suppressCeremonies: suppressCeremonies ?? this.suppressCeremonies,
       coinsEarnedThisMonth: coinsEarnedThisMonth ?? this.coinsEarnedThisMonth,
       coinsEarnedMonthKey: coinsEarnedMonthKey ?? this.coinsEarnedMonthKey,
+      seasonXp: seasonXp ?? this.seasonXp,
     );
   }
 }
@@ -153,6 +160,31 @@ class RewardsNotifier extends Notifier<RewardsState> {
       ceremonyQueue: [...state.ceremonyQueue, ...newCeremonies],
       coinsEarnedThisMonth: newCoinsEarnedThisMonth,
       coinsEarnedMonthKey: currentMonthKey,
+      // PRD §13.2's season tier (Bronze->Legend by season XP) --
+      // tracked here, the same single funnel coinsEarnedThisMonth
+      // already uses, rather than wiring every earn call site.
+      seasonXp: state.seasonXp + xp,
+    );
+  }
+
+  /// PRD §13.2: "end-of-season tier ... with exclusive profile frames."
+  /// Backlog: "season rollover ceremony." No real season-calendar timer
+  /// exists -- a debug control (season_screen.dart) triggers this.
+  void rolloverSeason() {
+    final finalTier = state.seasonTier;
+    state = state.copyWith(
+      seasonXp: 0,
+      ceremonyQueue: [
+        ...state.ceremonyQueue,
+        CeremonyEvent(
+          type: CeremonyType.seasonRollover,
+          tierLabel: seasonTierLabels[finalTier],
+        ),
+      ],
+      log: [
+        ...state.log,
+        'Season ended -- final tier: ${seasonTierLabels[finalTier]}',
+      ],
     );
   }
 
