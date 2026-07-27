@@ -37,6 +37,7 @@ import '../../matches/matches_provider.dart';
 import '../../matches/toss_screen.dart';
 import '../../onboarding/onboarding_flow.dart';
 import '../../rewards/rewards_summary_screen.dart';
+import '../../rewards/streaks_summary_screen.dart';
 import '../../profile/achievement_models.dart';
 import '../../profile/achievements_wall_screen.dart';
 import '../../profile/activity_calendar_models.dart';
@@ -1522,6 +1523,15 @@ class DebugMenuScreen extends StatelessWidget {
                 ),
               );
             },
+          ),
+          ListTile(
+            title: const Text('Streaks (login/playing)'),
+            subtitle: const Text(
+              'E6-02 — shield auto-apply, injury pause, playing streak milestones',
+            ),
+            onTap: () => Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => const StreaksSummaryScreen()),
+            ),
           ),
           ListTile(
             title: const Text('Field map tool (captain)'),
