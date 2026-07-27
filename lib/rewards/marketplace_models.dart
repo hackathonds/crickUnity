@@ -132,6 +132,27 @@ const List<RewardListing> mockRewardListings = [
     terms: 'Cosmetic only -- no gameplay effect.',
     expiryNote: 'No expiry once redeemed.',
   ),
+  // PRD §2.14 (Fan role): "redeem fan-tier coins ... for fan
+  // merchandise/coupons" -- same coin economy and catalog, no separate
+  // fan-only currency.
+  RewardListing(
+    id: 'fan-jersey-mini',
+    title: 'Mini replica jersey (fan edition)',
+    category: ListingCategory.merchandise,
+    coinPrice: 350,
+    stock: 40,
+    terms: 'Fan-tier merchandise. Ships in 2-3 weeks.',
+    expiryNote: 'No expiry once redeemed -- physical goods.',
+  ),
+  RewardListing(
+    id: 'fan-meetup-pass',
+    title: 'Fan meet-and-greet pass',
+    category: ListingCategory.exclusiveEvents,
+    coinPrice: 500,
+    stock: 10,
+    terms: 'Limited seats -- waitlist opens once stock is exhausted.',
+    expiryNote: 'Entry valid for the announced event date only.',
+  ),
 ];
 
 RewardListing listingById(String id) =>

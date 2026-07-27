@@ -7,6 +7,7 @@ import '../rewards/achievements_provider.dart';
 import '../rewards/rewards_models.dart';
 import '../rewards/rewards_provider.dart';
 import '../rewards/streaks_provider.dart';
+import '../social/fan_provider.dart';
 import 'scoring_models.dart';
 
 /// PRD §7.7 / DS §7-27 -- E4-04's full 4-way split (see
@@ -384,6 +385,14 @@ class InningsNotifier extends Notifier<InningsState> {
       if (scorerBowling != null)
         RecordCategory.bestBowlingFigures: scorerBowling.wickets,
     });
+    // E7-09's fan predictions -- genuinely resolves against the real
+    // finalMvp, not a mocked result.
+    ref
+        .read(fanProvider.notifier)
+        .resolveMvpPredictions(
+          '${state.battingTeamName} vs ${state.bowlingTeamName}',
+          state.finalMvp,
+        );
     state = state.copyWith(
       rippleFired: true,
       rippleLog: const [
