@@ -10,6 +10,7 @@ import '../design_system/tokens/app_colors.dart';
 import '../design_system/tokens/app_motion.dart';
 import '../design_system/tokens/app_spacing.dart';
 import '../design_system/tokens/app_typography.dart';
+import 'career_stats_screen.dart';
 import 'profile_blocked_view.dart';
 import 'profile_locked_card.dart';
 import 'profile_models.dart';
@@ -27,10 +28,10 @@ const List<String> _profileTabLabels = [
 /// Arc-mask, avatar 96 overlapping -48, name/verified/role chips, action
 /// row per relation, pinned badge strip, sticky stat header strip, tabs.
 ///
-/// Stats tab charts are E2-03 (depends on E13-01, also unbuilt) and Media/
-/// Timeline have no data model yet -- all three render a placeholder
-/// noting their real story, same "stand-in for a later screen" pattern
-/// used throughout E1.
+/// Stats tab is E2-03 (career_stats_screen.dart), now built now that its
+/// E13-01 chart-library dependency shipped. Media/Timeline still have no
+/// data model -- both render a placeholder noting their real story, same
+/// "stand-in for a later screen" pattern used throughout E1.
 ///
 /// Interpretation: DS's own anatomy line lists a Message action for
 /// "other" viewers generally, but the screen's edge-case note says "no
@@ -230,9 +231,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         onStyleTagsChanged: widget.onStyleTagsChanged,
         onOpenActivityCalendar: widget.onOpenActivityCalendar,
       ),
-      1 => const _ProfileTabPlaceholder(
-        text: 'Format-split stat cards and charts are E2-03.',
-      ),
+      1 => CareerStatsTabBody(viewerRelation: widget.relation),
       2 => const _ProfileTabPlaceholder(
         text: 'Media auto-albums are a later story.',
       ),
