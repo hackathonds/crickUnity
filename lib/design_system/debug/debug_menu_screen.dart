@@ -49,7 +49,9 @@ import '../../rewards/rewards_provider.dart';
 import '../../rewards/rewards_summary_screen.dart';
 import '../../rewards/wallet_screen.dart';
 import '../../messaging/chat_list_screen.dart';
+import '../../social/events_list_screen.dart';
 import '../../social/feed_screen.dart';
+import '../../social/groups_list_screen.dart';
 import '../../rewards/streaks_summary_screen.dart';
 import '../../profile/achievement_models.dart';
 import '../../profile/achievements_wall_screen.dart';
@@ -1660,6 +1662,24 @@ class DebugMenuScreen extends StatelessWidget {
             onTap: () => Navigator.of(
               context,
             ).push(MaterialPageRoute(builder: (_) => const ChatListScreen())),
+          ),
+          ListTile(
+            title: const Text('Groups'),
+            subtitle: const Text(
+              'E7-06 (1/2) — Privacy tiers, join questions, post approval',
+            ),
+            onTap: () => Navigator.of(
+              context,
+            ).push(MaterialPageRoute(builder: (_) => const GroupsListScreen())),
+          ),
+          ListTile(
+            title: const Text('Events'),
+            subtitle: const Text(
+              'E7-06 (2/2) — RSVP, co-hosts, discussion, coin ticketing',
+            ),
+            onTap: () => Navigator.of(
+              context,
+            ).push(MaterialPageRoute(builder: (_) => const EventsListScreen())),
           ),
           ListTile(
             title: const Text('Field map tool (captain)'),
