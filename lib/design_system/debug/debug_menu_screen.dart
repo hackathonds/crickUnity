@@ -135,6 +135,7 @@ import '../../analytics/custom_stats_explorer_screen.dart';
 import '../../analytics/entity_analytics_screen.dart';
 import '../../analytics/player_analytics_screen.dart';
 import '../../analytics/team_captain_analytics_screen.dart';
+import '../../officials/conduct_report_screen.dart';
 import '../../officials/gig_board_models.dart' show OfficialRole;
 import '../../officials/gig_board_screen.dart';
 import '../../officials/officials_console_screen.dart';
@@ -494,6 +495,16 @@ class DebugMenuScreen extends StatelessWidget {
             ),
             onTap: () => Navigator.of(context).push(
               MaterialPageRoute(builder: (_) => const OfficialsConsoleScreen()),
+            ),
+          ),
+          ListTile(
+            title: const Text('Conduct report + appeal'),
+            subtitle: const Text(
+              'E14-03 — stepped incident sheet, organizer review routing, '
+              'appeal flow',
+            ),
+            onTap: () => Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => const ConductReportScreen()),
             ),
           ),
           ListTile(
