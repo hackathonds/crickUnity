@@ -247,6 +247,23 @@ class GroundsNotifier extends Notifier<GroundsState> {
     }
     state = state.copyWith(followedGroundIds: current);
   }
+
+  /// PRD §2.11: owner cancellation < 48h before slot drops reliability,
+  /// "visible on listing." PRD names no exact point value -- a flagged
+  /// judgment call (see [reliabilityPenaltyPoints] in booking_models.dart).
+  void applyReliabilityPenalty(String groundId, double points) {
+    state = state.copyWith(
+      grounds: [
+        for (final g in state.grounds)
+          if (g.id == groundId)
+            g.copyWith(
+              reliabilityScore: (g.reliabilityScore - points).clamp(0, 100),
+            )
+          else
+            g,
+      ],
+    );
+  }
 }
 
 final groundsProvider = NotifierProvider<GroundsNotifier, GroundsState>(

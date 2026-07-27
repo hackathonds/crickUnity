@@ -219,6 +219,17 @@ class _GroundListCard extends StatelessWidget {
               '${boundaryBadgeLabels[ground.boundaryBadge]}',
               style: AppTypography.body.copyWith(color: colors.textSecondary),
             ),
+            // PRD §2.11: owner cancellation < 48h auto-drops reliability,
+            // "visible on listing" -- only shown once it has actually
+            // dropped, same as-needed-only convention as other status
+            // chips this session.
+            if (ground.reliabilityScore < 100) ...[
+              const SizedBox(height: AppSpacing.xs),
+              Text(
+                'Reliability: ${ground.reliabilityScore.round()}/100',
+                style: AppTypography.caption.copyWith(color: colors.warning),
+              ),
+            ],
             const SizedBox(height: AppSpacing.xs),
             Wrap(
               spacing: AppSpacing.xs,
