@@ -13,10 +13,17 @@ import '../tokens/app_typography.dart';
 /// active" experience — DS: "Focus expands to full-width app-bar
 /// replacement (240ms), recent list slides up."
 ///
-/// No real speech-to-text or QR camera scanning exists yet (those are
-/// Epic E12 stories) — the mic affordance shows a waveform + an editable
-/// text field the user types into themselves, and `onQrTap` is a bare hook
-/// for a future scanner to wire up.
+/// E12-03 (Voice + QR search/scanner): PRD §16 "Voice Search: mic in
+/// field; language auto-detect (supports vernacular); transcription
+/// shown editable before executing." No real speech-to-text engine
+/// exists (flagged, same convention as every other missing-device-API
+/// gap this session) — releasing the press-held mic fills the field
+/// with a mock transcribed phrase, editable before submit, which is
+/// the genuine "shown editable before executing" behavior; language
+/// auto-detect has nothing to detect without real audio, so it always
+/// mock-transcribes in English. `onQrTap` is wired by callers to a real
+/// QR lookup/jump screen (search/qr_scanner_screen.dart) — no camera
+/// scanning exists, but the resulting object-jump dispatch is genuine.
 class AppSearchBar extends StatelessWidget {
   final String hintText;
   final List<String> recentSearches;
@@ -137,10 +144,29 @@ class _AppSearchActiveScreen extends StatefulWidget {
   State<_AppSearchActiveScreen> createState() => _AppSearchActiveScreenState();
 }
 
+/// E12-03: no real speech-to-text exists (flagged) -- a small mock
+/// transcript pool cycles on each mic release so the "shown editable
+/// before executing" behavior is genuinely exercisable, not a single
+/// hardcoded string.
+const List<String> _mockVoiceTranscripts = [
+  'Green Valley Ground',
+  'Monsoon Cup',
+  'Riverside Warriors',
+];
+
 class _AppSearchActiveScreenState extends State<_AppSearchActiveScreen> {
   final _controller = TextEditingController();
   final _focusNode = FocusNode();
   bool _listeningToVoice = false;
+  int _mockTranscriptIndex = 0;
+
+  String _nextMockTranscript() {
+    final phrase =
+        _mockVoiceTranscripts[_mockTranscriptIndex %
+            _mockVoiceTranscripts.length];
+    _mockTranscriptIndex++;
+    return phrase;
+  }
 
   @override
   void initState() {
@@ -238,8 +264,13 @@ class _AppSearchActiveScreenState extends State<_AppSearchActiveScreen> {
                             key: const ValueKey('appSearchMicButton'),
                             onLongPressStart: (_) =>
                                 setState(() => _listeningToVoice = true),
-                            onLongPressEnd: (_) =>
-                                setState(() => _listeningToVoice = false),
+                            onLongPressEnd: (_) => setState(() {
+                              _listeningToVoice = false;
+                              _controller.text = _nextMockTranscript();
+                              _controller.selection = TextSelection.collapsed(
+                                offset: _controller.text.length,
+                              );
+                            }),
                             child: AppIcon(
                               id: AppIconId.mic,
                               semanticLabel: 'Search by voice',

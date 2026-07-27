@@ -14,6 +14,7 @@ import '../social/feed_models.dart'
 import '../teams/selection_board_models.dart';
 import '../tournaments/tournament_models.dart';
 import '../tournaments/tournaments_provider.dart';
+import 'qr_scanner_screen.dart';
 import 'search_filter_models.dart';
 import 'search_models.dart';
 import 'search_provider.dart';
@@ -401,6 +402,9 @@ class _GlobalSearchScreenState extends ConsumerState<GlobalSearchScreen> {
               recentSearches: searchState.recentSearches,
               onSubmit: _runSearch,
               onRecentTap: _runSearch,
+              onQrTap: () => Navigator.of(context).push(
+                MaterialPageRoute(builder: (_) => const QrScannerScreen()),
+              ),
             ),
             if (searchState.savedFilterSets.isNotEmpty) ...[
               const SizedBox(height: AppSpacing.sm),
