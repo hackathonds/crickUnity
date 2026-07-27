@@ -760,14 +760,86 @@ class InningsState {
     return result;
   }
 
-  /// DS §3.3 Wagon wheel: per-sector shot counts (a simplified list
-  /// breakdown rather than a radial ground diagram -- see
-  /// LiveMatchViewScreen's doc comment).
+  /// DS §3.3 Wagon wheel: per-sector shot counts, used by the table-view
+  /// toggle (AppChartShell) alongside the real radial diagram
+  /// ([wagonShots] feeds that).
   Map<WagonSector, int> get wagonSectorCounts {
     final result = <WagonSector, int>{};
     for (final d in deliveries) {
       final sector = d.wagonSector;
       if (sector != null) result[sector] = (result[sector] ?? 0) + 1;
+    }
+    return result;
+  }
+
+  /// DS §3.3 Wagon wheel (E13-01's real radial chart, AppWagonWheelChart):
+  /// per-shot (sector, runs) pairs so the chart can color dots by
+  /// boundary (four in `secondary`, six in `accent`) rather than just
+  /// counting shots per sector.
+  List<(WagonSector sector, int runs)> get wagonShots => [
+    for (final d in deliveries)
+      if (d.wagonSector != null) (d.wagonSector!, d.battingRuns),
+  ];
+
+  /// E13-01 "tag-coverage caption": eligible scoring shots vs. how many
+  /// actually have a logged wagon sector.
+  (int tagged, int total) get wagonTagCoverage {
+    final eligible = deliveries.where((d) => d.isEligibleForWagonInput);
+    final tagged = eligible.where((d) => d.wagonSector != null).length;
+    return (tagged, eligible.length);
+  }
+
+  /// E13-01 "dot-pressure gauge": PRD/DS name no dot-pressure formula --
+  /// a flagged judgment call, same convention as [suggestedMvp]'s simple
+  /// heuristic. Dot-ball percentage across the most recent [window] legal
+  /// deliveries (default: one over) -- commentary's usual proxy for
+  /// "building pressure."
+  double dotPressureLast({int window = 6}) {
+    final legal = deliveries.where((d) => d.isLegal).toList();
+    final recent = legal.length <= window
+        ? legal
+        : legal.sublist(legal.length - window);
+    if (recent.isEmpty) return 0;
+    final dots = recent.where((d) => d.battingRuns == 0 && !d.isWicket).length;
+    return 100 * dots / recent.length;
+  }
+
+  /// E13-01 "win-prob worm": PRD/DS name no win-probability model --
+  /// flagged judgment call, same convention as [suggestedMvp]. A simple
+  /// heuristic blending required-run-rate pressure and wickets-in-hand;
+  /// only meaningful for a 2nd-innings chase ([targetRuns] set) -- one
+  /// value per completed over, batting side's estimated win probability.
+  List<double> get winProbabilitySeries {
+    final target = targetRuns;
+    if (target == null) return const [];
+    final totalBalls = effectiveTotalOvers * 6;
+    final result = <double>[];
+    var runningRuns = 0;
+    var wicketsDown = 0;
+    var legalBalls = 0;
+    for (final d in deliveries) {
+      runningRuns += d.runs;
+      if (d.isWicket) wicketsDown++;
+      if (d.isLegal) legalBalls++;
+      if (!d.isLegal || legalBalls % 6 != 0) continue;
+
+      final ballsLeft = (totalBalls - legalBalls).clamp(0, totalBalls);
+      final runsNeeded = (target - runningRuns).clamp(0, target);
+      final wicketsLeft = (10 - wicketsDown).clamp(0, 10);
+      if (runsNeeded == 0) {
+        result.add(100);
+        continue;
+      }
+      if (ballsLeft == 0 || wicketsLeft == 0) {
+        result.add(0);
+        continue;
+      }
+      final requiredRate = runsNeeded / (ballsLeft / 6);
+      final currentRate = runningRuns / (legalBalls / 6);
+      final rateFactor = (currentRate / requiredRate).clamp(0.0, 2.0);
+      final wicketFactor = wicketsLeft / 10;
+      final prob = 50 * rateFactor * 0.6 + 50 * wicketFactor * 0.4;
+      result.add(prob.clamp(0, 100));
     }
     return result;
   }
