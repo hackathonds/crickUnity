@@ -21,6 +21,7 @@ import '../../grounds/ground_profile_screen.dart';
 import '../../grounds/grounds_discovery_screen.dart';
 import '../../grounds/caretaker_mode_screen.dart';
 import '../../tournaments/auction_room_screen.dart';
+import '../../tournaments/organizer_console_screen.dart';
 import '../../tournaments/bracket_screen.dart';
 import '../../tournaments/fixtures_editor_screen.dart';
 import '../../tournaments/points_table_screen.dart';
@@ -1924,6 +1925,15 @@ class DebugMenuScreen extends StatelessWidget {
             ),
             onTap: () => Navigator.of(context).push(
               MaterialPageRoute(builder: (_) => const AuctionRoomScreen()),
+            ),
+          ),
+          ListTile(
+            title: const Text('Organizer console + wallet + payouts'),
+            subtitle: const Text(
+              'E10-07 — Transparency summary, payout confirm, Organizer-Score input',
+            ),
+            onTap: () => Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => const OrganizerConsoleScreen()),
             ),
           ),
           ListTile(
