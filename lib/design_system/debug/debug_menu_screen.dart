@@ -50,6 +50,7 @@ import '../../rewards/rewards_summary_screen.dart';
 import '../../rewards/wallet_screen.dart';
 import '../../messaging/chat_list_screen.dart';
 import '../../moderation/moderation_settings_screen.dart';
+import '../../recognition/leaderboard_hub_screen.dart';
 import '../../social/events_list_screen.dart';
 import '../../social/feed_screen.dart';
 import '../../social/groups_list_screen.dart';
@@ -1691,6 +1692,16 @@ class DebugMenuScreen extends StatelessWidget {
               MaterialPageRoute(
                 builder: (_) => const ModerationSettingsScreen(),
               ),
+            ),
+          ),
+          ListTile(
+            title: const Text('Leaderboards hub'),
+            subtitle: const Text(
+              'E8-01 — Scope x metric x window, sticky self-row, '
+              'qualification progress, age/experience filters',
+            ),
+            onTap: () => Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => const LeaderboardHubScreen()),
             ),
           ),
           ListTile(
