@@ -161,6 +161,11 @@ class Club {
   final int upcomingEventsCount;
   final int pendingJoinRequests;
 
+  /// Backlog addendum (PRD §2.13): "club treasury (separate from team
+  /// treasuries; inter-wallet transfers require both treasurers'
+  /// confirmation)."
+  final int treasuryBalance;
+
   const Club({
     required this.id,
     required this.name,
@@ -168,5 +173,66 @@ class Club {
     this.linkedTeamNames = const [],
     this.upcomingEventsCount = 0,
     this.pendingJoinRequests = 0,
+    this.treasuryBalance = 0,
   });
+
+  Club copyWith({int? treasuryBalance}) {
+    return Club(
+      id: id,
+      name: name,
+      ownerName: ownerName,
+      linkedTeamNames: linkedTeamNames,
+      upcomingEventsCount: upcomingEventsCount,
+      pendingJoinRequests: pendingJoinRequests,
+      treasuryBalance: treasuryBalance ?? this.treasuryBalance,
+    );
+  }
+}
+
+enum TransferDirection { clubToTeam, teamToClub }
+
+/// PRD §2.13: "inter-wallet transfers between club and team treasuries
+/// require both treasurers' confirmation." No multi-account system
+/// exists to seat a distinct team-treasurer identity separate from the
+/// club treasurer (same flagged convention as every other cross-party
+/// flow this session) -- both confirmations are recorded, but from the
+/// same single account.
+class InterWalletTransferRequest {
+  final String id;
+  final TransferDirection direction;
+  final String teamName;
+  final int amount;
+  final bool clubTreasurerConfirmed;
+  final bool teamTreasurerConfirmed;
+  final bool completed;
+
+  const InterWalletTransferRequest({
+    required this.id,
+    required this.direction,
+    required this.teamName,
+    required this.amount,
+    this.clubTreasurerConfirmed = false,
+    this.teamTreasurerConfirmed = false,
+    this.completed = false,
+  });
+
+  bool get bothConfirmed => clubTreasurerConfirmed && teamTreasurerConfirmed;
+
+  InterWalletTransferRequest copyWith({
+    bool? clubTreasurerConfirmed,
+    bool? teamTreasurerConfirmed,
+    bool? completed,
+  }) {
+    return InterWalletTransferRequest(
+      id: id,
+      direction: direction,
+      teamName: teamName,
+      amount: amount,
+      clubTreasurerConfirmed:
+          clubTreasurerConfirmed ?? this.clubTreasurerConfirmed,
+      teamTreasurerConfirmed:
+          teamTreasurerConfirmed ?? this.teamTreasurerConfirmed,
+      completed: completed ?? this.completed,
+    );
+  }
 }

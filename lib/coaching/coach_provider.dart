@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../academies/academy_provider.dart';
 import 'coach_models.dart';
 
 class CoachState {
@@ -150,12 +151,20 @@ class CoachNotifier extends Notifier<CoachState> {
   }
 
   /// DS §7-46: "progress-card composer (approve -> send)."
+  /// Backlog addendum (PRD §2.8): "progress notes for minors visible
+  /// to guardian account." Reads the real academyProvider Student
+  /// record to determine minor status, not a re-declared flag.
   void composeProgressCard(
     String studentName,
     String monthLabel,
     String notes, {
     DateTime Function() now = DateTime.now,
   }) {
+    final student = ref
+        .read(academyProvider)
+        .students
+        .where((s) => s.name == studentName)
+        .firstOrNull;
     state = state.copyWith(
       progressCards: [
         ...state.progressCards,
@@ -164,6 +173,7 @@ class CoachNotifier extends Notifier<CoachState> {
           studentName: studentName,
           monthLabel: monthLabel,
           notes: notes,
+          visibleToGuardian: student?.isMinor ?? false,
         ),
       ],
     );

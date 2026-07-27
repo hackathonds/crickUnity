@@ -20,6 +20,7 @@ import '../../academies/academy_console_screen.dart';
 import '../../clubs/club_home_screen.dart';
 import '../../coaching/coach_console_screen.dart';
 import '../../coaching/compliance_vault_screen.dart';
+import '../../coaching/personal_training_log_screen.dart';
 import '../../grounds/booking_flow_screen.dart';
 import '../../grounds/ground_profile_screen.dart';
 import '../../grounds/grounds_discovery_screen.dart';
@@ -1897,6 +1898,17 @@ class DebugMenuScreen extends StatelessWidget {
             ),
             onTap: () => Navigator.of(context).push(
               MaterialPageRoute(builder: (_) => const ComplianceVaultScreen()),
+            ),
+          ),
+          ListTile(
+            title: const Text('My training log'),
+            subtitle: const Text(
+              'E11-05 — Drill Library for all users, PBs, missions/badges',
+            ),
+            onTap: () => Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (_) => const PersonalTrainingLogScreen(),
+              ),
             ),
           ),
           ListTile(

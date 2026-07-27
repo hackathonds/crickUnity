@@ -28,6 +28,7 @@ enum MissionActionType {
   scoreRuns,
   takeWicket,
   takeCatch,
+  logTrainingDrill,
 }
 
 class MissionDef {
@@ -119,6 +120,23 @@ const List<MissionDef> missionPool = [
     coins: 5,
     xp: 5,
   ),
+  // Backlog E11-05 (Personal training log): "feeds daily missions
+  // D5/D7/D8." Those specific IDs appear nowhere in the frozen PRD/DS
+  // (grepped, no match) -- a flagged gap bigger than the usual
+  // phantom-citation pattern, since the backlog invents identifiers
+  // with no definition anywhere. One daily + one weekly mission wired
+  // to the new logTrainingDrill action stand in, same role-fair pool
+  // shape as every other mission.
+  MissionDef(
+    id: 'log-drill',
+    tier: MissionTier.daily,
+    roleCategory: MissionRoleCategory.any,
+    actionType: MissionActionType.logTrainingDrill,
+    title: 'Log a training drill',
+    target: 1,
+    coins: 3,
+    xp: 3,
+  ),
   MissionDef(
     id: 'weekly-runs',
     tier: MissionTier.weekly,
@@ -136,6 +154,16 @@ const List<MissionDef> missionPool = [
     actionType: MissionActionType.takeWicket,
     title: 'Take 4 wickets this week',
     target: 4,
+    coins: 20,
+    xp: 20,
+  ),
+  MissionDef(
+    id: 'weekly-drills',
+    tier: MissionTier.weekly,
+    roleCategory: MissionRoleCategory.any,
+    actionType: MissionActionType.logTrainingDrill,
+    title: 'Log 5 training drills this week',
+    target: 5,
     coins: 20,
     xp: 20,
   ),

@@ -26,11 +26,15 @@ class _ClubHomeScreenState extends ConsumerState<ClubHomeScreen> {
   DateTime? _friendlyDate;
   final _wallOfFameNameController = TextEditingController();
   final _wallOfFameCitationController = TextEditingController();
+  TransferDirection _transferDirection = TransferDirection.clubToTeam;
+  String? _transferTeamName;
+  final _transferAmountController = TextEditingController();
 
   @override
   void dispose() {
     _wallOfFameNameController.dispose();
     _wallOfFameCitationController.dispose();
+    _transferAmountController.dispose();
     super.dispose();
   }
 
@@ -241,6 +245,141 @@ class _ClubHomeScreenState extends ConsumerState<ClubHomeScreen> {
               setState(() {});
             },
           ),
+          const SizedBox(height: AppSpacing.xl),
+          Text('Club treasury', style: AppTypography.h2),
+          const SizedBox(height: AppSpacing.xs),
+          Text(
+            'Balance: ₹${state.club.treasuryBalance}',
+            style: AppTypography.stat.copyWith(color: colors.textPrimary),
+          ),
+          Text(
+            // PRD §2.13: inter-wallet transfers require both
+            // treasurers' confirmation. No multi-account system exists
+            // to seat a real distinct team-treasurer identity (flagged,
+            // same convention as every other cross-party flow this
+            // session) -- both confirmations are recorded from the
+            // same single account via debug controls below.
+            'Inter-wallet transfers require both the club and team treasurer to confirm.',
+            style: AppTypography.caption.copyWith(color: colors.textTertiary),
+          ),
+          const SizedBox(height: AppSpacing.sm),
+          for (final request in state.transferRequests)
+            _TransferRow(
+              key: ValueKey('transferRow_${request.id}'),
+              request: request,
+              colors: colors,
+            ),
+          const SizedBox(height: AppSpacing.sm),
+          Wrap(
+            spacing: AppSpacing.sm,
+            children: [
+              ChoiceChip(
+                label: const Text('Club -> Team'),
+                selected: _transferDirection == TransferDirection.clubToTeam,
+                onSelected: (_) => setState(
+                  () => _transferDirection = TransferDirection.clubToTeam,
+                ),
+              ),
+              ChoiceChip(
+                label: const Text('Team -> Club'),
+                selected: _transferDirection == TransferDirection.teamToClub,
+                onSelected: (_) => setState(
+                  () => _transferDirection = TransferDirection.teamToClub,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: AppSpacing.xs),
+          Wrap(
+            spacing: AppSpacing.sm,
+            children: [
+              for (final team in state.club.linkedTeamNames)
+                ChoiceChip(
+                  key: ValueKey('transferTeamChip_$team'),
+                  label: Text(team),
+                  selected: _transferTeamName == team,
+                  onSelected: (_) => setState(() => _transferTeamName = team),
+                ),
+            ],
+          ),
+          TextField(
+            controller: _transferAmountController,
+            keyboardType: TextInputType.number,
+            decoration: const InputDecoration(labelText: 'Amount (₹)'),
+          ),
+          AppButton(
+            key: const ValueKey('requestTransferButton'),
+            variant: AppButtonVariant.secondary,
+            label: 'Request transfer',
+            fullWidth: true,
+            onPressed: _transferTeamName == null
+                ? null
+                : () {
+                    final amount =
+                        int.tryParse(_transferAmountController.text) ?? 0;
+                    if (amount <= 0) return;
+                    notifier.requestTransfer(
+                      _transferDirection,
+                      _transferTeamName!,
+                      amount,
+                    );
+                    _transferAmountController.clear();
+                    setState(() {});
+                  },
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _TransferRow extends ConsumerWidget {
+  final InterWalletTransferRequest request;
+  final AppColors colors;
+
+  const _TransferRow({super.key, required this.request, required this.colors});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final notifier = ref.read(clubProvider.notifier);
+    return Container(
+      margin: const EdgeInsets.only(bottom: AppSpacing.sm),
+      padding: const EdgeInsets.all(AppSpacing.md),
+      decoration: BoxDecoration(
+        color: colors.surfaceAlt,
+        borderRadius: BorderRadius.circular(14),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            '${request.direction == TransferDirection.clubToTeam ? "Club -> ${request.teamName}" : "${request.teamName} -> Club"}: ₹${request.amount}',
+            style: AppTypography.body,
+          ),
+          Text(
+            request.completed
+                ? 'Completed'
+                : 'Club treasurer: ${request.clubTreasurerConfirmed ? "confirmed" : "pending"} · '
+                      'Team treasurer: ${request.teamTreasurerConfirmed ? "confirmed" : "pending"}',
+            style: AppTypography.caption.copyWith(color: colors.textTertiary),
+          ),
+          if (!request.completed)
+            Row(
+              children: [
+                if (!request.clubTreasurerConfirmed)
+                  TextButton(
+                    onPressed: () =>
+                        notifier.confirmAsClubTreasurer(request.id),
+                    child: const Text('Confirm as club treasurer'),
+                  ),
+                if (!request.teamTreasurerConfirmed)
+                  TextButton(
+                    onPressed: () =>
+                        notifier.confirmAsTeamTreasurer(request.id),
+                    child: const Text('Confirm as team treasurer'),
+                  ),
+              ],
+            ),
         ],
       ),
     );
