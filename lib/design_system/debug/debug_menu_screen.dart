@@ -54,6 +54,7 @@ import '../../recognition/leaderboard_hub_screen.dart';
 import '../../recognition/challenges_hub_screen.dart';
 import '../../recognition/compare_screen.dart';
 import '../../recognition/goals_screen.dart';
+import '../../recognition/year_in_review_screen.dart';
 import '../../recognition/grounds_heatmap_screen.dart';
 import '../../recognition/personal_bests_screen.dart';
 import '../../recognition/records_hub_screen.dart';
@@ -1767,6 +1768,15 @@ class DebugMenuScreen extends StatelessWidget {
             onTap: () => Navigator.of(
               context,
             ).push(MaterialPageRoute(builder: (_) => const GoalsScreen())),
+          ),
+          ListTile(
+            title: const Text('Year in Review'),
+            subtitle: const Text(
+              'E8-06 — Swipeable story cards, per-card exclusion, share',
+            ),
+            onTap: () => Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => const YearInReviewScreen()),
+            ),
           ),
           ListTile(
             title: const Text('Field map tool (captain)'),
