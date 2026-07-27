@@ -63,6 +63,7 @@ import '../../recognition/records_hub_screen.dart';
 import '../../social/events_list_screen.dart';
 import '../../social/feed_screen.dart';
 import '../../social/groups_list_screen.dart';
+import '../../social/fan_engagement_screen.dart';
 import '../../social/saved_screen.dart';
 import '../../rewards/streaks_summary_screen.dart';
 import '../../profile/achievement_models.dart';
@@ -1675,6 +1676,15 @@ class DebugMenuScreen extends StatelessWidget {
             onTap: () => Navigator.of(
               context,
             ).push(MaterialPageRoute(builder: (_) => const SavedScreen())),
+          ),
+          ListTile(
+            title: const Text('Fan engagement'),
+            subtitle: const Text(
+              'E7-09 — Predictions, fan leaderboards, superfan streaks',
+            ),
+            onTap: () => Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => const FanEngagementScreen()),
+            ),
           ),
           ListTile(
             title: const Text('Messenger'),
