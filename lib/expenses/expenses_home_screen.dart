@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../design_system/components/app_bottom_sheet.dart';
 import '../design_system/components/app_button.dart';
 import '../design_system/components/app_expense_card.dart';
+import '../design_system/components/app_text_field.dart';
 import '../design_system/icons/app_icon_id.dart';
 import '../design_system/tokens/app_colors.dart';
 import '../design_system/tokens/app_money_text.dart';
@@ -12,15 +14,20 @@ import '../matches/matches_provider.dart';
 import 'add_edit_expense_screen.dart';
 import 'expense_models.dart';
 import 'expenses_provider.dart';
+import 'settle_up_screen.dart';
+import 'settlement_models.dart';
+import 'settlements_provider.dart';
 
 enum _ExpensesTab { iOwe, owed, all }
 
 /// DS §7-48 (Expenses Home): "Net header Display ('You're owed ₹450')
 /// -> tabs I-owe/Owed/All -> rows §3.2.6 -> {Add} FAB-less: sticky
 /// [Add expense]. All-square state: calm tick illustration." The net
-/// header here is a flat viewer-level total across every expense --
-/// the "3 payments instead of 7" per-counterparty netting graph is
-/// E5-04's separate scope.
+/// header here stays a flat viewer-level total across every expense --
+/// the "3 payments instead of 7" per-counterparty netting graph lives
+/// in [SettleUpScreen] (E5-04), reached via the Settle Up button below.
+/// Also surfaces incoming settlement requests awaiting this viewer's
+/// confirm/decline (PRD §11.6).
 class ExpensesHomeScreen extends ConsumerStatefulWidget {
   final String viewerName;
   final bool viewerIsCaptain;
@@ -55,6 +62,14 @@ class _ExpensesHomeScreenState extends ConsumerState<ExpensesHomeScreen> {
     final colors = Theme.of(context).extension<AppColors>()!;
     final expenses = ref.watch(expensesProvider).expenses;
     final notifier = ref.read(expensesProvider.notifier);
+    final settlements = ref.watch(settlementsProvider).settlements;
+    final settlementsNotifier = ref.read(settlementsProvider.notifier);
+    final incomingSettlements = [
+      for (final s in settlements)
+        if (s.toName == widget.viewerName &&
+            s.status == SettlementStatus.pendingConfirmation)
+          s,
+    ];
 
     final net = expenses.fold(0, (sum, e) => sum + e.netFor(widget.viewerName));
 
@@ -115,6 +130,62 @@ class _ExpensesHomeScreenState extends ConsumerState<ExpensesHomeScreen> {
                     ),
                   ),
           ),
+          if (incomingSettlements.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+              child: Column(
+                key: const ValueKey('pendingSettlementsSection'),
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Pending settlements',
+                    style: AppTypography.label.copyWith(
+                      color: colors.textTertiary,
+                    ),
+                  ),
+                  const SizedBox(height: AppSpacing.xs),
+                  for (final s in incomingSettlements)
+                    Container(
+                      key: ValueKey('pendingSettlementRow_${s.id}'),
+                      margin: const EdgeInsets.only(bottom: AppSpacing.sm),
+                      padding: const EdgeInsets.all(AppSpacing.md),
+                      decoration: BoxDecoration(
+                        color: colors.surfaceAlt,
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              '${s.fromName} says they paid you ₹${s.amount} '
+                              '(${settlementMethodLabels[s.method]})',
+                              style: AppTypography.body.copyWith(
+                                color: colors.textPrimary,
+                              ),
+                            ),
+                          ),
+                          AppButton(
+                            key: ValueKey('confirmReceiptButton_${s.id}'),
+                            variant: AppButtonVariant.secondary,
+                            label: 'Confirm',
+                            onPressed: () =>
+                                settlementsNotifier.confirmSettlement(s.id),
+                          ),
+                          const SizedBox(width: AppSpacing.xs),
+                          AppButton(
+                            key: ValueKey('declineReceiptButton_${s.id}'),
+                            variant: AppButtonVariant.destructive,
+                            label: 'Decline',
+                            onPressed: () =>
+                                _showDeclineSheet(context, ref, s.id),
+                          ),
+                        ],
+                      ),
+                    ),
+                  const SizedBox(height: AppSpacing.sm),
+                ],
+              ),
+            ),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
             child: Row(
@@ -221,22 +292,91 @@ class _ExpensesHomeScreenState extends ConsumerState<ExpensesHomeScreen> {
           ),
           Padding(
             padding: const EdgeInsets.all(AppSpacing.lg),
-            child: AppButton(
-              key: const ValueKey('addExpenseButton'),
-              variant: AppButtonVariant.primary,
-              label: 'Add expense',
-              fullWidth: true,
-              onPressed: () => Navigator.of(context).push(
-                MaterialPageRoute(
-                  builder: (_) => AddEditExpenseScreen(
-                    viewerName: widget.viewerName,
-                    viewerIsCaptain: widget.viewerIsCaptain,
+            child: Row(
+              children: [
+                Expanded(
+                  child: AppButton(
+                    key: const ValueKey('settleUpButton'),
+                    variant: AppButtonVariant.secondary,
+                    label: 'Settle up',
+                    fullWidth: true,
+                    onPressed: () => Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (_) =>
+                            SettleUpScreen(viewerName: widget.viewerName),
+                      ),
+                    ),
                   ),
                 ),
-              ),
+                const SizedBox(width: AppSpacing.sm),
+                Expanded(
+                  child: AppButton(
+                    key: const ValueKey('addExpenseButton'),
+                    variant: AppButtonVariant.primary,
+                    label: 'Add expense',
+                    fullWidth: true,
+                    onPressed: () => Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (_) => AddEditExpenseScreen(
+                          viewerName: widget.viewerName,
+                          viewerIsCaptain: widget.viewerIsCaptain,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  void _showDeclineSheet(
+    BuildContext context,
+    WidgetRef ref,
+    String settlementId,
+  ) {
+    final controller = TextEditingController();
+    showAppBottomSheet<void>(
+      context: context,
+      title: 'Decline settlement',
+      contentBuilder: (context) => Padding(
+        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Declining opens a mini-dispute -- explain why you didn\'t '
+              'receive this payment.',
+              style: AppTypography.caption,
+            ),
+            const SizedBox(height: AppSpacing.sm),
+            AppTextField(
+              key: const ValueKey('declineReasonField'),
+              label: 'Reason',
+              controller: controller,
+            ),
+            const SizedBox(height: AppSpacing.lg),
+            AppButton(
+              key: const ValueKey('submitDeclineButton'),
+              variant: AppButtonVariant.destructive,
+              label: 'Decline',
+              fullWidth: true,
+              onPressed: () {
+                final reason = controller.text.trim();
+                if (reason.isEmpty) return;
+                ref
+                    .read(settlementsProvider.notifier)
+                    .declineSettlement(settlementId, reason);
+                Navigator.of(context).pop();
+              },
+            ),
+            const SizedBox(height: AppSpacing.lg),
+          ],
+        ),
       ),
     );
   }

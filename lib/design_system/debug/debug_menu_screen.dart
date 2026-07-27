@@ -6,6 +6,7 @@ import '../../expenses/auto_split_review_screen.dart';
 import '../../expenses/expense_models.dart';
 import '../../expenses/expenses_home_screen.dart';
 import '../../expenses/expenses_provider.dart';
+import '../../expenses/settle_up_screen.dart';
 import '../../guest/guest_live_match_preview_screen.dart';
 import '../../matches/awards_screen.dart';
 import '../../matches/create_match_flow.dart';
@@ -1083,6 +1084,49 @@ class DebugMenuScreen extends StatelessWidget {
                     viewerName: 'Kabir Singh',
                     viewerIsCaptain: true,
                   ),
+                ),
+              );
+            },
+          ),
+          ListTile(
+            title: const Text('Settle up (who-owes-whom)'),
+            subtitle: const Text(
+              'E5-04 — simplify suggestion, full/partial/custom, handshake',
+            ),
+            onTap: () {
+              final container = ProviderScope.containerOf(
+                context,
+                listen: false,
+              );
+              final notifier = container.read(expensesProvider.notifier);
+              if (container.read(expensesProvider).expenses.isEmpty) {
+                notifier.addExpense(
+                  title: 'Ground fee',
+                  category: ExpenseCategory.groundFees,
+                  amount: 800,
+                  paidBy: const [PaidByEntry(name: 'Kabir Singh', amount: 800)],
+                  splitMethod: SplitMethod.equal,
+                  splitAmong: equalSplit(800, mockExpenseParticipants()),
+                  createdByName: 'Kabir Singh',
+                  createdByIsCaptain: true,
+                );
+                notifier.addExpense(
+                  title: 'Tournament entry',
+                  category: ExpenseCategory.tournamentEntry,
+                  amount: 1500,
+                  paidBy: const [
+                    PaidByEntry(name: 'Kabir Singh', amount: 1500),
+                  ],
+                  splitMethod: SplitMethod.equal,
+                  splitAmong: equalSplit(1500, mockExpenseParticipants()),
+                  createdByName: 'Kabir Singh',
+                  createdByIsCaptain: true,
+                );
+              }
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (_) =>
+                      const SettleUpScreen(viewerName: 'Kabir Singh'),
                 ),
               );
             },
