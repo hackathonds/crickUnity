@@ -9,17 +9,34 @@ import '../../tokens/app_typography.dart';
 /// pre-normalized to 0.0-1.0 by the caller (each analytics surface knows
 /// its own metric's natural range -- this chart only plots what it's
 /// given).
+///
+/// [comparisonAxes] (E13-01 addendum, unblocking DS §11.15's Compare
+/// tool "radar center" -- compare_models.dart's own doc comment flagged
+/// this exact gap: "a stand-in until that primitive exists"): an
+/// optional second series over the *same* keys as [axes], overlaid in
+/// [comparisonColor] so two profiles can be read on one radar.
 class AppRadarChart extends StatelessWidget {
   final Map<String, double> axes;
+  final Map<String, double>? comparisonAxes;
+  final Color? comparisonColor;
 
-  const AppRadarChart({super.key, required this.axes})
-    : assert(axes.length <= 6, 'DS §3.3: Radar allows max 6 axes');
+  const AppRadarChart({
+    super.key,
+    required this.axes,
+    this.comparisonAxes,
+    this.comparisonColor,
+  }) : assert(axes.length <= 6, 'DS §3.3: Radar allows max 6 axes');
 
   @override
   Widget build(BuildContext context) {
     final colors = Theme.of(context).extension<AppColors>()!;
     return CustomPaint(
-      painter: _RadarPainter(axes: axes, colors: colors),
+      painter: _RadarPainter(
+        axes: axes,
+        comparisonAxes: comparisonAxes,
+        comparisonColor: comparisonColor ?? colors.accent,
+        colors: colors,
+      ),
       size: Size.infinite,
     );
   }
@@ -27,9 +44,37 @@ class AppRadarChart extends StatelessWidget {
 
 class _RadarPainter extends CustomPainter {
   final Map<String, double> axes;
+  final Map<String, double>? comparisonAxes;
+  final Color comparisonColor;
   final AppColors colors;
 
-  const _RadarPainter({required this.axes, required this.colors});
+  const _RadarPainter({
+    required this.axes,
+    required this.comparisonAxes,
+    required this.comparisonColor,
+    required this.colors,
+  });
+
+  Path _seriesPath(
+    List<String> labels,
+    Map<String, double> series,
+    Offset center,
+    double radius,
+    double angleStep,
+  ) {
+    final path = Path();
+    for (var i = 0; i < labels.length; i++) {
+      final angle = i * angleStep - math.pi / 2;
+      final value = (series[labels[i]] ?? 0).clamp(0.0, 1.0);
+      final point =
+          center + Offset(math.cos(angle), math.sin(angle)) * radius * value;
+      i == 0
+          ? path.moveTo(point.dx, point.dy)
+          : path.lineTo(point.dx, point.dy);
+    }
+    path.close();
+    return path;
+  }
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -56,6 +101,27 @@ class _RadarPainter extends CustomPainter {
       }
       path.close();
       canvas.drawPath(path, gridPaint);
+    }
+
+    if (comparisonAxes != null) {
+      final comparisonPath = _seriesPath(
+        labels,
+        comparisonAxes!,
+        center,
+        radius,
+        angleStep,
+      );
+      canvas.drawPath(
+        comparisonPath,
+        Paint()..color = comparisonColor.withValues(alpha: 0.12),
+      );
+      canvas.drawPath(
+        comparisonPath,
+        Paint()
+          ..color = comparisonColor
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = 2,
+      );
     }
 
     final dataPath = Path();
@@ -101,5 +167,7 @@ class _RadarPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant _RadarPainter oldDelegate) =>
-      oldDelegate.axes != axes || oldDelegate.colors != colors;
+      oldDelegate.axes != axes ||
+      oldDelegate.comparisonAxes != comparisonAxes ||
+      oldDelegate.colors != colors;
 }
