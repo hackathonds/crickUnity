@@ -18,7 +18,12 @@ import 'training_log_provider.dart';
 /// workload caps." Reuses the real coachProvider Drill Library
 /// (E11-03) rather than a second catalog.
 class PersonalTrainingLogScreen extends ConsumerStatefulWidget {
-  const PersonalTrainingLogScreen({super.key});
+  /// E15-04 (Discover): "tip cards carry [Add drill] chip deep-linking
+  /// Drill Library." Pre-selects the drill the tip was about, rather
+  /// than always landing on whichever drill happens to be first.
+  final String? initialDrillId;
+
+  const PersonalTrainingLogScreen({super.key, this.initialDrillId});
 
   @override
   ConsumerState<PersonalTrainingLogScreen> createState() =>
@@ -32,6 +37,12 @@ class _PersonalTrainingLogScreenState
   int _value = 10;
   bool _hasProof = false;
   String? _logError;
+
+  @override
+  void initState() {
+    super.initState();
+    _selectedDrillId = widget.initialDrillId;
+  }
 
   @override
   Widget build(BuildContext context) {
