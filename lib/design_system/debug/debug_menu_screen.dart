@@ -3,11 +3,14 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../expenses/add_edit_expense_screen.dart';
 import '../../expenses/auto_split_review_screen.dart';
+import '../../expenses/collections_provider.dart';
 import '../../expenses/expense_detail_screen.dart';
 import '../../expenses/expense_models.dart';
 import '../../expenses/expenses_home_screen.dart';
 import '../../expenses/expenses_provider.dart';
 import '../../expenses/settle_up_screen.dart';
+import '../../expenses/treasury_screen.dart';
+import '../../expenses/wallet_payouts_provider.dart';
 import '../../guest/guest_live_match_preview_screen.dart';
 import '../../matches/awards_screen.dart';
 import '../../matches/create_match_flow.dart';
@@ -1168,6 +1171,68 @@ class DebugMenuScreen extends StatelessWidget {
                     expenseId: id,
                     viewerName: 'Kabir Singh',
                     viewerIsCaptain: true,
+                  ),
+                ),
+              );
+            },
+          ),
+          ListTile(
+            title: const Text('Treasury (team wallet)'),
+            subtitle: const Text(
+              'E5-07 — wallet balance, collections, dual-approval payout',
+            ),
+            onTap: () {
+              final container = ProviderScope.containerOf(
+                context,
+                listen: false,
+              );
+              final expensesNotifier = container.read(
+                expensesProvider.notifier,
+              );
+              expensesNotifier.addExpense(
+                title: 'Ground fee',
+                category: ExpenseCategory.groundFees,
+                amount: 800,
+                paidBy: const [
+                  PaidByEntry(name: teamWalletPayerName, amount: 800),
+                ],
+                splitMethod: SplitMethod.equal,
+                splitAmong: equalSplit(800, mockExpenseParticipants()),
+                createdByName: 'Kabir Singh',
+                createdByIsCaptain: true,
+              );
+              expensesNotifier.addExpense(
+                title: 'Late-arrival fine',
+                category: ExpenseCategory.penaltyFine,
+                amount: 100,
+                paidBy: const [
+                  PaidByEntry(name: teamWalletPayerName, amount: 100),
+                ],
+                splitMethod: SplitMethod.custom,
+                splitAmong: const [SplitShare(name: 'Sana Iyer', amount: 100)],
+                createdByName: 'Kabir Singh',
+                createdByIsCaptain: true,
+              );
+              container
+                  .read(collectionsProvider.notifier)
+                  .createCollection(
+                    title: 'Season fund',
+                    amountPerMember: 500,
+                    memberNames: mockExpenseParticipants(),
+                    deadline: DateTime.now().add(const Duration(days: 5)),
+                  );
+              container
+                  .read(walletPayoutsProvider.notifier)
+                  .requestPayout(
+                    purpose: 'New training kit',
+                    amount: 2500,
+                    createdByName: 'Kabir Singh',
+                  );
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (_) => const TreasuryScreen(
+                    viewerName: 'Kabir Singh',
+                    viewerIsManagerOrCaptain: true,
                   ),
                 ),
               );
