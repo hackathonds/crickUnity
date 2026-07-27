@@ -56,7 +56,11 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
   @override
   Widget build(BuildContext context) {
     final colors = Theme.of(context).extension<AppColors>()!;
-    final expenses = ref.watch(expensesProvider).expenses;
+    final expenses = ref
+        .watch(expensesProvider)
+        .expenses
+        .where((e) => !e.isDeleted)
+        .toList();
     final settlements = ref.watch(settlementsProvider).settlements;
 
     final periodTotal = totalSpentFor(widget.viewerName, expenses, _period);

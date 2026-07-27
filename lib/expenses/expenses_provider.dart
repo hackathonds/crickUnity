@@ -38,6 +38,7 @@ class ExpensesNotifier extends Notifier<ExpensesState> {
     required String createdByName,
     required bool createdByIsCaptain,
     bool isIncome = false,
+    String? recurrenceSeriesId,
     DateTime Function() now = DateTime.now,
   }) {
     final id = 'expense-${now().millisecondsSinceEpoch}-${_nextId++}';
@@ -65,11 +66,34 @@ class ExpensesNotifier extends Notifier<ExpensesState> {
               share.name: AppExpenseRowState.pending,
           },
           isIncome: isIncome,
+          recurrenceSeriesId: recurrenceSeriesId,
         ),
         ...state.expenses,
       ],
     );
     return id;
+  }
+
+  /// DS §11.13 Recently Deleted: "30-day list, rows show deleted-by +
+  /// countdown, [Restore] per row." Soft-delete only -- rows still
+  /// exist, just excluded from the normal ledger views.
+  void deleteExpense(
+    String expenseId,
+    String deletedByName, {
+    DateTime Function() now = DateTime.now,
+  }) {
+    _updateExpense(
+      expenseId,
+      (e) => e.copyWith(deletedAt: now(), deletedByName: deletedByName),
+    );
+  }
+
+  /// "restore re-notifies participants." No real notification channel
+  /// exists (Epic 15, unbuilt) -- this is a no-op beyond restoring, same
+  /// flagged-mock convention as every other missing-notification-
+  /// channel gap this session (e.g. E5-05's reminders).
+  void restoreExpense(String expenseId) {
+    _updateExpense(expenseId, (e) => e.copyWith(clearDeleted: true));
   }
 
   void approveExpense(String expenseId) {

@@ -15,6 +15,8 @@ import '../matches/matches_provider.dart';
 import '../teams/jersey_board_provider.dart';
 import 'expense_models.dart';
 import 'expenses_provider.dart';
+import 'recurring_series_models.dart';
+import 'recurring_series_provider.dart';
 
 class _ItemEntry {
   String label = '';
@@ -29,6 +31,30 @@ class _VehicleGroupInput {
   int fuelCost = 0;
   bool driverExempt = false;
 }
+
+/// DS §11.13 Scan-to-itemize: mock detected line item -- no real
+/// camera/OCR pipeline exists in this codebase (flagged, same
+/// convention as every other missing-device-integration mock this
+/// session). [confidenceLow] mirrors "confidence-low rows flagged for
+/// manual check."
+class _DetectedItem {
+  String name;
+  int amount;
+  String? assignedTo;
+  final bool confidenceLow;
+
+  _DetectedItem({
+    required this.name,
+    required this.amount,
+    this.confidenceLow = false,
+  });
+}
+
+List<_DetectedItem> _mockDetectedItems() => [
+  _DetectedItem(name: 'Ground fee', amount: 500),
+  _DetectedItem(name: 'Water bottles', amount: 150),
+  _DetectedItem(name: 'Extra ball', amount: 150, confidenceLow: true),
+];
 
 /// DS §7-49 (Add/Edit Expense): "category grid (glyphs) first (drives
 /// smart form) -> amount pad-first field -> paid-by selector -> split
@@ -82,6 +108,8 @@ class _AddEditExpenseScreenState extends ConsumerState<AddEditExpenseScreen> {
   FineChartEntry? _selectedFineReason; // Penalty/Fine
   String? _fineeName; // Penalty/Fine
   PrizeDistributionMethod _prizeDistribution = PrizeDistributionMethod.equal;
+  RecurrenceCadence _cadence = RecurrenceCadence.off; // DS §11.13
+  DateTime? _seriesEndDate;
 
   @override
   void dispose() {
@@ -319,6 +347,27 @@ class _AddEditExpenseScreenState extends ConsumerState<AddEditExpenseScreen> {
         _teamWalletPays &&
         (_category == ExpenseCategory.groundFees ||
             _category == ExpenseCategory.tournamentEntry);
+    final splitAmong = isPrize
+        ? [SplitShare(name: 'Prize pool', amount: _effectiveAmount)]
+        : _computeSplit();
+
+    String? seriesId;
+    if (_cadence != RecurrenceCadence.off) {
+      seriesId = ref
+          .read(recurringSeriesProvider.notifier)
+          .createSeries(
+            title: _titleController.text.trim(),
+            category: _category!,
+            amount: _effectiveAmount,
+            splitMethod: _splitMethod,
+            splitAmong: splitAmong,
+            cadence: _cadence,
+            startDate: DateTime.now(),
+            endDate: _seriesEndDate,
+            createdByName: widget.viewerName,
+            createdByIsCaptain: widget.viewerIsCaptain,
+          );
+    }
 
     ref
         .read(expensesProvider.notifier)
@@ -341,15 +390,14 @@ class _AddEditExpenseScreenState extends ConsumerState<AddEditExpenseScreen> {
                     PaidByEntry(name: entry.key, amount: entry.value),
                 ],
           splitMethod: _splitMethod,
-          splitAmong: isPrize
-              ? [SplitShare(name: 'Prize pool', amount: _effectiveAmount)]
-              : _computeSplit(),
+          splitAmong: splitAmong,
           contextMatchId: _contextMatchId,
           hasProof: _hasProof,
           notes: null,
           createdByName: widget.viewerName,
           createdByIsCaptain: widget.viewerIsCaptain,
           isIncome: isPrize,
+          recurrenceSeriesId: seriesId,
         );
     Navigator.of(context).pop();
   }
@@ -453,6 +501,13 @@ class _AddEditExpenseScreenState extends ConsumerState<AddEditExpenseScreen> {
                 ],
               ],
             ),
+            const SizedBox(height: AppSpacing.sm),
+            AppButton(
+              key: const ValueKey('scanReceiptButton'),
+              variant: AppButtonVariant.tertiary,
+              label: 'Scan receipt (detect items)',
+              onPressed: () => _showScanReceiptSheet(context),
+            ),
             const SizedBox(height: AppSpacing.lg),
             Text(
               'Context link (optional)',
@@ -467,6 +522,88 @@ class _AddEditExpenseScreenState extends ConsumerState<AddEditExpenseScreen> {
                   : 'Linked -- change',
               onPressed: _showContextLinkSheet,
             ),
+            const SizedBox(height: AppSpacing.lg),
+            Text(
+              'Repeats',
+              style: AppTypography.label.copyWith(color: colors.textTertiary),
+            ),
+            const SizedBox(height: AppSpacing.xs),
+            AppSegmentedControl<RecurrenceCadence>(
+              key: const ValueKey('cadenceControl'),
+              options: RecurrenceCadence.values,
+              value: _cadence,
+              onChanged: (v) => setState(() => _cadence = v),
+              labelBuilder: (v) => recurrenceCadenceLabels[v]!,
+            ),
+            if (_cadence != RecurrenceCadence.off) ...[
+              () {
+                final previewSeries = RecurringSeries(
+                  id: '',
+                  title: '',
+                  category: _category!,
+                  amount: _effectiveAmount,
+                  splitMethod: _splitMethod,
+                  splitAmong: const [],
+                  cadence: _cadence,
+                  startDate: DateTime.now(),
+                  endDate: _seriesEndDate,
+                  createdByName: widget.viewerName,
+                  createdByIsCaptain: widget.viewerIsCaptain,
+                );
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const SizedBox(height: AppSpacing.xs),
+                    Text(
+                      key: const ValueKey('seriesSummaryLine'),
+                      previewSeries.summaryLine,
+                      style: AppTypography.caption.copyWith(
+                        color: colors.textTertiary,
+                      ),
+                    ),
+                    const SizedBox(height: AppSpacing.xs),
+                    AppButton(
+                      key: const ValueKey('seriesEndDateButton'),
+                      variant: AppButtonVariant.tertiary,
+                      label: _seriesEndDate == null
+                          ? 'Set end date (optional)'
+                          : 'Ends ${_seriesEndDate!.day}/'
+                                '${_seriesEndDate!.month}/'
+                                '${_seriesEndDate!.year}',
+                      onPressed: () async {
+                        final picked = await showDatePicker(
+                          context: context,
+                          initialDate: DateTime.now().add(
+                            const Duration(days: 90),
+                          ),
+                          firstDate: DateTime.now(),
+                          lastDate: DateTime.now().add(
+                            const Duration(days: 730),
+                          ),
+                        );
+                        if (picked != null) {
+                          setState(() => _seriesEndDate = picked);
+                        }
+                      },
+                    ),
+                    const SizedBox(height: AppSpacing.xs),
+                    Text(
+                      'Upcoming instances',
+                      style: AppTypography.caption.copyWith(
+                        color: colors.textTertiary,
+                      ),
+                    ),
+                    for (final date in previewSeries.upcomingInstances())
+                      Text(
+                        '${date.day}/${date.month}/${date.year}',
+                        style: AppTypography.caption.copyWith(
+                          color: colors.textSecondary,
+                        ),
+                      ),
+                  ],
+                );
+              }(),
+            ],
             if (_needsApproval) ...[
               const SizedBox(height: AppSpacing.lg),
               Container(
@@ -1283,6 +1420,128 @@ class _AddEditExpenseScreenState extends ConsumerState<AddEditExpenseScreen> {
           ),
         ];
     }
+  }
+
+  /// DS §11.13: "proof camera -> detected line-items sheet as editable
+  /// rows (name+amount) with per-row assignee avatars multi-select;
+  /// confidence-low rows flagged for manual check; [Looks right]
+  /// confirms -- every line user-confirmed before save." Confirmed rows
+  /// populate this screen's existing Itemized-split mechanism (E5-01)
+  /// rather than a parallel one. Only a single assignee per row is
+  /// supported here (reusing the existing itemized-split assignee
+  /// picker) -- DS's literal "multi-select" (splitting one item across
+  /// several people) isn't built, flagged as a simplification.
+  void _showScanReceiptSheet(BuildContext context) {
+    final items = _mockDetectedItems();
+    showAppBottomSheet<void>(
+      context: context,
+      title: 'Detected items',
+      contentBuilder: (context) => StatefulBuilder(
+        builder: (context, setSheetState) {
+          final colors = Theme.of(context).extension<AppColors>()!;
+          final allConfirmed = items.every((i) => i.assignedTo != null);
+          return Padding(
+            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                for (var i = 0; i < items.length; i++)
+                  Container(
+                    key: ValueKey('detectedItemRow_$i'),
+                    margin: const EdgeInsets.only(bottom: AppSpacing.sm),
+                    padding: const EdgeInsets.all(AppSpacing.sm),
+                    decoration: BoxDecoration(
+                      color: colors.surfaceAlt,
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Expanded(
+                              child: AppTextField(
+                                key: ValueKey('detectedItemName_$i'),
+                                label: 'Item',
+                                controller: TextEditingController(
+                                  text: items[i].name,
+                                ),
+                                onChanged: (v) => items[i].name = v,
+                              ),
+                            ),
+                            const SizedBox(width: AppSpacing.xs),
+                            SizedBox(
+                              width: 90,
+                              child: AppCurrencyField(
+                                key: ValueKey('detectedItemAmount_$i'),
+                                label: '',
+                                controller: TextEditingController(
+                                  text: '${items[i].amount}',
+                                ),
+                                onChanged: (v) => items[i].amount =
+                                    int.tryParse(v.replaceAll(',', '')) ?? 0,
+                              ),
+                            ),
+                          ],
+                        ),
+                        if (items[i].confidenceLow)
+                          Padding(
+                            padding: const EdgeInsets.only(top: AppSpacing.xs),
+                            child: AppTagChip(
+                              label: 'Low confidence -- check',
+                              variant: AppTagChipVariant.warning,
+                            ),
+                          ),
+                        const SizedBox(height: AppSpacing.xs),
+                        Wrap(
+                          spacing: AppSpacing.xs,
+                          children: [
+                            for (final name in _participants)
+                              ChoiceChip(
+                                key: ValueKey('detectedItemAssign_${i}_$name'),
+                                label: Text(name),
+                                selected: items[i].assignedTo == name,
+                                onSelected: (_) => setSheetState(
+                                  () => items[i].assignedTo = name,
+                                ),
+                              ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                AppButton(
+                  key: const ValueKey('looksRightButton'),
+                  variant: AppButtonVariant.primary,
+                  label: 'Looks right',
+                  fullWidth: true,
+                  onPressed: allConfirmed
+                      ? () {
+                          setState(() {
+                            _splitMethod = SplitMethod.itemized;
+                            _items
+                              ..clear()
+                              ..addAll([
+                                for (final d in items)
+                                  _ItemEntry()
+                                    ..label = d.name
+                                    ..amount = d.amount
+                                    ..assignedTo = d.assignedTo,
+                              ]);
+                            _selected = {for (final d in items) d.assignedTo!};
+                          });
+                          Navigator.of(context).pop();
+                        }
+                      : null,
+                ),
+                const SizedBox(height: AppSpacing.lg),
+              ],
+            ),
+          );
+        },
+      ),
+    );
   }
 
   void _showAddPayerSheet(List<String> participants) {

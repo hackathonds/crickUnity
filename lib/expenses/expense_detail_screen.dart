@@ -12,6 +12,7 @@ import '../design_system/tokens/app_spacing.dart';
 import '../design_system/tokens/app_typography.dart';
 import 'expense_models.dart';
 import 'expenses_provider.dart';
+import 'recurring_series_provider.dart';
 import 'reminders_provider.dart';
 import 'settle_up_screen.dart';
 import 'settlement_models.dart';
@@ -354,6 +355,20 @@ class ExpenseDetailScreen extends ConsumerWidget {
                 ),
               ),
             ),
+          if (isCreator || viewerIsCaptain)
+            Padding(
+              padding: const EdgeInsets.only(top: AppSpacing.lg),
+              child: AppButton(
+                key: const ValueKey('deleteExpenseButton'),
+                variant: AppButtonVariant.destructive,
+                label: 'Delete',
+                fullWidth: true,
+                onPressed: () {
+                  notifier.deleteExpense(expenseId, viewerName);
+                  Navigator.of(context).pop();
+                },
+              ),
+            ),
         ],
       ),
     );
@@ -415,38 +430,72 @@ class ExpenseDetailScreen extends ConsumerWidget {
 
   void _showAmendSheet(BuildContext context, WidgetRef ref, Expense expense) {
     final controller = TextEditingController(text: '${expense.amount}');
+    final seriesId = expense.recurrenceSeriesId;
+    // DS §11.13: "editing asks 'This one / All future' sheet" -- only
+    // relevant when this expense belongs to a recurring series.
+    var applyToAllFuture = false;
     showAppBottomSheet<void>(
       context: context,
       title: 'Amend amount',
-      contentBuilder: (context) => Padding(
-        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            AppCurrencyField(
-              key: const ValueKey('amendAmountField'),
-              label: 'Corrected amount',
-              controller: controller,
-            ),
-            const SizedBox(height: AppSpacing.lg),
-            AppButton(
-              key: const ValueKey('submitAmendButton'),
-              variant: AppButtonVariant.primary,
-              label: 'Save amendment',
-              fullWidth: true,
-              onPressed: () {
-                final newAmount = int.tryParse(
-                  controller.text.replaceAll(',', ''),
-                );
-                if (newAmount == null || newAmount <= 0) return;
-                ref
-                    .read(expensesProvider.notifier)
-                    .amendExpense(expenseId, newAmount);
-                Navigator.of(context).pop();
-              },
-            ),
-            const SizedBox(height: AppSpacing.lg),
-          ],
+      contentBuilder: (context) => StatefulBuilder(
+        builder: (context, setSheetState) => Padding(
+          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              if (seriesId != null) ...[
+                Wrap(
+                  spacing: AppSpacing.xs,
+                  children: [
+                    ChoiceChip(
+                      key: const ValueKey('amendScopeThisOne'),
+                      label: const Text('This one'),
+                      selected: !applyToAllFuture,
+                      onSelected: (_) =>
+                          setSheetState(() => applyToAllFuture = false),
+                    ),
+                    ChoiceChip(
+                      key: const ValueKey('amendScopeAllFuture'),
+                      label: const Text('All future'),
+                      selected: applyToAllFuture,
+                      onSelected: (_) =>
+                          setSheetState(() => applyToAllFuture = true),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: AppSpacing.sm),
+              ],
+              AppCurrencyField(
+                key: const ValueKey('amendAmountField'),
+                label: 'Corrected amount',
+                controller: controller,
+              ),
+              const SizedBox(height: AppSpacing.lg),
+              AppButton(
+                key: const ValueKey('submitAmendButton'),
+                variant: AppButtonVariant.primary,
+                label: 'Save amendment',
+                fullWidth: true,
+                onPressed: () {
+                  final newAmount = int.tryParse(
+                    controller.text.replaceAll(',', ''),
+                  );
+                  if (newAmount == null || newAmount <= 0) return;
+                  ref
+                      .read(expensesProvider.notifier)
+                      .amendExpense(expenseId, newAmount);
+                  if (seriesId != null && applyToAllFuture) {
+                    ref
+                        .read(recurringSeriesProvider.notifier)
+                        .updateSeriesTemplate(seriesId, newAmount);
+                  }
+                  Navigator.of(context).pop();
+                },
+              ),
+              const SizedBox(height: AppSpacing.lg),
+            ],
+          ),
         ),
       ),
     );

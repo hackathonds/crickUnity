@@ -16,6 +16,7 @@ import 'add_edit_expense_screen.dart';
 import 'expense_detail_screen.dart';
 import 'expense_models.dart';
 import 'expenses_provider.dart';
+import 'recently_deleted_screen.dart';
 import 'reminders_provider.dart';
 import 'settle_up_screen.dart';
 import 'settlement_models.dart';
@@ -151,18 +152,38 @@ class _ExpensesHomeScreenState extends ConsumerState<ExpensesHomeScreen> {
           s,
     ];
 
-    final net = expenses.fold(0, (sum, e) => sum + e.netFor(widget.viewerName));
+    final net = expenses
+        .where((e) => !e.isDeleted)
+        .fold(0, (sum, e) => sum + e.netFor(widget.viewerName));
 
     final filtered = [
       for (final e in expenses)
-        if (_tab == _ExpensesTab.all ||
-            (_tab == _ExpensesTab.iOwe && e.netFor(widget.viewerName) < 0) ||
-            (_tab == _ExpensesTab.owed && e.netFor(widget.viewerName) > 0))
+        if (!e.isDeleted &&
+            (_tab == _ExpensesTab.all ||
+                (_tab == _ExpensesTab.iOwe &&
+                    e.netFor(widget.viewerName) < 0) ||
+                (_tab == _ExpensesTab.owed && e.netFor(widget.viewerName) > 0)))
           e,
     ];
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Expenses')),
+      appBar: AppBar(
+        title: const Text('Expenses'),
+        actions: [
+          PopupMenuButton<String>(
+            key: const ValueKey('expensesOverflowMenu'),
+            onSelected: (_) => Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => const RecentlyDeletedScreen()),
+            ),
+            itemBuilder: (context) => const [
+              PopupMenuItem(
+                value: 'recentlyDeleted',
+                child: Text('Recently deleted'),
+              ),
+            ],
+          ),
+        ],
+      ),
       body: Column(
         children: [
           Padding(
@@ -339,7 +360,9 @@ class _ExpensesHomeScreenState extends ConsumerState<ExpensesHomeScreen> {
                                 ),
                               ),
                               child: AppExpenseRow(
-                                title: expense.title,
+                                title: expense.recurrenceSeriesId == null
+                                    ? expense.title
+                                    : '⟳ ${expense.title}',
                                 contextCaption: _contextCaption(expense),
                                 amount: expense.amount,
                                 state: expense.hasActiveDispute

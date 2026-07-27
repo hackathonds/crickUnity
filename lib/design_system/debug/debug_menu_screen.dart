@@ -8,6 +8,9 @@ import '../../expenses/expense_detail_screen.dart';
 import '../../expenses/expense_models.dart';
 import '../../expenses/expenses_home_screen.dart';
 import '../../expenses/expenses_provider.dart';
+import '../../expenses/recently_deleted_screen.dart';
+import '../../expenses/recurring_series_models.dart';
+import '../../expenses/recurring_series_provider.dart';
 import '../../expenses/reports_screen.dart';
 import '../../expenses/settle_up_screen.dart';
 import '../../expenses/treasury_screen.dart';
@@ -1278,6 +1281,70 @@ class DebugMenuScreen extends StatelessWidget {
                     viewerName: 'Kabir Singh',
                     viewerIsCaptain: true,
                   ),
+                ),
+              );
+            },
+          ),
+          ListTile(
+            title: const Text('Recurring expense series'),
+            subtitle: const Text(
+              'E5-09 (1/3) — ⟳ glyph, generate next instance, amend scope',
+            ),
+            onTap: () {
+              final container = ProviderScope.containerOf(
+                context,
+                listen: false,
+              );
+              final seriesNotifier = container.read(
+                recurringSeriesProvider.notifier,
+              );
+              final seriesId = seriesNotifier.createSeries(
+                title: 'Monthly ground booking',
+                category: ExpenseCategory.groundFees,
+                amount: 800,
+                splitMethod: SplitMethod.equal,
+                splitAmong: equalSplit(800, mockExpenseParticipants()),
+                cadence: RecurrenceCadence.monthly,
+                startDate: DateTime.now(),
+                createdByName: 'Kabir Singh',
+                createdByIsCaptain: true,
+              );
+              seriesNotifier.generateNextInstance(seriesId);
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (_) => const ExpensesHomeScreen(
+                    viewerName: 'Kabir Singh',
+                    viewerIsCaptain: true,
+                  ),
+                ),
+              );
+            },
+          ),
+          ListTile(
+            title: const Text('Recently deleted'),
+            subtitle: const Text(
+              'E5-09 (3/3) — 30-day list, deleted-by + countdown, restore',
+            ),
+            onTap: () {
+              final container = ProviderScope.containerOf(
+                context,
+                listen: false,
+              );
+              final notifier = container.read(expensesProvider.notifier);
+              final id = notifier.addExpense(
+                title: 'Ball purchase',
+                category: ExpenseCategory.ballPurchase,
+                amount: 300,
+                paidBy: const [PaidByEntry(name: 'Kabir Singh', amount: 300)],
+                splitMethod: SplitMethod.equal,
+                splitAmong: equalSplit(300, mockExpenseParticipants()),
+                createdByName: 'Kabir Singh',
+                createdByIsCaptain: true,
+              );
+              notifier.deleteExpense(id, 'Kabir Singh');
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (_) => const RecentlyDeletedScreen(),
                 ),
               );
             },

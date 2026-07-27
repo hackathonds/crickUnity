@@ -234,6 +234,9 @@ class Expense {
   final Map<String, AppExpenseRowState> settlementStates;
   final bool isIncome;
   final List<ExpenseDispute> disputes;
+  final String? recurrenceSeriesId;
+  final DateTime? deletedAt;
+  final String? deletedByName;
 
   const Expense({
     required this.id,
@@ -252,9 +255,13 @@ class Expense {
     this.settlementStates = const {},
     this.isIncome = false,
     this.disputes = const [],
+    this.recurrenceSeriesId,
+    this.deletedAt,
+    this.deletedByName,
   });
 
   bool get hasActiveDispute => disputes.any((d) => !d.resolved);
+  bool get isDeleted => deletedAt != null;
 
   int get splitTotal => splitAmong.fold(0, (sum, s) => sum + s.amount);
   int get splitRemainder => amount - splitTotal;
@@ -279,6 +286,10 @@ class Expense {
     int? amount,
     List<SplitShare>? splitAmong,
     List<ExpenseDispute>? disputes,
+    String? recurrenceSeriesId,
+    DateTime? deletedAt,
+    String? deletedByName,
+    bool clearDeleted = false,
   }) {
     return Expense(
       id: id,
@@ -297,6 +308,11 @@ class Expense {
       settlementStates: settlementStates,
       isIncome: isIncome,
       disputes: disputes ?? this.disputes,
+      recurrenceSeriesId: recurrenceSeriesId ?? this.recurrenceSeriesId,
+      deletedAt: clearDeleted ? null : (deletedAt ?? this.deletedAt),
+      deletedByName: clearDeleted
+          ? null
+          : (deletedByName ?? this.deletedByName),
     );
   }
 }
