@@ -56,7 +56,11 @@ class TreasuryScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final colors = Theme.of(context).extension<AppColors>()!;
-    final expenses = ref.watch(expensesProvider).expenses;
+    final expenses = ref
+        .watch(expensesProvider)
+        .expenses
+        .where((e) => !e.isDeleted)
+        .toList();
     final settlements = ref.watch(settlementsProvider).settlements;
     final collections = ref.watch(collectionsProvider).collections;
     final payouts = ref.watch(walletPayoutsProvider).requests;
@@ -69,8 +73,9 @@ class TreasuryScreen extends ConsumerWidget {
         0;
     final walletExpenses = [
       for (final e in expenses)
-        if (e.paidBy.any((p) => p.name == teamWalletPayerName) ||
-            e.splitAmong.any((s) => s.name == teamWalletPayerName))
+        if (!e.isDeleted &&
+            (e.paidBy.any((p) => p.name == teamWalletPayerName) ||
+                e.splitAmong.any((s) => s.name == teamWalletPayerName)))
           e,
     ];
     final pendingPayouts = payouts.where((p) => !p.completed).toList();
@@ -282,7 +287,7 @@ class TreasuryScreen extends ConsumerWidget {
                 ),
               ),
               child: AppExpenseRow(
-                title: e.title,
+                title: e.recurrenceSeriesId == null ? e.title : '⟳ ${e.title}',
                 contextCaption: expenseCategoryLabels[e.category]!,
                 amount: e.amount,
                 state:
