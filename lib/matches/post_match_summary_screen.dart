@@ -7,6 +7,8 @@ import '../design_system/tokens/app_colors.dart';
 import '../design_system/tokens/app_money_text.dart';
 import '../design_system/tokens/app_spacing.dart';
 import '../design_system/tokens/app_typography.dart';
+import '../teams/peer_rating_models.dart';
+import '../teams/peer_rating_sheet.dart';
 import 'awards_screen.dart';
 import 'ball_timeline_screen.dart';
 import 'insights_models.dart';
@@ -50,12 +52,15 @@ class PostMatchSummaryScreen extends ConsumerWidget {
     final myBatting = state.batters[viewerPlayerName];
     final myBowling = state.bowlers[viewerPlayerName];
 
-    final ratingsWindowOpensAt = state.scorecardPostedAt.add(
-      const Duration(hours: 1),
-    );
-    final ratingsWindowClosesAt = ratingsWindowOpensAt.add(
-      const Duration(hours: 48),
-    );
+    final ratingsWindow = peerRatingWindowFor(state.scorecardPostedAt);
+    final ratingsWindowOpensAt = ratingsWindow.opensAt;
+    final ratingsWindowClosesAt = ratingsWindow.closesAt;
+    final myTeamRoster = state.battingOrder.contains(viewerPlayerName)
+        ? state.battingOrder
+        : state.bowlingRoster;
+    final teammates = myTeamRoster
+        .where((name) => name != viewerPlayerName)
+        .toList();
 
     return Scaffold(
       appBar: AppBar(title: const Text('Match summary')),
@@ -172,13 +177,11 @@ class PostMatchSummaryScreen extends ConsumerWidget {
               key: const ValueKey('ratePlayersButton'),
               variant: AppButtonVariant.secondary,
               label: 'Rate',
-              onPressed: () => ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text(
-                    'Peer ratings (E3-12) isn\'t built yet -- unblocked '
-                    'now that E4-10 has landed.',
-                  ),
-                ),
+              onPressed: () => showPeerRatingSheet(
+                context: context,
+                raterName: viewerPlayerName,
+                teammates: teammates,
+                window: ratingsWindow,
               ),
             ),
           ),

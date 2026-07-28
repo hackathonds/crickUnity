@@ -115,8 +115,11 @@ import '../../teams/selection_board_screen.dart';
 import '../../teams/carpool_screen.dart';
 import '../../teams/duty_roster_screen.dart';
 import '../../teams/kit_inventory_screen.dart';
+import '../../teams/peer_rating_aggregate_screen.dart';
 import '../../teams/recruitment_board_screen.dart';
 import '../../teams/season_summary_models.dart';
+import '../../teams/team_chemistry_models.dart';
+import '../../teams/team_chemistry_screen.dart';
 import '../../teams/season_summary_screen.dart';
 import '../../teams/succession_screen.dart';
 import '../../teams/team_documents_screen.dart';
@@ -1074,6 +1077,76 @@ class DebugMenuScreen extends StatelessWidget {
                 builder: (_) => const RecruitmentBoardScreen(
                   viewerName: 'Karan Bhatt',
                   viewerRole: TeamMemberRole.player,
+                ),
+              ),
+            ),
+          ),
+          ListTile(
+            title: const Text('Peer ratings aggregate (self)'),
+            subtitle: const Text(
+              'E3-12 — pre-threshold state (<3 raters, no average shown)',
+            ),
+            onTap: () => Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (_) => const PeerRatingAggregateScreen(
+                  mode: PeerRatingViewerRole.self,
+                  viewerIsCaptain: false,
+                  selfPlayerName: 'Kabir Singh',
+                ),
+              ),
+            ),
+          ),
+          ListTile(
+            title: const Text('Peer ratings aggregate (Captain)'),
+            subtitle: const Text(
+              "E3-12 — captain's private roster-wide coach's view",
+            ),
+            onTap: () => Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (_) => PeerRatingAggregateScreen(
+                  mode: PeerRatingViewerRole.captain,
+                  viewerIsCaptain: true,
+                  teamRoster: mockRoster().map((m) => m.name).toList(),
+                ),
+              ),
+            ),
+          ),
+          ListTile(
+            title: const Text('Peer ratings aggregate (denied)'),
+            subtitle: const Text(
+              'E3-12 — non-captain requesting the coach\'s view',
+            ),
+            onTap: () => Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (_) => const PeerRatingAggregateScreen(
+                  mode: PeerRatingViewerRole.captain,
+                  viewerIsCaptain: false,
+                ),
+              ),
+            ),
+          ),
+          ListTile(
+            title: const Text('Team chemistry (Captain)'),
+            subtitle: const Text(
+              'E3-12 — composite ring, factor bars, 12-week trend, insight',
+            ),
+            onTap: () => Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (_) => TeamChemistryScreen(
+                  viewerIsCaptain: true,
+                  chemistry: mockTeamChemistry(),
+                ),
+              ),
+            ),
+          ),
+          ListTile(
+            title: const Text('Team chemistry (denied)'),
+            subtitle: const Text('E3-12 — non-captain viewer'),
+            onTap: () => Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (_) => TeamChemistryScreen(
+                  viewerIsCaptain: false,
+                  chemistry: mockTeamChemistry(),
                 ),
               ),
             ),
