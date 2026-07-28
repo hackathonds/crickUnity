@@ -5,6 +5,8 @@ import '../expenses/expenses_provider.dart';
 import '../matches/match_models.dart';
 import '../matches/matches_provider.dart';
 import '../matches/scoring_provider.dart';
+import '../messaging/chat_provider.dart';
+import '../notifications/notification_provider.dart';
 import '../recognition/challenges_provider.dart';
 import '../rewards/luck_provider.dart';
 import '../rewards/rewards_models.dart' show coinsExpiringWithin;
@@ -201,6 +203,20 @@ List<HomeWidgetInstance> computeHomeWidgets(WidgetRef ref) {
     return c.target > 0 && mine.progress / c.target >= 0.8;
   });
 
+  final hasUnreadMessages = ref
+      .watch(chatsProvider)
+      .chats
+      .any((c) => c.unreadCount > 0);
+  final unreadNotificationCount = ref
+      .watch(notificationProvider)
+      .cards
+      .where((c) => !c.read)
+      .length;
+  final hasPendingInvitation = ref
+      .watch(matchesProvider)
+      .matches
+      .any((m) => m.status == MatchStatus.pendingOpponent);
+
   HomeWidgetUrgency urgencyFor(HomeWidgetId id) {
     switch (id) {
       case HomeWidgetId.pendingPayments:
@@ -230,19 +246,30 @@ List<HomeWidgetInstance> computeHomeWidgets(WidgetRef ref) {
             : HomeWidgetUrgency.informational;
       case HomeWidgetId.liveMatches:
         return HomeWidgetUrgency.timeSensitive;
+      case HomeWidgetId.invitations:
+        return hasPendingInvitation
+            ? HomeWidgetUrgency.actionNeeded
+            : HomeWidgetUrgency.informational;
+      case HomeWidgetId.messages:
+        return hasUnreadMessages
+            ? HomeWidgetUrgency.timeSensitive
+            : HomeWidgetUrgency.informational;
       default:
         return HomeWidgetUrgency.informational;
     }
   }
 
-  // PRD §4.19/§4.12/§4.6: payer-only / live-only / unclaimed-only
-  // widgets self-hide when there's nothing to show, same convention
-  // as every other "only when relevant" widget this session.
+  // PRD §4.19/§4.12/§4.6/§4.16/§4.17/§4.18: widgets with nothing
+  // relevant self-hide, same convention as every other "only when
+  // relevant" widget this session.
   final selfHidden = <HomeWidgetId>{
     if (!hasAnyPendingPayment) HomeWidgetId.pendingPayments,
     if (!hasLiveMatch) HomeWidgetId.liveMatches,
     if (!hasUnclaimedRewards) HomeWidgetId.rewards,
     if (myChallenges.isEmpty) HomeWidgetId.challenges,
+    if (!hasUnreadMessages) HomeWidgetId.messages,
+    if (!hasPendingInvitation) HomeWidgetId.invitations,
+    if (unreadNotificationCount < 5) HomeWidgetId.unreadNotifications,
   };
 
   final instances = [
