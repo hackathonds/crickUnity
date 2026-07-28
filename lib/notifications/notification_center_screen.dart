@@ -4,6 +4,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../design_system/tokens/app_colors.dart';
 import '../design_system/tokens/app_spacing.dart';
 import '../design_system/tokens/app_typography.dart';
+import '../expenses/settle_up_screen.dart';
+import '../social/composer_screen.dart' show composerViewerName;
 import 'notification_models.dart';
 import 'notification_provider.dart';
 
@@ -303,6 +305,27 @@ class _NotificationRow extends StatelessWidget {
     NotificationPriority.p3 => colors.textTertiary,
   };
 
+  /// E16-08 (DS §1.3): "Notification taps always deep-link to the
+  /// actionable state, not the parent list (payment reminder -> Settle
+  /// sheet pre-filled, one tap from done)." Every other inline action
+  /// still just marks read (performAction) -- Pay is the concrete proof
+  /// of the rule, wired to the real Settle sheet, rather than a rushed
+  /// pass wiring all ~15 catalog action types to screens that may not
+  /// exist yet.
+  void _handleAction(BuildContext context, NotificationActionType action) {
+    notifier.performAction(card.id, action);
+    if (action == NotificationActionType.pay) {
+      Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (_) => SettleUpScreen(
+            viewerName: composerViewerName,
+            prefilledCounterpartName: card.entityName,
+          ),
+        ),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Dismissible(
@@ -386,8 +409,7 @@ class _NotificationRow extends StatelessWidget {
                         key: ValueKey(
                           'notificationAction_${card.id}_${action.name}',
                         ),
-                        onPressed: () =>
-                            notifier.performAction(card.id, action),
+                        onPressed: () => _handleAction(context, action),
                         child: Text(notificationActionLabels[action]!),
                       ),
                   ],

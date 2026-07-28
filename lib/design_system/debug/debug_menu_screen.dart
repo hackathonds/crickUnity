@@ -145,6 +145,9 @@ import '../../guardian/guardian_view_screen.dart';
 import '../../medical/captain_medical_view_screen.dart';
 import '../../medical/injury_log_screen.dart';
 import '../../medical/medical_card_screen.dart';
+import '../../deeplinks/calendar_sync_screen.dart';
+import '../../deeplinks/deep_link_screen.dart';
+import '../../deeplinks/launcher_shortcuts_screen.dart';
 import '../../sandbox/sandbox_scoring_screen.dart';
 import '../../settings/data_controls_screen.dart';
 import '../../verification/verification_screen.dart';
@@ -694,6 +697,36 @@ class DebugMenuScreen extends StatelessWidget {
             ),
             onTap: () => Navigator.of(context).push(
               MaterialPageRoute(builder: (_) => const SandboxEntryPoint()),
+            ),
+          ),
+          ListTile(
+            title: const Text('Open deep link'),
+            subtitle: const Text(
+              'E16-08 — parses cricunity:// links, ball-level scroll + '
+              'highlight for matches',
+            ),
+            onTap: () => Navigator.of(
+              context,
+            ).push(MaterialPageRoute(builder: (_) => const DeepLinkScreen())),
+          ),
+          ListTile(
+            title: const Text('Launcher shortcuts (demo)'),
+            subtitle: const Text(
+              'E16-08 — Start Scoring / My Next Match / Scan QR / Add Expense',
+            ),
+            onTap: () => Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (_) => const LauncherShortcutsScreen(),
+              ),
+            ),
+          ),
+          ListTile(
+            title: const Text('Calendar sync'),
+            subtitle: const Text(
+              'E16-08 — subscribe explainer + per-category toggles',
+            ),
+            onTap: () => Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => const CalendarSyncScreen()),
             ),
           ),
           ListTile(
