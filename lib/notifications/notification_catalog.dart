@@ -2,25 +2,31 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../expenses/expense_models.dart';
 import '../expenses/expenses_provider.dart';
+import '../expenses/reminders_provider.dart';
 import '../expenses/settlement_models.dart';
 import '../expenses/settlements_provider.dart';
 import '../grounds/booking_models.dart';
 import '../grounds/bookings_provider.dart';
 import '../grounds/ground_models.dart';
 import '../grounds/grounds_provider.dart';
+import '../grounds/reviews_provider.dart';
 import '../matches/match_models.dart';
 import '../matches/matches_provider.dart';
 import '../matches/scoring_provider.dart';
+import '../messaging/chat_provider.dart';
 import '../moderation/moderation_provider.dart';
 import '../moderation/report_models.dart';
+import '../recognition/personal_bests_provider.dart';
 import '../rewards/rewards_models.dart';
 import '../rewards/rewards_provider.dart';
 import '../rewards/streaks_provider.dart';
 import '../social/composer_screen.dart' show composerViewerName;
 import '../teams/announcement_models.dart';
 import '../teams/announcements_provider.dart';
+import '../teams/availability_matrix_models.dart';
 import '../teams/join_request_models.dart';
 import '../teams/join_requests_provider.dart';
+import '../teams/practice_session_provider.dart';
 import '../tournaments/fixture_models.dart';
 import '../tournaments/fixtures_provider.dart';
 import '../tournaments/ledger_provider.dart';
@@ -50,6 +56,11 @@ List<NotificationCard> generateCatalogCards(Ref ref, DateTime now) {
   cards.addAll(_followedGroundCards(ref, now));
   cards.addAll(_rewardsCards(ref, now));
   cards.addAll(_moderationCards(ref, now));
+  cards.addAll(_paymentReminderCards(ref, now));
+  cards.addAll(_practiceReminderCards(ref, now));
+  cards.addAll(_levelUpAndPbCards(ref, now));
+  cards.addAll(_messageCards(ref, now));
+  cards.addAll(_reviewReplyCards(ref, now));
   cards.addAll(_unwiredCatalogRows(now));
   return cards;
 }
@@ -601,18 +612,179 @@ List<NotificationCard> _moderationCards(Ref ref, DateTime now) {
   ];
 }
 
+/// PRD §15 row: "Payment reminder." Distinct from "Your share
+/// finalized" (which fires once, at finalization) -- this is the
+/// ongoing §11.10 cadence (T+3d gentle, T+7d firm, weekly after). Real
+/// read of [expensesProvider]/[remindersProvider]; only fires once the
+/// gentle threshold is reached.
+List<NotificationCard> _paymentReminderCards(Ref ref, DateTime now) {
+  final expenses = ref.read(expensesProvider).expenses;
+  final cards = <NotificationCard>[];
+  for (final e in expenses) {
+    if (e.isDeleted) continue;
+    if (e.approvalState == ExpenseApprovalState.pendingApproval) continue;
+    final net = e.netFor(composerViewerName);
+    if (net >= 0 || !e.splitAmong.any((s) => s.name == composerViewerName)) {
+      continue;
+    }
+    final ageDays = now.difference(e.date).inDays;
+    if (ageDays < 3) continue;
+    cards.add(
+      NotificationCard(
+        id: 'payment-reminder-${e.id}-${ageDays ~/ 7}',
+        tab: NotificationTab.forYou,
+        entityName: _myTeamName,
+        title:
+            '${reminderCopy(amount: -net, contextCaption: e.title)} -- '
+            '${reminderCadenceLabel(ageDays)}',
+        priority: NotificationPriority.p1,
+        channel: NotificationChannel.money,
+        actions: const [
+          NotificationActionType.pay,
+          NotificationActionType.snooze,
+        ],
+        createdAt: e.date,
+        followUpExempt: true,
+      ),
+    );
+  }
+  return cards;
+}
+
+/// PRD §15 row: "Practice reminder." Real read of
+/// [practiceSessionProvider] -- only fires for a roster member who
+/// RSVP'd yes, within the −3h window before the session.
+List<NotificationCard> _practiceReminderCards(Ref ref, DateTime now) {
+  final session = ref.read(practiceSessionProvider).session;
+  if (!session.roster.contains(composerViewerName)) return const [];
+  if (session.rsvps[composerViewerName] != AvailabilityResponse.yes) {
+    return const [];
+  }
+  final untilStart = session.scheduledAt.difference(now);
+  if (untilStart.inMinutes <= 0 || untilStart > const Duration(hours: 3)) {
+    return const [];
+  }
+  return [
+    NotificationCard(
+      id: 'practice-reminder-${session.scheduledAt.millisecondsSinceEpoch}',
+      tab: NotificationTab.forYou,
+      entityName: _myTeamName,
+      title: 'Practice at ${session.venueName} in less than 3h',
+      priority: NotificationPriority.p2,
+      channel: NotificationChannel.team,
+      actions: const [NotificationActionType.checkIn],
+      createdAt: now,
+    ),
+  ];
+}
+
+/// PRD §15 row: "Level up / rank PB." Real reads of
+/// [rewardsProvider]'s ceremony queue (E6-01's genuine level-up
+/// signal, not a re-derived one) and [personalBestsProvider]'s real PB
+/// announcements (E8-04).
+List<NotificationCard> _levelUpAndPbCards(Ref ref, DateTime now) {
+  final cards = <NotificationCard>[];
+  final ceremonies = ref.read(rewardsProvider).ceremonyQueue;
+  for (final c in ceremonies) {
+    if (c.type != CeremonyType.levelUp) continue;
+    cards.add(
+      NotificationCard(
+        id: 'level-up-${c.level}',
+        tab: NotificationTab.forYou,
+        entityName: 'CricUnity Rewards',
+        title: 'Level up! You reached level ${c.level}',
+        priority: NotificationPriority.p2,
+        channel: NotificationChannel.rewards,
+        actions: const [NotificationActionType.share],
+        createdAt: now,
+      ),
+    );
+  }
+  final pbAnnouncements = ref.read(personalBestsProvider).announcements;
+  if (pbAnnouncements.isNotEmpty) {
+    cards.add(
+      NotificationCard(
+        id: 'rank-pb-${pbAnnouncements.length}',
+        tab: NotificationTab.forYou,
+        entityName: 'CricUnity Rewards',
+        title: pbAnnouncements.last,
+        priority: NotificationPriority.p2,
+        channel: NotificationChannel.rewards,
+        actions: const [NotificationActionType.share],
+        createdAt: now,
+      ),
+    );
+  }
+  return cards;
+}
+
+/// PRD §15 row: "Message received." Real read of [chatsProvider] --
+/// this codebase now has a real messaging module (E15-05), closing
+/// what was a genuine gap in E12-05's original pass.
+List<NotificationCard> _messageCards(Ref ref, DateTime now) {
+  final chats = ref.read(chatsProvider).chats;
+  final cards = <NotificationCard>[];
+  for (final chat in chats) {
+    if (chat.unreadCount == 0) continue;
+    final lastFromOther = chat.messages
+        .where((m) => m.senderName != composerViewerName)
+        .lastOrNull;
+    cards.add(
+      NotificationCard(
+        id: 'message-received-${chat.id}-${chat.unreadCount}',
+        tab: NotificationTab.forYou,
+        entityName: chat.name,
+        title: chat.unreadCount > 1
+            ? '${chat.unreadCount} new messages from ${chat.name}'
+            : (lastFromOther?.text ?? 'New message from ${chat.name}'),
+        priority: chat.isMuted
+            ? NotificationPriority.p2
+            : NotificationPriority.p1,
+        channel: NotificationChannel.social,
+        actions: const [NotificationActionType.reply],
+        createdAt: lastFromOther?.timestamp ?? now,
+      ),
+    );
+  }
+  return cards;
+}
+
+/// PRD §15 row: "Review reply." Real read of [reviewsProvider] -- only
+/// fires for the viewer's own reviews that the ground owner has
+/// replied to.
+List<NotificationCard> _reviewReplyCards(Ref ref, DateTime now) {
+  final reviews = ref.read(reviewsProvider).reviews;
+  return [
+    for (final r in reviews)
+      if (r.reviewerName == composerViewerName && r.hasOwnerReply)
+        NotificationCard(
+          id: 'review-reply-${r.id}',
+          tab: NotificationTab.forYou,
+          entityName: r.groundId,
+          title: 'The ground replied to your review: "${r.ownerReplyText}"',
+          priority: NotificationPriority.p3,
+          channel: NotificationChannel.bookings,
+          actions: const [NotificationActionType.view],
+          createdAt: r.ownerReplyAt ?? now,
+        ),
+  ];
+}
+
 /// PRD §15 catalog rows with no real backing data source in this
-/// codebase yet: no "follow a match/player" relationship graph exists
-/// (toss/innings/result live events, wicket/fifty-by-followed-player),
-/// no messaging module exists (message received), no review-reply
-/// notification hook exists on the reviews module, no historical
-/// "old record holder" ledger exists in the recognition module, no
-/// cross-tournament Organizer Score profile aggregates a challenge-
-/// overtaken style event, and no per-profile follower/mention graph is
-/// wired into the feed yet (new follower / mention / comment / props).
+/// codebase: no "follow a match/player" relationship graph exists
+/// anywhere (toss/innings/result live events for followed matches,
+/// wicket/fifty-by-followed-player, new follower/mention/comment/
+/// props), no received-team-invite-offers state exists (distinct from
+/// join requests -- team_invite_provider.dart only tracks the
+/// captain's outgoing link), no historical "old record holder" ledger
+/// exists in the recognition module, and no cross-tournament Organizer
+/// Score profile aggregates a challenge-overtaken style event.
 /// Flagged and mocked here, same convention as every other missing-
 /// backend gap this session, rather than fabricating the underlying
-/// relationship data.
+/// relationship data. (Message received and Review reply, previously
+/// flagged here too, are now genuinely wired above -- E15-05's
+/// messaging module and E9-04's reviews module didn't exist when
+/// E12-05 first wrote this list.)
 List<NotificationCard> _unwiredCatalogRows(DateTime now) {
   return [
     NotificationCard(
