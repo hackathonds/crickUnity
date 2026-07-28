@@ -9,20 +9,25 @@ import 'home_widget_models.dart';
 
 class HomeDashboardState {
   final HomeRolePreset preset;
-  final Set<HomeWidgetId> pinned;
+
+  /// Ordered, not a Set -- PRD §4/DS §7-3: Edit Home's "reorder" drag
+  /// applies to the pinned tier specifically (the only tier with a
+  /// user-controlled order; urgency/recency order the rest
+  /// automatically), so pin position must be preserved.
+  final List<HomeWidgetId> pinned;
   final Set<HomeWidgetId> hidden;
   final Map<HomeWidgetId, DateTime> lastUpdated;
 
   const HomeDashboardState({
     this.preset = HomeRolePreset.playerFirst,
-    this.pinned = const {},
+    this.pinned = const [],
     this.hidden = const {},
     this.lastUpdated = const {},
   });
 
   HomeDashboardState copyWith({
     HomeRolePreset? preset,
-    Set<HomeWidgetId>? pinned,
+    List<HomeWidgetId>? pinned,
     Set<HomeWidgetId>? hidden,
     Map<HomeWidgetId, DateTime>? lastUpdated,
   }) {
@@ -47,7 +52,7 @@ class HomeDashboardNotifier extends Notifier<HomeDashboardState> {
   /// than erroring -- the Edit Home UI (E18-02) is the one responsible
   /// for surfacing the cap to the user.
   void togglePin(HomeWidgetId id) {
-    final current = {...state.pinned};
+    final current = [...state.pinned];
     if (current.remove(id)) {
       state = state.copyWith(pinned: current);
       return;
@@ -61,6 +66,23 @@ class HomeDashboardNotifier extends Notifier<HomeDashboardState> {
     final current = {...state.hidden};
     if (!current.remove(id)) current.add(id);
     state = state.copyWith(hidden: current);
+  }
+
+  /// DS §7-3 (Edit Home): "Full-screen reorder list" -- drag-reorders
+  /// the pinned tier's mutual order. [newIndex] is expected already
+  /// adjusted for the removed item (ReorderableListView.onReorderItem's
+  /// contract), unlike the deprecated onReorder callback.
+  void reorderPinned(int oldIndex, int newIndex) {
+    final current = [...state.pinned];
+    final id = current.removeAt(oldIndex);
+    current.insert(newIndex, id);
+    state = state.copyWith(pinned: current);
+  }
+
+  /// DS §7-3: "Reset-to-default tertiary." Clears every user
+  /// customization back to the role preset's plain order.
+  void resetToDefault() {
+    state = state.copyWith(pinned: const [], hidden: const {});
   }
 
   /// PRD §4: "Pull-to-refresh refreshes all." Touches every widget's

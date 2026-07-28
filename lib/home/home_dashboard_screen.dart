@@ -12,6 +12,7 @@ import '../notifications/notification_center_screen.dart';
 import '../rewards/rewards_provider.dart';
 import '../search/global_search_screen.dart';
 import '../social/composer_screen.dart' show composerViewerName;
+import 'edit_home_screen.dart';
 import 'home_dashboard_provider.dart';
 import 'home_widget_models.dart';
 import 'onboarding_checklist_provider.dart';
@@ -91,6 +92,14 @@ class HomeDashboardScreen extends ConsumerWidget {
                   ),
                 ),
               ),
+              IconButton(
+                key: const ValueKey('editHomeButton'),
+                icon: const Icon(Icons.edit_outlined),
+                tooltip: 'Edit Home',
+                onPressed: () => Navigator.of(context).push(
+                  MaterialPageRoute(builder: (_) => const EditHomeScreen()),
+                ),
+              ),
             ],
           ),
           if (showOnboarding)
@@ -140,52 +149,62 @@ class _HomeWidgetCard extends ConsumerWidget {
     final colors = Theme.of(context).extension<AppColors>()!;
     final notifier = ref.read(homeDashboardProvider.notifier);
 
-    return Container(
+    return GestureDetector(
       key: ValueKey('homeWidgetCard_${instance.id.name}'),
-      padding: const EdgeInsets.all(AppSpacing.md),
-      decoration: BoxDecoration(
-        color: colors.surface,
-        border: Border.all(color: colors.border),
-        borderRadius: BorderRadius.circular(14),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              if (instance.isPinned)
-                Padding(
-                  padding: const EdgeInsets.only(right: AppSpacing.xs),
-                  child: Icon(Icons.push_pin, size: 14, color: colors.primary),
-                ),
-              Expanded(
-                child: Text(
-                  homeWidgetTitles[instance.id]!,
-                  style: AppTypography.title.copyWith(
-                    color: colors.textPrimary,
+      // PRD §4: "Edit Home mode (long-press any widget or via ⋮)."
+      onLongPress: () => Navigator.of(
+        context,
+      ).push(MaterialPageRoute(builder: (_) => const EditHomeScreen())),
+      child: Container(
+        padding: const EdgeInsets.all(AppSpacing.md),
+        decoration: BoxDecoration(
+          color: colors.surface,
+          border: Border.all(color: colors.border),
+          borderRadius: BorderRadius.circular(14),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                if (instance.isPinned)
+                  Padding(
+                    padding: const EdgeInsets.only(right: AppSpacing.xs),
+                    child: Icon(
+                      Icons.push_pin,
+                      size: 14,
+                      color: colors.primary,
+                    ),
+                  ),
+                Expanded(
+                  child: Text(
+                    homeWidgetTitles[instance.id]!,
+                    style: AppTypography.title.copyWith(
+                      color: colors.textPrimary,
+                    ),
                   ),
                 ),
-              ),
-              PopupMenuButton<String>(
-                key: ValueKey('homeWidgetMenu_${instance.id.name}'),
-                icon: const Icon(Icons.more_vert, size: 18),
-                onSelected: (value) {
-                  if (value == 'pin') notifier.togglePin(instance.id);
-                  if (value == 'hide') notifier.toggleHide(instance.id);
-                },
-                itemBuilder: (context) => [
-                  PopupMenuItem(
-                    value: 'pin',
-                    child: Text(instance.isPinned ? 'Unpin' : 'Pin'),
-                  ),
-                  const PopupMenuItem(value: 'hide', child: Text('Hide')),
-                ],
-              ),
-            ],
-          ),
-          const SizedBox(height: AppSpacing.sm),
-          _HomeWidgetBody(id: instance.id),
-        ],
+                PopupMenuButton<String>(
+                  key: ValueKey('homeWidgetMenu_${instance.id.name}'),
+                  icon: const Icon(Icons.more_vert, size: 18),
+                  onSelected: (value) {
+                    if (value == 'pin') notifier.togglePin(instance.id);
+                    if (value == 'hide') notifier.toggleHide(instance.id);
+                  },
+                  itemBuilder: (context) => [
+                    PopupMenuItem(
+                      value: 'pin',
+                      child: Text(instance.isPinned ? 'Unpin' : 'Pin'),
+                    ),
+                    const PopupMenuItem(value: 'hide', child: Text('Hide')),
+                  ],
+                ),
+              ],
+            ),
+            const SizedBox(height: AppSpacing.sm),
+            _HomeWidgetBody(id: instance.id),
+          ],
+        ),
       ),
     );
   }
