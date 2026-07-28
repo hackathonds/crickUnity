@@ -28,11 +28,12 @@ import 'widgets/weather_home_widget.dart';
 /// shows Onboarding-Checklist widget replacing stack until 2 items
 /// done."
 ///
-/// E18-01's own job: the shell (app bar, ordering engine, pin/hide,
-/// pull-refresh, "More for you") -- not each widget's real content.
-/// Quick-action chips are E18-07's story; drag-reorder is E18-02's.
-/// Sits directly inside AppShell's shared Scaffold (no Scaffold of its
-/// own), same convention as TabRootScreen.
+/// E18-01 built the shell (app bar, ordering engine, pin/hide, pull-
+/// refresh, "More for you"); E18-02 added drag-reorder; E18-03/04/05
+/// filled in every widget's real content; E18-07 (this addition) wires
+/// the quick-chips row to real dynamic actions. Sits directly inside
+/// AppShell's shared Scaffold (no Scaffold of its own), same
+/// convention as TabRootScreen.
 class HomeDashboardScreen extends ConsumerWidget {
   const HomeDashboardScreen({super.key});
 
@@ -109,8 +110,22 @@ class HomeDashboardScreen extends ConsumerWidget {
               padding: EdgeInsets.all(AppSpacing.lg),
               sliver: SliverToBoxAdapter(child: OnboardingChecklistWidget()),
             )
-          else
+          else ...[
+            SliverPadding(
+              padding: const EdgeInsets.fromLTRB(
+                AppSpacing.lg,
+                AppSpacing.sm,
+                AppSpacing.lg,
+                0,
+              ),
+              sliver: SliverToBoxAdapter(
+                child: _QuickActionChipsRow(
+                  chips: computeQuickActionChips(ref),
+                ),
+              ),
+            ),
             ..._widgetStackSlivers(context, ref, colors),
+          ],
         ],
       ),
     );
@@ -139,6 +154,27 @@ class HomeDashboardScreen extends ConsumerWidget {
         ),
       ),
     ];
+  }
+}
+
+class _QuickActionChipsRow extends StatelessWidget {
+  final List<QuickActionChip> chips;
+  const _QuickActionChipsRow({required this.chips});
+
+  @override
+  Widget build(BuildContext context) {
+    if (chips.isEmpty) return const SizedBox.shrink();
+    return Wrap(
+      spacing: AppSpacing.sm,
+      children: [
+        for (final chip in chips)
+          ActionChip(
+            key: ValueKey('quickActionChip_${chip.label}'),
+            label: Text(chip.label),
+            onPressed: () => chip.onTap(context),
+          ),
+      ],
+    );
   }
 }
 

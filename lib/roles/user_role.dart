@@ -21,3 +21,24 @@ enum UserRole {
   admin,
   superAdmin,
 }
+
+/// PRD §3.1/§3.6: "account switcher (multi-role identities, e.g.,
+/// 'Deepak – Scorer view')" -- the display label for each held role.
+const Map<UserRole, String> userRoleLabels = {
+  UserRole.player: 'Player',
+  UserRole.captain: 'Captain',
+  UserRole.viceCaptain: 'Vice-Captain',
+  UserRole.manager: 'Manager',
+  UserRole.scorer: 'Scorer',
+  UserRole.umpire: 'Umpire',
+  UserRole.coach: 'Coach',
+  UserRole.teamOwner: 'Team Owner',
+  UserRole.academyOwner: 'Academy Owner',
+  UserRole.groundOwner: 'Ground Owner',
+  UserRole.tournamentOrganizer: 'Organizer',
+  UserRole.clubOwner: 'Club Owner',
+  UserRole.fan: 'Fan',
+  UserRole.sponsor: 'Sponsor',
+  UserRole.admin: 'Admin',
+  UserRole.superAdmin: 'Super Admin',
+};

@@ -1,7 +1,10 @@
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../expenses/expense_models.dart';
 import '../expenses/expenses_provider.dart';
+import '../expenses/settle_up_screen.dart';
+import '../matches/live_match_view_screen.dart';
 import '../matches/match_models.dart';
 import '../matches/matches_provider.dart';
 import '../matches/scoring_provider.dart';
@@ -9,6 +12,7 @@ import '../messaging/chat_provider.dart';
 import '../notifications/notification_provider.dart';
 import '../recognition/challenges_provider.dart';
 import '../rewards/luck_provider.dart';
+import '../teams/availability_matrix_models.dart';
 import 'widgets/weather_home_widget.dart';
 import '../rewards/rewards_models.dart' show coinsExpiringWithin;
 import '../rewards/rewards_provider.dart';
@@ -304,6 +308,114 @@ List<HomeWidgetInstance> computeHomeWidgets(WidgetRef ref) {
     });
 
   return [...pinnedList, ...unpinned];
+}
+
+/// PRD §3.5: "Home header chips (dynamic, max 3): 'Respond: Sunday
+/// match?', 'Pay ₹120 to Arjun', 'Confirm scorecard'." Each chip's
+/// [onTap] performs the real action (or opens the real screen) rather
+/// than being a static label.
+class QuickActionChip {
+  final String label;
+  final void Function(BuildContext context) onTap;
+
+  const QuickActionChip({required this.label, required this.onTap});
+}
+
+List<QuickActionChip> computeQuickActionChips(WidgetRef ref) {
+  final chips = <QuickActionChip>[];
+
+  final needsResponse = ref
+      .watch(matchesProvider)
+      .matches
+      .where(
+        (m) =>
+            m.squadNames.contains(composerViewerName) &&
+            m.availabilityPollSent &&
+            !m.availabilityResponses.containsKey(composerViewerName),
+      )
+      .toList();
+  for (final m in needsResponse.take(1)) {
+    chips.add(
+      QuickActionChip(
+        label: 'Respond: vs ${m.draft.opponentTeamName}?',
+        onTap: (context) => showDialog<void>(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: Text('vs ${m.draft.opponentTeamName}'),
+            content: const Text('Are you available for this match?'),
+            actions: [
+              TextButton(
+                onPressed: () {
+                  ref
+                      .read(matchesProvider.notifier)
+                      .respondAvailability(
+                        m.id,
+                        composerViewerName,
+                        AvailabilityResponse.no,
+                      );
+                  Navigator.of(context).pop();
+                },
+                child: const Text('No'),
+              ),
+              TextButton(
+                onPressed: () {
+                  ref
+                      .read(matchesProvider.notifier)
+                      .respondAvailability(
+                        m.id,
+                        composerViewerName,
+                        AvailabilityResponse.yes,
+                      );
+                  Navigator.of(context).pop();
+                },
+                child: const Text('Yes'),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  final unpaid = ref
+      .watch(expensesProvider)
+      .expenses
+      .where(
+        (e) =>
+            !e.isDeleted &&
+            e.approvalState != ExpenseApprovalState.pendingApproval &&
+            e.netFor(composerViewerName) < 0 &&
+            e.splitAmong.any((s) => s.name == composerViewerName),
+      )
+      .toList();
+  if (unpaid.isNotEmpty) {
+    final amount = -unpaid.first.netFor(composerViewerName);
+    chips.add(
+      QuickActionChip(
+        label: 'Pay ₹$amount for ${unpaid.first.title}',
+        onTap: (context) => Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (_) =>
+                const SettleUpScreen(viewerName: composerViewerName),
+          ),
+        ),
+      ),
+    );
+  }
+
+  final innings = ref.watch(inningsProvider);
+  if (!innings.isFullyConfirmed && innings.deliveries.isNotEmpty) {
+    chips.add(
+      QuickActionChip(
+        label: 'Confirm scorecard',
+        onTap: (context) => Navigator.of(
+          context,
+        ).push(MaterialPageRoute(builder: (_) => const LiveMatchViewScreen())),
+      ),
+    );
+  }
+
+  return chips.take(3).toList();
 }
 
 List<HomeWidgetInstance> computeHiddenHomeWidgets(WidgetRef ref) {

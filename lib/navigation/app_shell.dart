@@ -9,6 +9,9 @@ import '../design_system/tokens/app_colors.dart';
 import '../design_system/tokens/app_motion.dart';
 import '../design_system/tokens/app_spacing.dart';
 import '../design_system/tokens/app_typography.dart';
+import '../roles/active_role_view_provider.dart';
+import '../roles/current_roles_provider.dart';
+import '../roles/user_role.dart';
 import '../widgets/app_drawer.dart';
 import '../widgets/placeholder_screen.dart';
 import 'pinned_live_match_provider.dart';
@@ -64,10 +67,59 @@ class AppShell extends ConsumerWidget {
     );
   }
 
+  /// PRD §3.1/§3.6: "Long-press Profile → account switcher (multi-role
+  /// identities)." Only ever offers roles the account already holds
+  /// (non-negotiable #10) -- never a role picker.
+  void _onLongPressProfile(BuildContext context, WidgetRef ref) {
+    final heldRoles = ref.read(currentRolesProvider);
+    showModalBottomSheet<void>(
+      context: context,
+      builder: (context) => Consumer(
+        builder: (context, ref, _) {
+          final active = ref.watch(activeRoleViewProvider);
+          return SafeArea(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                ListTile(
+                  key: const ValueKey('roleViewOption_player'),
+                  title: const Text('Deepak — Player view'),
+                  trailing: active == null ? const Icon(Icons.check) : null,
+                  onTap: () {
+                    ref.read(activeRoleViewProvider.notifier).setView(null);
+                    Navigator.of(context).pop();
+                  },
+                ),
+                for (final role in heldRoles)
+                  ListTile(
+                    key: ValueKey('roleViewOption_${role.name}'),
+                    title: Text('Deepak — ${userRoleLabels[role]} view'),
+                    trailing: active == role ? const Icon(Icons.check) : null,
+                    onTap: () {
+                      ref.read(activeRoleViewProvider.notifier).setView(role);
+                      Navigator.of(context).pop();
+                    },
+                  ),
+              ],
+            ),
+          );
+        },
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final colors = Theme.of(context).extension<AppColors>()!;
     final badges = ref.watch(tabBadgesProvider);
+    final heldRoles = ref.watch(currentRolesProvider);
+    // PRD §3.1: "Ground Owners see Bookings replacing Community if
+    // they enable 'Business mode' toggle; Fans see Live replacing
+    // Matches."
+    final businessMode =
+        heldRoles.contains(UserRole.groundOwner) &&
+        ref.watch(businessModeProvider);
+    final isFan = heldRoles.contains(UserRole.fan);
 
     return Scaffold(
       drawer: const AppDrawer(),
@@ -94,8 +146,9 @@ class AppShell extends ConsumerWidget {
                 onTap: () => _onTabTapped(context, ref, 0),
               ),
               _NavItem(
-                icon: AppIconId.matches,
-                label: 'Matches',
+                key: const ValueKey('matchesOrLiveTab'),
+                icon: isFan ? AppIconId.live : AppIconId.matches,
+                label: isFan ? 'Live' : 'Matches',
                 active: navigationShell.currentIndex == 1,
                 count: badges.liveMatchCount,
                 onTap: () => _onTabTapped(context, ref, 1),
@@ -103,8 +156,9 @@ class AppShell extends ConsumerWidget {
               ),
               const SizedBox(width: 56),
               _NavItem(
-                icon: AppIconId.people,
-                label: 'Community',
+                key: const ValueKey('communityOrBookingsTab'),
+                icon: businessMode ? AppIconId.pitch : AppIconId.people,
+                label: businessMode ? 'Bookings' : 'Community',
                 active: navigationShell.currentIndex == 2,
                 countLabel: badges.newCommunityPostCount > 0
                     ? formatCommunityBadge(badges.newCommunityPostCount)
@@ -112,11 +166,13 @@ class AppShell extends ConsumerWidget {
                 onTap: () => _onTabTapped(context, ref, 2),
               ),
               _NavItem(
+                key: const ValueKey('profileTab'),
                 icon: AppIconId.avatar,
                 label: 'Profile',
                 active: navigationShell.currentIndex == 3,
                 showDot: badges.profileNeedsAttention,
                 onTap: () => _onTabTapped(context, ref, 3),
+                onLongPress: () => _onLongPressProfile(context, ref),
               ),
             ],
           ),
@@ -137,6 +193,7 @@ class _NavItem extends StatelessWidget {
   final VoidCallback? onLongPress;
 
   const _NavItem({
+    super.key,
     required this.icon,
     required this.label,
     required this.active,

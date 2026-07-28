@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../navigation/pinned_live_match_provider.dart';
 import '../../navigation/tab_badges_provider.dart';
+import '../../roles/active_role_view_provider.dart';
 import '../../roles/current_roles_provider.dart';
 import '../../roles/user_role.dart';
 import '../tokens/app_colors.dart';
@@ -48,6 +49,22 @@ class ShellDebugScreen extends ConsumerWidget {
               onChanged: (_) =>
                   ref.read(currentRolesProvider.notifier).toggle(role),
             ),
+          const Divider(height: AppSpacing.xxl),
+          Text(
+            'Business mode (PRD §3.1)',
+            style: AppTypography.h2.copyWith(color: colors.textPrimary),
+          ),
+          Text(
+            'Only swaps Community -> Bookings when the account also '
+            'holds the Ground Owner role above.',
+            style: AppTypography.caption.copyWith(color: colors.textSecondary),
+          ),
+          SwitchListTile(
+            key: const ValueKey('businessModeToggle'),
+            title: const Text('Business mode enabled'),
+            value: ref.watch(businessModeProvider),
+            onChanged: (_) => ref.read(businessModeProvider.notifier).toggle(),
+          ),
           const Divider(height: AppSpacing.xxl),
           Text(
             'Tab badges',
