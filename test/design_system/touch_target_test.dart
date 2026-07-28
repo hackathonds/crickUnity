@@ -52,14 +52,37 @@ void main() {
     expect(size.width, greaterThanOrEqualTo(44));
   });
 
-  // AppChipActionButton is NOT covered here -- it's a real, documented
-  // ~36px tap target (below the 44px floor), see the finding recorded on
-  // the component itself in app_button.dart. Padding it to 44h during
-  // this audit overflowed several fixed-height chip `Wrap`s elsewhere
-  // (style tag picker sheet, team-home's >4-tab fallback row); fixing it
-  // needs a review of every one of those call sites, not just this
-  // component, so it's left as an open question rather than a change
-  // that trades one defect for several new overflow regressions.
+  testWidgets(
+    'AppChipActionButton -- 36h visual pill, real 44h tap target '
+    '(fixed: this used to be a bare ~36px tap target)',
+    (tester) async {
+      var tapped = false;
+      await tester.pumpWidget(
+        harness(
+          AppChipActionButton(label: 'Yes', onPressed: () => tapped = true),
+        ),
+      );
+
+      // The visual pill legitimately stays DS's specified 36h...
+      final visual = sizeOf(
+        tester,
+        find.byKey(const ValueKey('appChipActionSurface')),
+      );
+      expect(visual.height, 36);
+
+      // ...but the actual tap target is verified by tapping just inside
+      // the 44h zone and outside the old 36h zone (an OverflowBox "paint
+      // bigger without growing layout" trick was tried first and
+      // empirically does not extend hit-testing -- see the component's
+      // own doc comment -- so this only trusts a real registered tap).
+      final center = tester.getCenter(
+        find.byKey(const ValueKey('appChipActionSurface')),
+      );
+      await tester.tapAt(Offset(center.dx, center.dy - 20));
+      await tester.pump();
+      expect(tapped, isTrue);
+    },
+  );
 
   testWidgets('AppFab is a full 56x56 tap target (well above the floor)', (
     tester,

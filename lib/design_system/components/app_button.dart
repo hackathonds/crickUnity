@@ -242,17 +242,16 @@ class AppIconButton extends StatelessWidget {
 /// Inline Yes/No decision chip — DS §3.1's Chip-action row (36h, r-full,
 /// `surfaceAlt` fill). `selected` tints the border/text `primary`.
 ///
-/// E16-10 finding (not fixed here): this 36h pill sits directly inside
-/// [AppPressable], whose hit area is exactly its child's rendered size --
-/// a real ~36px tap target, under non-negotiable #5's 44px floor. Padding
-/// the tap target to 44h (tried during this audit) pushes every fixed-
-/// height `Wrap` of chips over budget -- `style_tag_picker_sheet.dart`'s
-/// sheet, `team_home_screen.dart`'s >4-tab fallback row, and others all
-/// overflowed once each chip grew 8px taller. Fixing this properly means
-/// reviewing every one of those call sites' layouts, not just this
-/// component -- flagged as an open question for a dedicated follow-up
-/// story rather than a change that trades one defect for several new
-/// overflow regressions.
+/// Non-negotiable #5 (44px touch targets): the 36h visual pill used to
+/// sit directly inside [AppPressable], whose hit area was exactly its
+/// child's rendered size -- a real ~36px tap target. An `OverflowBox`
+/// trick (paint a bigger area without growing the layout footprint) was
+/// tried first and empirically does *not* work: Flutter's hit-testing
+/// only routes into a subtree for points within its ancestors' own
+/// reported sizes, so anything outside the declared 36h box was
+/// unreachable no matter how it painted. The tap target genuinely has to
+/// be 44h -- every consuming layout was reviewed and fixed to
+/// accommodate the extra 8px (see git history for the specific fixes).
 class AppChipActionButton extends StatelessWidget {
   final String label;
   final VoidCallback? onPressed;
@@ -278,21 +277,26 @@ class AppChipActionButton extends StatelessWidget {
       tintColor: colors.primary,
       cornerRadius: AppRadius.full,
       focusRingColor: colors.primary,
-      child: Container(
-        key: const ValueKey('appChipActionSurface'),
-        height: 36,
-        padding: const EdgeInsets.symmetric(horizontal: 14),
-        decoration: BoxDecoration(
-          color: colors.surfaceAlt,
-          borderRadius: AppRadius.fullRadius,
-          border: selected
-              ? Border.all(color: colors.primary, width: 1.5)
-              : null,
-        ),
+      child: SizedBox(
+        height: 44,
         child: Center(
-          child: Text(
-            label,
-            style: AppTypography.button.copyWith(color: foreground),
+          child: Container(
+            key: const ValueKey('appChipActionSurface'),
+            height: 36,
+            padding: const EdgeInsets.symmetric(horizontal: 14),
+            decoration: BoxDecoration(
+              color: colors.surfaceAlt,
+              borderRadius: AppRadius.fullRadius,
+              border: selected
+                  ? Border.all(color: colors.primary, width: 1.5)
+                  : null,
+            ),
+            child: Center(
+              child: Text(
+                label,
+                style: AppTypography.button.copyWith(color: foreground),
+              ),
+            ),
           ),
         ),
       ),

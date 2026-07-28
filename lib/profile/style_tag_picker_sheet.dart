@@ -56,6 +56,10 @@ class _StyleTagPickerContentState extends State<_StyleTagPickerContent> {
     final colors = Theme.of(context).extension<AppColors>()!;
     final atLimit = _selected.length >= maxStyleTags;
 
+    // Non-negotiable #5 grew AppChipActionButton's tap target from 36h to
+    // 44h -- this sheet's Wrap of 8 chips now needs more room than a
+    // fixed-height bottom sheet reliably gives it, so the tag list
+    // scrolls independently of the sticky title/Done button.
     return Padding(
       padding: const EdgeInsets.all(AppSpacing.lg),
       child: Column(
@@ -67,22 +71,26 @@ class _StyleTagPickerContentState extends State<_StyleTagPickerContent> {
             style: AppTypography.title.copyWith(color: colors.textPrimary),
           ),
           const SizedBox(height: AppSpacing.lg),
-          Wrap(
-            spacing: AppSpacing.sm,
-            runSpacing: AppSpacing.sm,
-            children: [
-              for (final tag in availableStyleTags)
-                AppChipActionButton(
-                  key: ValueKey('styleTagOption_$tag'),
-                  label: tag,
-                  selected: _selected.contains(tag),
-                  onPressed: (!_selected.contains(tag) && atLimit)
-                      ? null
-                      : () => setState(() {
-                          if (!_selected.remove(tag)) _selected.add(tag);
-                        }),
-                ),
-            ],
+          Flexible(
+            child: SingleChildScrollView(
+              child: Wrap(
+                spacing: AppSpacing.sm,
+                runSpacing: AppSpacing.sm,
+                children: [
+                  for (final tag in availableStyleTags)
+                    AppChipActionButton(
+                      key: ValueKey('styleTagOption_$tag'),
+                      label: tag,
+                      selected: _selected.contains(tag),
+                      onPressed: (!_selected.contains(tag) && atLimit)
+                          ? null
+                          : () => setState(() {
+                              if (!_selected.remove(tag)) _selected.add(tag);
+                            }),
+                    ),
+                ],
+              ),
+            ),
           ),
           const SizedBox(height: AppSpacing.lg),
           AppButton(
