@@ -17,6 +17,7 @@ import 'onboarding_checklist_provider.dart';
 import 'onboarding_checklist_widget.dart';
 import 'widgets/cricket_home_widgets.dart';
 import 'widgets/money_rewards_home_widgets.dart';
+import 'widgets/social_progress_home_widgets.dart';
 
 /// DS §7.1 screen 1 (Home): "app bar: avatar 32 · greeting/context
 /// title · search · bell · coin chip → quick-chips row (max 3 urgent)
@@ -210,11 +211,13 @@ class _HomeWidgetCard extends ConsumerWidget {
   }
 }
 
-/// E18-03 added the cricket batch
-/// ([upcomingMatches]/[todaysActivity]/[liveMatches]/[nearbyMatches]);
-/// E18-04 (this story) adds the money & rewards batch
-/// ([expenseSummary]/[pendingPayments]/[coinBalance]/[rewards]/
-/// [challenges]). The social & progress batch is E18-05's job.
+/// E18-03 added the cricket batch, E18-04 the money & rewards batch,
+/// E18-05 (this story) the social & progress batch. Every
+/// [HomeWidgetId] now has real content; a few (Suggested Friends/
+/// Teams, Followers delta) render an honest "no backing data source
+/// exists" message rather than fabricated suggestions, since this
+/// codebase has no mutual-connections/recruitment-matching graph or
+/// follower-count history to derive them from.
 class _HomeWidgetBody extends ConsumerWidget {
   final HomeWidgetId id;
   const _HomeWidgetBody({required this.id});
@@ -241,10 +244,37 @@ class _HomeWidgetBody extends ConsumerWidget {
         return const LiveMatchesBody();
       case HomeWidgetId.nearbyMatches:
         return const NearbyMatchesBody();
-      default:
+      case HomeWidgetId.recentPerformance:
+        return const RecentPerformanceBody();
+      case HomeWidgetId.suggestedFriends:
+        return const SuggestedFriendsBody();
+      case HomeWidgetId.suggestedTeams:
+        return const SuggestedTeamsBody();
+      case HomeWidgetId.suggestedGrounds:
+        return const SuggestedGroundsBody();
+      case HomeWidgetId.recentPosts:
+        return const RecentPostsBody();
+      case HomeWidgetId.recentAchievements:
+        return const RecentAchievementsBody();
+      case HomeWidgetId.followers:
+        return const FollowersDeltaBody();
+      case HomeWidgetId.messages:
+        return const MessagesPreviewBody();
+      case HomeWidgetId.invitations:
+        return const InvitationsBody();
+      case HomeWidgetId.unreadNotifications:
+        return const UnreadNotificationsBody();
+      case HomeWidgetId.playerRanking:
+        return const PlayerRankingBody();
+      case HomeWidgetId.fitnessProgress:
+        return const FitnessProgressBody();
+      case HomeWidgetId.attendance:
+        return const AttendanceBody();
+      case HomeWidgetId.tournamentUpdates:
+        return const TournamentUpdatesBody();
+      case HomeWidgetId.weather:
         return Text(
-          '${homeWidgetTitles[id]} content is a later story (E18-03/'
-          '04/05).',
+          'Weather is a later story (E18-06).',
           style: AppTypography.caption.copyWith(color: colors.textTertiary),
         );
     }
