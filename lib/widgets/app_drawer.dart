@@ -30,6 +30,7 @@ import '../roles/console_registry.dart';
 import '../roles/current_roles_provider.dart';
 import '../settings/localization_settings_screen.dart';
 import '../sponsors/sponsor_console_screen.dart';
+import '../teams/my_teams_screen.dart';
 import '../tournaments/organizer_console_screen.dart';
 import 'unbuilt_destination_screen.dart';
 
@@ -42,10 +43,11 @@ import 'unbuilt_destination_screen.dart';
 /// whether a real destination existed -- by the time this was revisited,
 /// most of them did (each built by its own later story). This wires
 /// every genuine destination for real; the handful with no real screen
-/// anywhere in the app (My Teams/Matches/Tournaments/Bookings/Academy
+/// anywhere in the app (My Matches/Tournaments/Bookings/Academy
 /// aggregator lists, a standalone Captain Console, Help, Report a
 /// Problem) get an honest, explained gap notice instead of a silent
-/// mis-navigation or a bare "placeholder content" line.
+/// mis-navigation or a bare "placeholder content" line. My Teams was
+/// one of these too, until its own switcher screen was built.
 ///
 /// No session/auth concept exists anywhere in this app (confirmed by a
 /// full-codebase search) -- "Log out" cannot actually reset anything, so
@@ -274,14 +276,7 @@ class _DrawerSection extends StatelessWidget {
         );
 
       case 'My Teams':
-        return const UnbuiltDestinationScreen(
-          title: 'My Teams',
-          explanation:
-              "PRD §3.3 names a My Teams switcher (team cards you're a "
-              'member of, with an open/create action), but no aggregator '
-              "screen was ever built -- only a single team's own home "
-              'page exists once you already know which team.',
-        );
+        return const MyTeamsScreen();
       case 'My Matches':
         return const UnbuiltDestinationScreen(
           title: 'My Matches',

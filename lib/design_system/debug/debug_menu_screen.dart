@@ -119,6 +119,7 @@ import '../../teams/carpool_screen.dart';
 import '../../teams/duty_roster_screen.dart';
 import '../../teams/kit_inventory_screen.dart';
 import '../../teams/peer_rating_aggregate_screen.dart';
+import '../../teams/my_teams_screen.dart';
 import '../../teams/recruitment_board_screen.dart';
 import '../../teams/season_summary_models.dart';
 import '../../teams/team_chemistry_models.dart';
@@ -1103,6 +1104,16 @@ class DebugMenuScreen extends StatelessWidget {
                   viewerRole: TeamMemberRole.captain,
                 ),
               ),
+            ),
+          ),
+          ListTile(
+            title: const Text('My Teams (switcher)'),
+            subtitle: const Text(
+              'Drawer fix follow-up — role chips, default/mute/leave, '
+              'empty create/join CTAs',
+            ),
+            onTap: () => Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => const MyTeamsScreen()),
             ),
           ),
           ListTile(

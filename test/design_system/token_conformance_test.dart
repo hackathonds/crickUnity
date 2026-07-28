@@ -23,7 +23,10 @@ void main() {
       // Where raw hex is the token/theme system itself defining the
       // palette -- this is what "tokens only" means callers should
       // build from, not a violation of the rule.
-      const allowedDirs = ['lib/design_system/tokens', 'lib/design_system/theme'];
+      const allowedDirs = [
+        'lib/design_system/tokens',
+        'lib/design_system/theme',
+      ];
 
       // file path (posix-style, relative to repo root) -> justification.
       // Each entry was individually read and confirmed to be user/entity
@@ -37,6 +40,9 @@ void main() {
             'user-chosen team branding color, not component styling',
         'lib/teams/create_team_provider.dart':
             'user-chosen team branding color, not component styling',
+        'lib/teams/my_teams_models.dart':
+            'mock per-team branding colors for the My Teams switcher, same '
+            'category as team_models.dart above',
         // Profile cover color is the same kind of per-user customizable
         // value (PRD §5.1's cover), not a design-system token.
         'lib/profile/profile_models.dart':
