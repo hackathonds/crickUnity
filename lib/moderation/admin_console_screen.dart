@@ -5,6 +5,7 @@ import '../design_system/theme/app_theme.dart';
 import '../design_system/tokens/app_colors.dart';
 import '../design_system/tokens/app_spacing.dart';
 import '../design_system/tokens/app_typography.dart';
+import '../matches/matches_provider.dart';
 import 'moderation_provider.dart';
 import 'report_models.dart';
 
@@ -35,13 +36,35 @@ class AdminConsoleScreen extends StatelessWidget {
   }
 }
 
-class _AdminConsoleBody extends ConsumerWidget {
+class _AdminConsoleBody extends ConsumerStatefulWidget {
   final bool isSuperAdmin;
 
   const _AdminConsoleBody({required this.isSuperAdmin});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<_AdminConsoleBody> createState() => _AdminConsoleBodyState();
+}
+
+class _AdminConsoleBodyState extends ConsumerState<_AdminConsoleBody> {
+  @override
+  void initState() {
+    super.initState();
+    // Same "sweep on read" idiom as my_rewards_screen.dart's
+    // sweepExpiredVouchers -- a mutating notifier call is unsafe
+    // directly inside build(), so it runs once after the first frame
+    // instead.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        ref
+            .read(moderationProvider.notifier)
+            .sweepLineupAnomalies(ref.read(matchesProvider).matches);
+      }
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final isSuperAdmin = widget.isSuperAdmin;
     final colors = Theme.of(context).extension<AppColors>()!;
     final state = ref.watch(moderationProvider);
     final pending = state.reports

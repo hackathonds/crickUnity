@@ -368,3 +368,73 @@ class MatchRecord {
     );
   }
 }
+
+/// PRD §13: "Anti-fraud gate: ... anomaly checks (same 4 players
+/// 'playing' daily) flag to review." PRD names the example but no exact
+/// algorithm -- a flagged judgment call, same convention as
+/// `registration_models.dart`'s `duplicatePlayersAcross`: the same exact
+/// squad (>= [minSquadSize] players) appearing in completed matches on
+/// [dayThreshold]+ distinct calendar days within a trailing
+/// [windowDays]-day window is the "playing daily" pattern PRD's example
+/// describes.
+class LineupAnomaly {
+  final List<String> squad;
+  final int distinctDays;
+  final DateTime mostRecentMatchDate;
+
+  const LineupAnomaly({
+    required this.squad,
+    required this.distinctDays,
+    required this.mostRecentMatchDate,
+  });
+}
+
+List<LineupAnomaly> detectDailyLineupAnomalies(
+  List<MatchRecord> matches, {
+  DateTime Function() now = DateTime.now,
+  int dayThreshold = 3,
+  int windowDays = 7,
+  int minSquadSize = 4,
+}) {
+  final nowValue = now();
+  final cutoff = nowValue.subtract(Duration(days: windowDays));
+  final completed = matches.where(
+    (m) =>
+        m.status == MatchStatus.accepted &&
+        m.draft.dateTime.isBefore(nowValue) &&
+        m.draft.dateTime.isAfter(cutoff) &&
+        m.squadNames.length >= minSquadSize,
+  );
+
+  final bySquad = <String, List<MatchRecord>>{};
+  for (final m in completed) {
+    final key = (List<String>.from(m.squadNames)..sort()).join('|');
+    (bySquad[key] ??= []).add(m);
+  }
+
+  final anomalies = <LineupAnomaly>[];
+  for (final entry in bySquad.entries) {
+    final distinctDays = entry.value
+        .map(
+          (m) => DateTime(
+            m.draft.dateTime.year,
+            m.draft.dateTime.month,
+            m.draft.dateTime.day,
+          ),
+        )
+        .toSet()
+        .length;
+    if (distinctDays < dayThreshold) continue;
+    final mostRecent = entry.value
+        .map((m) => m.draft.dateTime)
+        .reduce((a, b) => a.isAfter(b) ? a : b);
+    anomalies.add(
+      LineupAnomaly(
+        squad: List<String>.from(entry.value.first.squadNames)..sort(),
+        distinctDays: distinctDays,
+        mostRecentMatchDate: mostRecent,
+      ),
+    );
+  }
+  return anomalies;
+}
