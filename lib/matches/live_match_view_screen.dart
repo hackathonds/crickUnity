@@ -57,7 +57,16 @@ class LiveMatchViewScreen extends ConsumerStatefulWidget {
   /// action this session).
   final bool isScorer;
 
-  const LiveMatchViewScreen({super.key, this.isScorer = false});
+  /// E16-08 (DS §1.3): "link to ball 14.3 opens Scorecard scrolled +
+  /// highlighted." Set from a resolved deep link to scroll the
+  /// Commentary tab to and highlight this ball on open.
+  final int? highlightBallIndex;
+
+  const LiveMatchViewScreen({
+    super.key,
+    this.isScorer = false,
+    this.highlightBallIndex,
+  });
 
   @override
   ConsumerState<LiveMatchViewScreen> createState() =>
@@ -142,7 +151,10 @@ class _LiveMatchViewScreenState extends ConsumerState<LiveMatchViewScreen>
               controller: _tabController,
               children: [
                 const _WatchTab(),
-                _CommentaryTab(isScorer: widget.isScorer),
+                _CommentaryTab(
+                  isScorer: widget.isScorer,
+                  highlightBallIndex: widget.highlightBallIndex,
+                ),
                 const ScorecardBody(),
                 const _ChartsTab(),
                 const GalleryBody(viewerName: 'Spectator', isCaptain: false),
@@ -275,8 +287,9 @@ class _WatchTab extends ConsumerWidget {
 
 class _CommentaryTab extends ConsumerStatefulWidget {
   final bool isScorer;
+  final int? highlightBallIndex;
 
-  const _CommentaryTab({required this.isScorer});
+  const _CommentaryTab({required this.isScorer, this.highlightBallIndex});
 
   @override
   ConsumerState<_CommentaryTab> createState() => _CommentaryTabState();
@@ -284,12 +297,25 @@ class _CommentaryTab extends ConsumerStatefulWidget {
 
 class _CommentaryTabState extends ConsumerState<_CommentaryTab> {
   final _scrollController = ScrollController();
+  final _highlightKey = GlobalKey();
   bool _showJumpToLive = false;
 
   @override
   void initState() {
     super.initState();
     _scrollController.addListener(_onScroll);
+    if (widget.highlightBallIndex != null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        final context = _highlightKey.currentContext;
+        if (context != null) {
+          Scrollable.ensureVisible(
+            context,
+            duration: const Duration(milliseconds: 240),
+            alignment: 0.3,
+          );
+        }
+      });
+    }
   }
 
   @override
@@ -376,13 +402,23 @@ class _CommentaryTabState extends ConsumerState<_CommentaryTab> {
                   children: [
                     Expanded(
                       child: Container(
-                        key: keyMoments.contains(i)
-                            ? ValueKey('keyMomentEntry_$i')
-                            : null,
-                        padding: keyMoments.contains(i)
+                        key: i == widget.highlightBallIndex
+                            ? _highlightKey
+                            : (keyMoments.contains(i)
+                                  ? ValueKey('keyMomentEntry_$i')
+                                  : null),
+                        padding:
+                            i == widget.highlightBallIndex ||
+                                keyMoments.contains(i)
                             ? const EdgeInsets.all(AppSpacing.sm)
                             : EdgeInsets.zero,
-                        decoration: keyMoments.contains(i)
+                        decoration: i == widget.highlightBallIndex
+                            ? BoxDecoration(
+                                color: colors.primary.withValues(alpha: 0.12),
+                                borderRadius: BorderRadius.circular(10),
+                                border: Border.all(color: colors.primary),
+                              )
+                            : keyMoments.contains(i)
                             ? BoxDecoration(
                                 color: colors.coin.withValues(alpha: 0.1),
                                 borderRadius: BorderRadius.circular(10),
