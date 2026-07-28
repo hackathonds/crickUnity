@@ -17,6 +17,7 @@ import 'home_dashboard_provider.dart';
 import 'home_widget_models.dart';
 import 'onboarding_checklist_provider.dart';
 import 'onboarding_checklist_widget.dart';
+import 'widgets/cricket_home_widgets.dart';
 
 /// DS §7.1 screen 1 (Home): "app bar: avatar 32 · greeting/context
 /// title · search · bell · coin chip → quick-chips row (max 3 urgent)
@@ -210,10 +211,10 @@ class _HomeWidgetCard extends ConsumerWidget {
   }
 }
 
-/// Only [HomeWidgetId.pendingPayments] and [HomeWidgetId.coinBalance]
-/// read real state (enough to make urgency reordering genuinely
-/// demonstrable, E18-01's own AC) -- every other id's real content is
-/// E18-03/04/05's job.
+/// E18-01 wired [HomeWidgetId.pendingPayments]/[coinBalance] to real
+/// state; E18-03 (this story) adds the cricket batch --
+/// [upcomingMatches]/[todaysActivity]/[liveMatches]/[nearbyMatches].
+/// The remaining widgets' real content is E18-04/05's job.
 class _HomeWidgetBody extends ConsumerWidget {
   final HomeWidgetId id;
   const _HomeWidgetBody({required this.id});
@@ -246,6 +247,14 @@ class _HomeWidgetBody extends ConsumerWidget {
           '${rewards.coinBalance} coins',
           style: AppTypography.stat.copyWith(color: colors.coin),
         );
+      case HomeWidgetId.upcomingMatches:
+        return const UpcomingMatchesBody();
+      case HomeWidgetId.todaysActivity:
+        return const TodaysActivityBody();
+      case HomeWidgetId.liveMatches:
+        return const LiveMatchesBody();
+      case HomeWidgetId.nearbyMatches:
+        return const NearbyMatchesBody();
       default:
         return Text(
           '${homeWidgetTitles[id]} content is a later story (E18-03/'
