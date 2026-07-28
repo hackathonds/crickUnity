@@ -22,19 +22,28 @@ class CeremonySuppressionScope extends ConsumerStatefulWidget {
 
 class _CeremonySuppressionScopeState
     extends ConsumerState<CeremonySuppressionScope> {
+  // Captured once, rather than re-reading `ref` from `dispose()` --
+  // Riverpod's ConsumerStatefulElement already considers itself disposed
+  // by the time a StatefulWidget's own `dispose()` body runs, so
+  // `ref.read` there throws "Cannot use ref after the widget was
+  // disposed." The notifier instance itself outlives this widget (it
+  // lives in the ProviderContainer), so holding it is safe.
+  RewardsNotifier? _notifier;
+
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
-        ref.read(rewardsProvider.notifier).setSuppressCeremonies(true);
+        _notifier = ref.read(rewardsProvider.notifier);
+        _notifier!.setSuppressCeremonies(true);
       }
     });
   }
 
   @override
   void dispose() {
-    ref.read(rewardsProvider.notifier).setSuppressCeremonies(false);
+    _notifier?.setSuppressCeremonies(false);
     super.dispose();
   }
 

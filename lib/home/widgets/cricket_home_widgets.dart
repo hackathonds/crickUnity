@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../design_system/tokens/app_colors.dart';
@@ -141,31 +142,60 @@ class _UpcomingMatchRow extends ConsumerWidget {
               children: [
                 OutlinedButton(
                   key: ValueKey('upcomingRsvpYes_${match.id}'),
-                  onPressed: () => ref
-                      .read(matchesProvider.notifier)
-                      .respondAvailability(
-                        match.id,
-                        composerViewerName,
-                        AvailabilityResponse.yes,
-                      ),
+                  onPressed: () => _respondWithUndo(
+                    context,
+                    ref,
+                    matchId: match.id,
+                    response: AvailabilityResponse.yes,
+                    confirmMessage: "Marked available -- you're in.",
+                  ),
                   child: const Text('Yes'),
                 ),
                 const SizedBox(width: AppSpacing.sm),
                 OutlinedButton(
                   key: ValueKey('upcomingRsvpNo_${match.id}'),
-                  onPressed: () => ref
-                      .read(matchesProvider.notifier)
-                      .respondAvailability(
-                        match.id,
-                        composerViewerName,
-                        AvailabilityResponse.no,
-                      ),
+                  onPressed: () => _respondWithUndo(
+                    context,
+                    ref,
+                    matchId: match.id,
+                    response: AvailabilityResponse.no,
+                    confirmMessage: 'Marked unavailable.',
+                  ),
                   child: const Text('No'),
                 ),
               ],
             ),
           ],
         ],
+      ),
+    );
+  }
+
+  /// DS §1.5: "Home widget chip -> confirm haptic (undo snackbar)" -- the
+  /// tap itself stays a single action (budget of 2 total from the Home
+  /// widget entry point), with the confirm/undo as feedback layered on
+  /// top, not an extra required tap.
+  void _respondWithUndo(
+    BuildContext context,
+    WidgetRef ref, {
+    required String matchId,
+    required AvailabilityResponse response,
+    required String confirmMessage,
+  }) {
+    HapticFeedback.selectionClick();
+    ref
+        .read(matchesProvider.notifier)
+        .respondAvailability(matchId, composerViewerName, response);
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        key: const ValueKey('rsvpConfirmSnackbar'),
+        content: Text(confirmMessage),
+        action: SnackBarAction(
+          label: 'Undo',
+          onPressed: () => ref
+              .read(matchesProvider.notifier)
+              .clearAvailabilityResponse(matchId, composerViewerName),
+        ),
       ),
     );
   }

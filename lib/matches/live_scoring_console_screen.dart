@@ -140,12 +140,16 @@ class LiveScoringConsoleScreen extends ConsumerWidget {
                         ),
                       ),
                       const SizedBox(width: AppSpacing.sm),
-                      Padding(
-                        padding: const EdgeInsets.only(bottom: AppSpacing.xs),
-                        child: Text(
-                          '(${state.completedOvers}.${state.legalBallsThisOver} ov)',
-                          style: AppTypography.body.copyWith(
-                            color: colors.textSecondary,
+                      Flexible(
+                        child: Padding(
+                          padding: const EdgeInsets.only(bottom: AppSpacing.xs),
+                          child: Text(
+                            '(${state.completedOvers}.${state.legalBallsThisOver} ov)',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: AppTypography.body.copyWith(
+                              color: colors.textSecondary,
+                            ),
                           ),
                         ),
                       ),

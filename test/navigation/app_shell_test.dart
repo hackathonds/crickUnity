@@ -1,5 +1,6 @@
 import 'package:cricunity/design_system/components/app_button.dart';
 import 'package:cricunity/main.dart';
+import 'package:cricunity/matches/live_match_view_screen.dart';
 import 'package:cricunity/navigation/app_router.dart';
 import 'package:cricunity/navigation/pinned_live_match_provider.dart';
 import 'package:cricunity/navigation/push_depth_tracker.dart';
@@ -135,7 +136,9 @@ void main() {
     await tester.longPress(find.byKey(const ValueKey('bottomNavItem-Matches')));
     await tester.pumpAndSettle();
 
-    expect(find.text('Live: Titans vs Strikers'), findsOneWidget);
+    // E17-03: now lands on the real Live Match View (E4-11's screen now
+    // exists), not a bare placeholder.
+    expect(find.byType(LiveMatchViewScreen), findsOneWidget);
   });
 
   testWidgets(

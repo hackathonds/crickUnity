@@ -7,6 +7,8 @@ import '../design_system/tokens/app_colors.dart';
 import '../design_system/tokens/app_money_text.dart';
 import '../design_system/tokens/app_spacing.dart';
 import '../design_system/tokens/app_typography.dart';
+import '../social/feed_models.dart';
+import '../social/feed_provider.dart';
 import '../teams/peer_rating_models.dart';
 import '../teams/peer_rating_sheet.dart';
 import 'awards_screen.dart';
@@ -106,18 +108,9 @@ class PostMatchSummaryScreen extends ConsumerWidget {
                           '${myBowling.ballsThisOver}-'
                           '${myBowling.runsConceded}-${myBowling.wickets}',
                   ].join(' · '),
-            trailing: AppButton(
-              key: const ValueKey('sharePerformanceButton'),
-              variant: AppButtonVariant.secondary,
-              label: 'Share',
-              onPressed: () {
-                Clipboard.setData(
-                  ClipboardData(text: '$viewerPlayerName -- $resultText'),
-                );
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Performance card copied')),
-                );
-              },
+            trailing: _SharePerformanceButton(
+              viewerPlayerName: viewerPlayerName,
+              resultText: resultText,
             ),
           ),
           // 4. XP/coins earned strip.
@@ -218,6 +211,77 @@ class PostMatchSummaryScreen extends ConsumerWidget {
         ],
       ),
     );
+  }
+}
+
+/// DS §1.5 "Post match performance card": budget 2, "Share -> Post."
+/// Share only ever copied the card to the clipboard with no second step
+/// -- this makes the second tap real: posting to the feed via the same
+/// [FeedNotifier.addPost] hook E17-01's Match Ripple already uses for
+/// the match-summary post.
+class _SharePerformanceButton extends ConsumerStatefulWidget {
+  final String viewerPlayerName;
+  final String resultText;
+
+  const _SharePerformanceButton({
+    required this.viewerPlayerName,
+    required this.resultText,
+  });
+
+  @override
+  ConsumerState<_SharePerformanceButton> createState() =>
+      _SharePerformanceButtonState();
+}
+
+class _SharePerformanceButtonState
+    extends ConsumerState<_SharePerformanceButton> {
+  bool _shared = false;
+  bool _posted = false;
+
+  @override
+  Widget build(BuildContext context) {
+    if (_posted) {
+      return const Icon(Icons.check_circle_outline, size: 20);
+    }
+    return AppButton(
+      key: ValueKey(_shared ? 'postPerformanceButton' : 'sharePerformanceButton'),
+      variant: _shared ? AppButtonVariant.primary : AppButtonVariant.secondary,
+      label: _shared ? 'Post' : 'Share',
+      onPressed: _shared ? _post : _share,
+    );
+  }
+
+  void _share() {
+    Clipboard.setData(
+      ClipboardData(
+        text: '${widget.viewerPlayerName} -- ${widget.resultText}',
+      ),
+    );
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(const SnackBar(content: Text('Performance card copied')));
+    setState(() => _shared = true);
+  }
+
+  void _post() {
+    ref
+        .read(feedProvider.notifier)
+        .addPost(
+          FeedPost(
+            id: 'post-perf-${DateTime.now().microsecondsSinceEpoch}',
+            authorName: widget.viewerPlayerName,
+            contentText: '${widget.viewerPlayerName} -- ${widget.resultText}',
+            timestamp: DateTime.now(),
+            isFollowed: true,
+            relationshipScore: 1.0,
+            cricketRelevanceScore: 1.0,
+            audience: PostAudience.public,
+          ),
+        );
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(const SnackBar(content: Text('Posted to your feed')));
+    setState(() => _posted = true);
   }
 }
 
