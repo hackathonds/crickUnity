@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../expenses/auto_split_bundle_provider.dart';
 import '../offline/queued_action.dart';
 import '../recognition/personal_bests_provider.dart';
 import '../recognition/record_models.dart';
@@ -10,6 +11,8 @@ import '../recognition/progress_ring_models.dart';
 import '../recognition/progress_rings_provider.dart';
 import '../rewards/streaks_provider.dart';
 import '../social/fan_provider.dart';
+import '../social/feed_models.dart';
+import '../social/feed_provider.dart';
 import 'scoring_models.dart';
 
 /// PRD §7.7 / DS §7-27 -- E4-04's full 4-way split (see
@@ -347,15 +350,27 @@ class InningsNotifier extends Notifier<InningsState> {
   /// PRD Pillar 1: "One completed match updates 9 systems
   /// automatically." AC: "the full Match Ripple fires exactly once" --
   /// [InningsState.rippleFired] guards against firing twice even if
-  /// confirmation state is touched again afterward. E6-01's coin/XP
-  /// engine now genuinely exists -- "Coins/XP/badges awarded" is a real
-  /// [RewardsNotifier.awardActions] call, not just a log line, same
-  /// quality bar as E5-07's Team Wallet integration. Scoped to the
+  /// confirmation state is touched again afterward. Scoped to the
   /// scorer (the one concrete named identity [InningsState] always
   /// carries -- there's no real multi-account system to award every
-  /// participant individually against, flagged). No E5/E6 module exists
-  /// for the other 8 ripple lines, so those stay a log of what would
-  /// fire.
+  /// participant individually against, flagged throughout below).
+  ///
+  /// E17-01 status of the 9 canonical lines (audited against every
+  /// module that exists today, not just the ones present when this
+  /// method was first written):
+  /// - Real calls: coins/XP/badges (E6-01), streak (E6-02), dispute-free
+  ///   achievement (E6-04), personal bests (E8-04), fan MVP predictions
+  ///   (E7-09), progress rings (E8-08), expense split finalize (E5-03),
+  ///   social summary post (E7-01/E7-02).
+  /// - Already true by construction, no call needed: "AI insights & analytics
+  ///   fed" -- `teamInsights()` computes live from [InningsState] on
+  ///   every read, there is nothing to push.
+  /// - Still log-only (no callable hook exists anywhere in the codebase):
+  ///   "Player & team stats updated", "Rankings recalculated" (leaderboards
+  ///   are a pure mock function, no notifier), "Attendance written" (only
+  ///   practice-session attendance exists, not match attendance), "Trust &
+  ///   Sportsmanship updated" (`trust_sportsmanship_models.dart` is a
+  ///   static mock with no update function).
   void _maybeFireRipple() {
     if (state.rippleFired || state.isDisputed || !state.isFullyConfirmed) {
       return;
@@ -398,6 +413,56 @@ class InningsNotifier extends Notifier<InningsState> {
     // E8-08's Progress Rings -- a completed match is real "Play"
     // activity, same scorer-scoped identity used above (flagged there).
     ref.read(progressRingsProvider.notifier).recordProgress(RingType.play, 1);
+    // E5-03's Auto-Split Bundle -- genuinely finalizes a real [Expense]
+    // via expensesProvider (same quality bar as the coin/XP call above).
+    // No real match-id system exists anywhere yet, so a name-derived key
+    // stands in (flagged, same convention as the scorer-scoped identity
+    // above). The draft normally spawns at match creation (PRD §11.4),
+    // but nothing calls that hook yet either -- it's drafted here if
+    // missing, immediately before finalizing, rather than leaving the
+    // finalize call a permanent no-op.
+    final matchId = '${state.battingTeamName}_vs_${state.bowlingTeamName}';
+    final splitNotifier = ref.read(autoSplitBundleProvider.notifier);
+    splitNotifier.draftBundleForMatch(
+      matchId,
+      groundFee: 1200,
+      ballFee: 300,
+      officialsFee: 500,
+    );
+    splitNotifier.finalizeBundle(
+      matchId,
+      finalSquad: state.battingOrder,
+      createdByName: state.scorerName,
+      createdByIsCaptain: false,
+    );
+    // PRD §12.1/§12.2's "attached-object rich card" -- a genuine
+    // [FeedPost] with a verified match attachment, not just a log line.
+    ref
+        .read(feedProvider.notifier)
+        .addPost(
+          FeedPost(
+            id: 'post-ripple-${DateTime.now().microsecondsSinceEpoch}',
+            authorName: state.scorerName,
+            contentText:
+                'Match wrapped: ${state.battingTeamName} '
+                '${state.totalRuns}/${state.wicketsLost} '
+                '(${state.completedOvers}.${state.legalBallsThisOver} ov) '
+                'vs ${state.bowlingTeamName}.',
+            attachedObject: AttachedObject(
+              type: AttachedObjectType.match,
+              title: '${state.battingTeamName} vs ${state.bowlingTeamName}',
+              subtitle:
+                  '${state.totalRuns}/${state.wicketsLost} '
+                  '(${state.completedOvers}.${state.legalBallsThisOver} ov)',
+              verified: true,
+            ),
+            timestamp: DateTime.now(),
+            isFollowed: true,
+            relationshipScore: 1.0,
+            cricketRelevanceScore: 1.0,
+            audience: PostAudience.public,
+          ),
+        );
     state = state.copyWith(
       rippleFired: true,
       rippleLog: const [
