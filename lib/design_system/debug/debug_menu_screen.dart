@@ -158,6 +158,7 @@ import '../../deeplinks/deep_link_screen.dart';
 import '../../deeplinks/launcher_shortcuts_screen.dart';
 import '../../sandbox/sandbox_scoring_screen.dart';
 import '../../settings/data_controls_screen.dart';
+import '../../settings/localization_settings_screen.dart';
 import '../../settings/wearable_glances_screen.dart';
 import '../../verification/verification_screen.dart';
 import '../../marketplace/shops_directory_screen.dart';
@@ -706,6 +707,18 @@ class DebugMenuScreen extends StatelessWidget {
             ),
             onTap: () => Navigator.of(context).push(
               MaterialPageRoute(builder: (_) => const WearableGlancesScreen()),
+            ),
+          ),
+          ListTile(
+            title: const Text('Language'),
+            subtitle: const Text(
+              'E16-10 — no PRD/DS grounding exists; open-question notice, '
+              'not a guessed language picker',
+            ),
+            onTap: () => Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (_) => const LocalizationSettingsScreen(),
+              ),
             ),
           ),
           ListTile(
