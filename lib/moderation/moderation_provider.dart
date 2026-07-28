@@ -52,6 +52,7 @@ class ModerationNotifier extends Notifier<ModerationState> {
     bool hasEvidence = false,
     bool anonymous = false,
     required String reporterName,
+    String? reportedExcerpt,
     DateTime Function() now = DateTime.now,
   }) {
     final existingIndex = state.reports.indexWhere(
@@ -85,6 +86,7 @@ class ModerationNotifier extends Notifier<ModerationState> {
           anonymous: anonymous,
           reporterName: reporterName,
           createdAt: now(),
+          reportedExcerpt: reportedExcerpt,
         ),
       ],
     );

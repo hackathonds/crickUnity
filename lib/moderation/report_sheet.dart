@@ -18,6 +18,7 @@ void showReportSheet(
   required String targetLabel,
   String? targetUserName,
   required String reporterName,
+  String? reportedExcerpt,
 }) {
   showModalBottomSheet<void>(
     context: context,
@@ -27,6 +28,7 @@ void showReportSheet(
       targetLabel: targetLabel,
       targetUserName: targetUserName,
       reporterName: reporterName,
+      reportedExcerpt: reportedExcerpt,
     ),
   );
 }
@@ -36,12 +38,14 @@ class _ReportSheetContent extends ConsumerStatefulWidget {
   final String targetLabel;
   final String? targetUserName;
   final String reporterName;
+  final String? reportedExcerpt;
 
   const _ReportSheetContent({
     required this.targetType,
     required this.targetLabel,
     required this.targetUserName,
     required this.reporterName,
+    required this.reportedExcerpt,
   });
 
   @override
@@ -142,6 +146,7 @@ class _ReportSheetContentState extends ConsumerState<_ReportSheetContent> {
                           hasEvidence: _hasEvidence,
                           anonymous: _anonymous,
                           reporterName: widget.reporterName,
+                          reportedExcerpt: widget.reportedExcerpt,
                         );
                     Navigator.of(context).pop();
                     ScaffoldMessenger.of(context).showSnackBar(

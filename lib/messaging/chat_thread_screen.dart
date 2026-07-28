@@ -5,6 +5,7 @@ import '../design_system/tokens/app_colors.dart';
 import '../design_system/tokens/app_spacing.dart';
 import '../design_system/tokens/app_typography.dart';
 import '../expenses/expenses_provider.dart';
+import '../moderation/report_sheet.dart';
 import '../social/feed_models.dart' show AttachedObject, AttachedObjectType;
 import 'chat_models.dart';
 import 'chat_provider.dart';
@@ -363,6 +364,7 @@ class _ChatThreadScreenState extends ConsumerState<ChatThreadScreen> {
                     key: ValueKey('chatMessage_${message.id}'),
                     message: message,
                     isMine: message.senderName == messengerViewerName,
+                    chatName: chat.name,
                     receiptsEnabled: chatsState.receiptsEnabled,
                     replyToText: message.replyToMessageId == null
                         ? null
@@ -448,6 +450,7 @@ class _ChatThreadScreenState extends ConsumerState<ChatThreadScreen> {
 class _MessageBubble extends ConsumerWidget {
   final ChatMessage message;
   final bool isMine;
+  final String chatName;
   final bool receiptsEnabled;
   final String? replyToText;
   final VoidCallback onReply;
@@ -458,6 +461,7 @@ class _MessageBubble extends ConsumerWidget {
     super.key,
     required this.message,
     required this.isMine,
+    required this.chatName,
     required this.receiptsEnabled,
     required this.replyToText,
     required this.onReply,
@@ -646,8 +650,46 @@ class _MessageBubble extends ConsumerWidget {
               onForward();
             },
           ),
+          if (!isMine)
+            ListTile(
+              key: const ValueKey('reportMessageAction'),
+              leading: const Icon(Icons.flag_outlined),
+              title: const Text('Report message'),
+              onTap: () {
+                Navigator.of(context).pop();
+                showReportSheet(
+                  context,
+                  targetType: 'message',
+                  targetLabel: 'Message in $chatName',
+                  targetUserName: message.senderName,
+                  reporterName: messengerViewerName,
+                  reportedExcerpt: _excerptFor(message),
+                );
+              },
+            ),
         ],
       ),
     );
   }
+
+  /// PRD §2.16: "cannot access private messages except reported
+  /// threads (reported excerpt only)." This excerpt is the only
+  /// content of the thread a report ever carries into the Admin
+  /// console -- no full-thread reference is stored on [Report].
+  String _excerptFor(ChatMessage message) {
+    final text = message.text;
+    if (text == null || text.isEmpty) return '[${_kindLabel(message)}]';
+    return text.length > 140 ? '${text.substring(0, 140)}...' : text;
+  }
+
+  String _kindLabel(ChatMessage message) => switch (message.type) {
+    MessageType.voice => 'Voice note',
+    MessageType.sticker => 'Sticker',
+    MessageType.gif => 'GIF',
+    MessageType.image => 'Image',
+    MessageType.video => 'Video',
+    MessageType.poll => 'Poll',
+    MessageType.objectCard => 'Card',
+    _ => 'Message',
+  };
 }

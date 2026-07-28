@@ -734,10 +734,23 @@ class DebugMenuScreen extends StatelessWidget {
             title: const Text('Admin console'),
             subtitle: const Text(
               'E16-11 — queue rows, evidence preview, action sheet '
-              '(reason codes mandatory), audit log, SLA chips, Theme-5',
+              '(reason codes mandatory), reported-excerpt-only message '
+              'view, SLA chips, Theme-5',
             ),
             onTap: () => Navigator.of(context).push(
               MaterialPageRoute(builder: (_) => const AdminConsoleScreen()),
+            ),
+          ),
+          ListTile(
+            title: const Text('Admin console — Super Admin view'),
+            subtitle: const Text(
+              'E16-11 addendum — audit log visible to Super Admin only '
+              '(PRD §2.16)',
+            ),
+            onTap: () => Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (_) => const AdminConsoleScreen(isSuperAdmin: true),
+              ),
             ),
           ),
           ListTile(

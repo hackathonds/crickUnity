@@ -17,20 +17,28 @@ import 'report_models.dart';
 /// moderator-facing console that file's own doc comment flagged as
 /// missing ("real review requires a moderator role/queue this session
 /// hasn't built").
+///
+/// [isSuperAdmin] backs PRD §2.16's restriction that admin actions are
+/// "logged and visible to Super Admin" -- the audit log is only
+/// reachable from that role's view of this same console, not Admin's.
 class AdminConsoleScreen extends StatelessWidget {
-  const AdminConsoleScreen({super.key});
+  final bool isSuperAdmin;
+
+  const AdminConsoleScreen({super.key, this.isSuperAdmin = false});
 
   @override
   Widget build(BuildContext context) {
     return Theme(
       data: AppTheme.themes[AppThemeId.theme5]!,
-      child: const _AdminConsoleBody(),
+      child: _AdminConsoleBody(isSuperAdmin: isSuperAdmin),
     );
   }
 }
 
 class _AdminConsoleBody extends ConsumerWidget {
-  const _AdminConsoleBody();
+  final bool isSuperAdmin;
+
+  const _AdminConsoleBody({required this.isSuperAdmin});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -42,16 +50,19 @@ class _AdminConsoleBody extends ConsumerWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Admin console'),
+        title: Text(
+          isSuperAdmin ? 'Admin console — Super Admin' : 'Admin console',
+        ),
         actions: [
-          IconButton(
-            key: const ValueKey('auditLogButton'),
-            icon: const Icon(Icons.history),
-            tooltip: 'Audit log',
-            onPressed: () => Navigator.of(
-              context,
-            ).push(MaterialPageRoute(builder: (_) => const _AuditLogScreen())),
-          ),
+          if (isSuperAdmin)
+            IconButton(
+              key: const ValueKey('auditLogButton'),
+              icon: const Icon(Icons.history),
+              tooltip: 'Audit log',
+              onPressed: () => Navigator.of(context).push(
+                MaterialPageRoute(builder: (_) => const _AuditLogScreen()),
+              ),
+            ),
         ],
       ),
       body: pending.isEmpty
@@ -148,6 +159,38 @@ class _QueueRow extends ConsumerWidget {
               ],
             ],
           ),
+          if (report.targetType == 'message' &&
+              report.reportedExcerpt != null) ...[
+            const SizedBox(height: AppSpacing.sm),
+            Container(
+              key: const ValueKey('reportedExcerptCard'),
+              padding: const EdgeInsets.all(AppSpacing.sm),
+              decoration: BoxDecoration(
+                color: colors.surfaceAlt,
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: colors.border),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    '"${report.reportedExcerpt}"',
+                    style: AppTypography.body.copyWith(
+                      color: colors.textPrimary,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    'Reported excerpt only -- full message thread is not '
+                    'accessible (PRD §2.16).',
+                    style: AppTypography.caption.copyWith(
+                      color: colors.textTertiary,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
           const SizedBox(height: AppSpacing.sm),
           OutlinedButton(
             key: ValueKey('reviewButton_${report.id}'),
