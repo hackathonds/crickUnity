@@ -97,6 +97,7 @@ import '../../profile/achievements_wall_screen.dart';
 import '../../profile/activity_calendar_models.dart';
 import '../../profile/activity_calendar_screen.dart';
 import '../../profile/edit_profile_screen.dart';
+import '../../profile/followers_list_screen.dart';
 import '../../profile/free_agent_screen.dart';
 import '../../profile/profile_models.dart';
 import '../../teams/create_team_flow.dart';
@@ -845,6 +846,15 @@ class DebugMenuScreen extends StatelessWidget {
             ),
             onTap: () => Navigator.of(context).push(
               MaterialPageRoute(builder: (_) => const EditProfileScreen()),
+            ),
+          ),
+          ListTile(
+            title: const Text('Followers & Following'),
+            subtitle: const Text(
+              'E16-02 — mutual chips, restrict/remove (followers), unfollow',
+            ),
+            onTap: () => Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => const FollowersListScreen()),
             ),
           ),
           ListTile(
