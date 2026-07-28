@@ -132,6 +132,17 @@ class _QueueRow extends ConsumerWidget {
             '${report.mergedCount > 1 ? ' (${report.mergedCount} reports)' : ''}',
             style: AppTypography.caption.copyWith(color: colors.textSecondary),
           ),
+          if (report.targetUserName != null) ...[
+            const SizedBox(height: 2),
+            Text(
+              key: ValueKey('ladderPreview_${report.id}'),
+              '${report.targetUserName}: ${_strikesFor(ref, report.targetUserName!)} '
+              'strike${_strikesFor(ref, report.targetUserName!) == 1 ? '' : 's'} so '
+              'far -- taking action here escalates to '
+              '"${offenderStageFor(_strikesFor(ref, report.targetUserName!) + 1)}".',
+              style: AppTypography.caption.copyWith(color: colors.textTertiary),
+            ),
+          ],
           Row(
             children: [
               Icon(
@@ -201,6 +212,9 @@ class _QueueRow extends ConsumerWidget {
       ),
     );
   }
+
+  int _strikesFor(WidgetRef ref, String name) =>
+      ref.watch(moderationProvider).offenderStrikes[name] ?? 0;
 
   void _showActionSheet(BuildContext context, WidgetRef ref) {
     String? selectedReason;
@@ -355,7 +369,8 @@ class _AuditLogScreen extends ConsumerWidget {
                         ),
                         Text(
                           '${entry.actionTaken ? 'Action taken' : 'No action'} '
-                          '-- ${entry.reasonCode}',
+                          '-- ${entry.reasonCode}'
+                          '${entry.ladderStageApplied != null ? ' -- ladder: ${entry.ladderStageApplied}' : ''}',
                           style: AppTypography.caption.copyWith(
                             color: colors.textSecondary,
                           ),

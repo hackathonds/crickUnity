@@ -56,6 +56,14 @@ class Report {
   final DateTime createdAt;
   final String? reportedExcerpt;
 
+  /// The repeat-offender ladder stage ([offenderStageFor]) this
+  /// specific resolution moved [targetUserName] to -- baked in at
+  /// resolution time rather than recomputed from the live
+  /// `offenderStrikes` total, since that total keeps changing as later
+  /// reports resolve and would misrepresent what this report's own
+  /// action actually was.
+  final String? ladderStageApplied;
+
   const Report({
     required this.id,
     required this.targetType,
@@ -70,9 +78,14 @@ class Report {
     this.mergedCount = 1,
     required this.createdAt,
     this.reportedExcerpt,
+    this.ladderStageApplied,
   });
 
-  Report copyWith({ReportStatus? status, int? mergedCount}) {
+  Report copyWith({
+    ReportStatus? status,
+    int? mergedCount,
+    String? ladderStageApplied,
+  }) {
     return Report(
       id: id,
       targetType: targetType,
@@ -87,6 +100,7 @@ class Report {
       mergedCount: mergedCount ?? this.mergedCount,
       createdAt: createdAt,
       reportedExcerpt: reportedExcerpt,
+      ladderStageApplied: ladderStageApplied ?? this.ladderStageApplied,
     );
   }
 }
@@ -124,12 +138,19 @@ class AuditLogEntry {
   final String reasonCode;
   final DateTime decidedAt;
 
+  /// Mirrors [Report.ladderStageApplied] -- PRD §2.16: admin actions
+  /// are "logged and visible to Super Admin," and the ladder stage
+  /// reached is the one piece of that action Super Admin most needs to
+  /// see (whether this decision was a first warning or an escalation).
+  final String? ladderStageApplied;
+
   const AuditLogEntry({
     required this.reportId,
     required this.targetLabel,
     required this.actionTaken,
     required this.reasonCode,
     required this.decidedAt,
+    this.ladderStageApplied,
   });
 }
 

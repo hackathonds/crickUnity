@@ -99,6 +99,19 @@ class ModerationNotifier extends Notifier<ModerationState> {
   /// own debug control predates that console and has no reason-code UI,
   /// so [reasonCode] stays optional here with a generic fallback rather
   /// than breaking that call site.
+  /// PRD: "repeat-offender ladder: warn -> mute 24h -> suspend 7d ->
+  /// ban (each with notice + appeal)." [offenderStageFor] existed
+  /// (report_models.dart) but nothing ever called it -- this is that
+  /// call: every actioned report against a named user now advances
+  /// their strike count and bakes the resulting ladder stage into both
+  /// the report (surfaced to the reported user as a real notice, see
+  /// notification_catalog.dart's `_moderationCards`) and the audit log
+  /// (surfaced to Super Admin). The "appeal" half of the PRD line has
+  /// no real dispute-review backend anywhere in this app (same flagged
+  /// gap `band_breakdown_screen.dart` already names for the Trust/
+  /// Sportsmanship score's own appeal link) -- the notice's Dispute
+  /// action marks read like every other non-Pay notification action in
+  /// this app rather than claiming a review flow that doesn't exist.
   void resolveReport(
     String reportId, {
     required bool actionTaken,
@@ -109,11 +122,22 @@ class ModerationNotifier extends Notifier<ModerationState> {
     final index = state.reports.indexWhere((r) => r.id == reportId);
     if (index < 0) return;
     final report = state.reports[index];
+
+    String? ladderStage;
+    var strikes = state.offenderStrikes;
+    if (actionTaken && report.targetUserName != null) {
+      final name = report.targetUserName!;
+      final newStrikeCount = (strikes[name] ?? 0) + 1;
+      strikes = {...strikes, name: newStrikeCount};
+      ladderStage = offenderStageFor(newStrikeCount);
+    }
+
     final updated = [...state.reports];
     updated[index] = report.copyWith(
       status: actionTaken
           ? ReportStatus.reviewedActionTaken
           : ReportStatus.reviewedNoAction,
+      ladderStageApplied: ladderStage,
     );
     final resolvedReasonCode =
         reasonCode ??
@@ -122,6 +146,7 @@ class ModerationNotifier extends Notifier<ModerationState> {
             : adminActionReasonCodes[2]);
     state = state.copyWith(
       reports: updated,
+      offenderStrikes: strikes,
       auditLog: [
         AuditLogEntry(
           reportId: reportId,
@@ -129,20 +154,11 @@ class ModerationNotifier extends Notifier<ModerationState> {
           actionTaken: actionTaken,
           reasonCode: resolvedReasonCode,
           decidedAt: now(),
+          ladderStageApplied: ladderStage,
         ),
         ...state.auditLog,
       ],
     );
-
-    if (actionTaken && report.targetUserName != null) {
-      final name = report.targetUserName!;
-      state = state.copyWith(
-        offenderStrikes: {
-          ...state.offenderStrikes,
-          name: (state.offenderStrikes[name] ?? 0) + 1,
-        },
-      );
-    }
   }
 
   /// PRD: "Blocking: blocker & blocked become invisible to each other
