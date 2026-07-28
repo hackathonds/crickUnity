@@ -9,6 +9,7 @@ import '../messaging/chat_provider.dart';
 import '../notifications/notification_provider.dart';
 import '../recognition/challenges_provider.dart';
 import '../rewards/luck_provider.dart';
+import 'widgets/weather_home_widget.dart';
 import '../rewards/rewards_models.dart' show coinsExpiringWithin;
 import '../rewards/rewards_provider.dart';
 import '../social/composer_screen.dart' show composerViewerName;
@@ -217,6 +218,10 @@ List<HomeWidgetInstance> computeHomeWidgets(WidgetRef ref) {
       .matches
       .any((m) => m.status == MatchStatus.pendingOpponent);
 
+  final hasSevereWeather = myMatches.any(
+    (m) => forecastFor(m.draft.groundName, m.draft.dateTime).isSevere,
+  );
+
   HomeWidgetUrgency urgencyFor(HomeWidgetId id) {
     switch (id) {
       case HomeWidgetId.pendingPayments:
@@ -253,6 +258,10 @@ List<HomeWidgetInstance> computeHomeWidgets(WidgetRef ref) {
       case HomeWidgetId.messages:
         return hasUnreadMessages
             ? HomeWidgetUrgency.timeSensitive
+            : HomeWidgetUrgency.informational;
+      case HomeWidgetId.weather:
+        return hasSevereWeather
+            ? HomeWidgetUrgency.actionNeeded
             : HomeWidgetUrgency.informational;
       default:
         return HomeWidgetUrgency.informational;
