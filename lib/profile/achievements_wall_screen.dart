@@ -72,11 +72,18 @@ class _AchievementsWallScreenState extends State<AchievementsWallScreen> {
                       // 3-column split on a wide/tablet viewport would
                       // stretch each cell far beyond the tile's own 88px
                       // art, leaving the tile stranded off-center.
+                      //
+                      // childAspectRatio < 1 (taller than wide) so a
+                      // square 112-wide cell still has room for a tiered
+                      // badge's +16 tier-ribbon row below the 88px tile --
+                      // a square aspect ratio overflowed by exactly that
+                      // much for every tiered badge.
                       gridDelegate:
                           const SliverGridDelegateWithMaxCrossAxisExtent(
                             maxCrossAxisExtent: 112,
                             mainAxisSpacing: AppSpacing.lg,
                             crossAxisSpacing: AppSpacing.sm,
+                            childAspectRatio: 88 / 104,
                           ),
                       itemCount: filtered.length,
                       itemBuilder: (context, index) {

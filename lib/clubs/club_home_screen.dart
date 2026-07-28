@@ -448,10 +448,13 @@ class _MemberRow extends ConsumerWidget {
               children: [
                 Row(
                   children: [
-                    Text(
-                      member.name,
-                      style: AppTypography.body.copyWith(
-                        color: colors.textPrimary,
+                    Flexible(
+                      child: Text(
+                        member.name,
+                        overflow: TextOverflow.ellipsis,
+                        style: AppTypography.body.copyWith(
+                          color: colors.textPrimary,
+                        ),
                       ),
                     ),
                     const SizedBox(width: AppSpacing.xs),
