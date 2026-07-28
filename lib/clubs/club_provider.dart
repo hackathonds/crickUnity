@@ -53,6 +53,9 @@ class ClubNotifier extends Notifier<ClubState> {
       name: 'City Cricket Club',
       ownerName: 'Deepak Sharma',
       linkedTeamNames: ['Strikers CC', 'Riverside Warriors'],
+      // Riverside Warriors is left pending -- demonstrates both the
+      // accepted and not-yet-accepted link states (AC amendment #2).
+      ownerAcceptedTeamNames: {'Strikers CC'},
       upcomingEventsCount: 1,
       pendingJoinRequests: 2,
       treasuryBalance: 5000,
@@ -203,6 +206,33 @@ class ClubNotifier extends Notifier<ClubState> {
           amount: amount,
         ),
       ],
+    );
+  }
+
+  /// AC amendment #2 (PRD §9): "linking requires that team Owner's
+  /// acceptance." Called from the team-owner side (not modeled as a
+  /// separate account/notification flow -- same flagged convention as
+  /// every other cross-party acceptance this session).
+  void acceptLink(String teamName) {
+    state = state.copyWith(
+      club: state.club.copyWith(
+        ownerAcceptedTeamNames: {
+          ...state.club.ownerAcceptedTeamNames,
+          teamName,
+        },
+      ),
+    );
+  }
+
+  void declineLink(String teamName) {
+    state = state.copyWith(
+      club: state.club.copyWith(
+        linkedTeamNames: state.club.linkedTeamNames
+            .where((n) => n != teamName)
+            .toList(),
+        ownerAcceptedTeamNames: {...state.club.ownerAcceptedTeamNames}
+          ..remove(teamName),
+      ),
     );
   }
 

@@ -166,6 +166,13 @@ class Club {
   /// confirmation)."
   final int treasuryBalance;
 
+  /// AC amendment #2 (PRD §9): "linking requires that team Owner's
+  /// acceptance; club-branded surfaces on linked teams" -- a team in
+  /// [linkedTeamNames] but not in this set is a pending link: it shows
+  /// up in the club's own Teams list, but the team's public page
+  /// renders no club branding until its owner accepts.
+  final Set<String> ownerAcceptedTeamNames;
+
   const Club({
     required this.id,
     required this.name,
@@ -174,17 +181,24 @@ class Club {
     this.upcomingEventsCount = 0,
     this.pendingJoinRequests = 0,
     this.treasuryBalance = 0,
+    this.ownerAcceptedTeamNames = const {},
   });
 
-  Club copyWith({int? treasuryBalance}) {
+  Club copyWith({
+    int? treasuryBalance,
+    Set<String>? ownerAcceptedTeamNames,
+    List<String>? linkedTeamNames,
+  }) {
     return Club(
       id: id,
       name: name,
       ownerName: ownerName,
-      linkedTeamNames: linkedTeamNames,
+      linkedTeamNames: linkedTeamNames ?? this.linkedTeamNames,
       upcomingEventsCount: upcomingEventsCount,
       pendingJoinRequests: pendingJoinRequests,
       treasuryBalance: treasuryBalance ?? this.treasuryBalance,
+      ownerAcceptedTeamNames:
+          ownerAcceptedTeamNames ?? this.ownerAcceptedTeamNames,
     );
   }
 }

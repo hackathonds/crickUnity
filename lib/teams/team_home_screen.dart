@@ -1,9 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../clubs/club_provider.dart';
+import '../design_system/components/app_button.dart';
 import '../design_system/tokens/app_colors.dart';
 import '../design_system/tokens/app_motion.dart';
 import '../design_system/tokens/app_spacing.dart';
 import '../design_system/tokens/app_typography.dart';
+import 'team_followers_provider.dart';
 import 'team_models.dart';
 import 'team_viewer_role.dart';
 
@@ -31,7 +35,7 @@ class _TeamTab {
 /// same "stand-in for a later screen" pattern used throughout E1/E2.
 /// This story's own job is the header, the *tab structure itself*, its
 /// role-gating, and the archived banner.
-class TeamHomeScreen extends StatefulWidget {
+class TeamHomeScreen extends ConsumerStatefulWidget {
   final Team team;
   final TeamViewerRole viewerRole;
 
@@ -42,10 +46,10 @@ class TeamHomeScreen extends StatefulWidget {
   });
 
   @override
-  State<TeamHomeScreen> createState() => _TeamHomeScreenState();
+  ConsumerState<TeamHomeScreen> createState() => _TeamHomeScreenState();
 }
 
-class _TeamHomeScreenState extends State<TeamHomeScreen> {
+class _TeamHomeScreenState extends ConsumerState<TeamHomeScreen> {
   int _tabIndex = 0;
 
   List<_TeamTab> _visibleTabs() {
@@ -104,6 +108,17 @@ class _TeamHomeScreenState extends State<TeamHomeScreen> {
     final team = widget.team;
     final tabs = _visibleTabs();
     final tabIndex = _tabIndex >= tabs.length ? 0 : _tabIndex;
+    final club = ref.watch(clubProvider).club;
+    // AC amendment #2 (PRD §9): club branding only after the team
+    // owner has accepted the link -- a merely-linked-but-pending team
+    // renders with no club branding at all.
+    final showClubBranding =
+        club.linkedTeamNames.contains(team.name) &&
+        club.ownerAcceptedTeamNames.contains(team.name);
+    final isFollowing = ref
+        .watch(teamFollowersProvider)
+        .followedTeamNames
+        .contains(team.name);
 
     return Scaffold(
       appBar: AppBar(title: Text(team.name)),
@@ -127,6 +142,22 @@ class _TeamHomeScreenState extends State<TeamHomeScreen> {
                       ),
                     ),
                   ),
+                if (showClubBranding)
+                  Container(
+                    key: const ValueKey('clubBrandingBanner'),
+                    width: double.infinity,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: AppSpacing.md,
+                      vertical: AppSpacing.xs,
+                    ),
+                    color: colors.primary.withValues(alpha: 0.08),
+                    child: Text(
+                      'Part of ${club.name}',
+                      style: AppTypography.caption.copyWith(
+                        color: colors.primary,
+                      ),
+                    ),
+                  ),
                 _TeamCoverAndCrest(team: team),
                 const SizedBox(height: AppSpacing.xxl),
                 Padding(
@@ -147,6 +178,20 @@ class _TeamHomeScreenState extends State<TeamHomeScreen> {
                           color: colors.textSecondary,
                         ),
                       ),
+                      const Spacer(),
+                      // AC amendment #1 (PRD §6.20): "Followers get
+                      // match alerts + follow CTA on public team page."
+                      if (!widget.viewerRole.isMember)
+                        AppButton(
+                          key: const ValueKey('followTeamButton'),
+                          variant: isFollowing
+                              ? AppButtonVariant.secondary
+                              : AppButtonVariant.primary,
+                          label: isFollowing ? 'Following' : 'Follow',
+                          onPressed: () => ref
+                              .read(teamFollowersProvider.notifier)
+                              .toggleFollow(team.name),
+                        ),
                     ],
                   ),
                 ),

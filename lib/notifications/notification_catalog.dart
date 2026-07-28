@@ -27,6 +27,7 @@ import '../teams/availability_matrix_models.dart';
 import '../teams/join_request_models.dart';
 import '../teams/join_requests_provider.dart';
 import '../teams/practice_session_provider.dart';
+import '../teams/team_followers_provider.dart';
 import '../tournaments/fixture_models.dart';
 import '../tournaments/fixtures_provider.dart';
 import '../tournaments/ledger_provider.dart';
@@ -61,7 +62,50 @@ List<NotificationCard> generateCatalogCards(Ref ref, DateTime now) {
   cards.addAll(_levelUpAndPbCards(ref, now));
   cards.addAll(_messageCards(ref, now));
   cards.addAll(_reviewReplyCards(ref, now));
+  cards.addAll(_followedTeamMatchCards(ref, now));
   cards.addAll(_unwiredCatalogRows(now));
+  return cards;
+}
+
+/// AC amendment #1 (PRD §6.20): "team Followers get match alerts."
+/// Real read of [teamFollowersProvider] + [matchesProvider] -- a
+/// lighter P2 heads-up for a followed team's upcoming match, distinct
+/// from [_matchCards]'s full P0/P1 squad-member alerts (which already
+/// cover the viewer's own matches).
+List<NotificationCard> _followedTeamMatchCards(Ref ref, DateTime now) {
+  final followedTeams = ref.read(teamFollowersProvider).followedTeamNames;
+  if (followedTeams.isEmpty) return const [];
+  final matches = ref.read(matchesProvider).matches;
+  final cards = <NotificationCard>[];
+
+  for (final m in matches) {
+    if (m.squadNames.contains(composerViewerName)) {
+      continue; // already covered by _matchCards's own-squad alerts.
+    }
+    final isFollowedSide =
+        followedTeams.contains(m.composerTeamName) ||
+        followedTeams.contains(m.draft.opponentTeamName);
+    if (!isFollowedSide || m.status != MatchStatus.accepted) continue;
+
+    final untilStart = m.draft.dateTime.difference(now);
+    if (untilStart.inMinutes <= 0 || untilStart > const Duration(hours: 24)) {
+      continue;
+    }
+    cards.add(
+      NotificationCard(
+        id: 'followed-team-match-${m.id}',
+        tab: NotificationTab.following,
+        entityName: m.composerTeamName,
+        title:
+            '${m.composerTeamName} vs ${m.draft.opponentTeamName} -- '
+            'match tomorrow at ${m.draft.groundName}',
+        priority: NotificationPriority.p2,
+        channel: NotificationChannel.matches,
+        actions: const [NotificationActionType.view],
+        createdAt: now,
+      ),
+    );
+  }
   return cards;
 }
 
