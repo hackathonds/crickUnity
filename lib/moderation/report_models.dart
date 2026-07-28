@@ -3,6 +3,12 @@
 /// levels max)."
 enum ReportReason { spam, abuse, nudity, harassment, fakeScore, other }
 
+/// PRD §13's anti-fraud "anomaly checks" flag matches into this same
+/// queue with no reporting user behind them -- this name in
+/// [Report.reporterName] is how the admin console tells a system-
+/// generated flag apart from a real person's report.
+const systemFraudDetectionReporterName = 'CricUnity Fraud Detection';
+
 const Map<ReportReason, String> reportReasonLabels = {
   ReportReason.spam: 'Spam',
   ReportReason.abuse: 'Abuse',

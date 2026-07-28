@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../matches/match_models.dart';
 import 'report_models.dart';
 
 class ModerationState {
@@ -159,6 +160,35 @@ class ModerationNotifier extends Notifier<ModerationState> {
         ...state.auditLog,
       ],
     );
+  }
+
+  /// PRD §13: "anomaly checks (same 4 players 'playing' daily) flag to
+  /// review." [detectDailyLineupAnomalies] (match_models.dart) is the
+  /// detection; this is the "flag to review" half -- one system report
+  /// per anomalous lineup, into the exact same queue/action-sheet/audit
+  /// log Admin already uses for real user reports. Reuses [submitReport]'s
+  /// own duplicate-merge logic (same targetLabel+reason) so a lineup
+  /// that's still anomalous on the next sweep just bumps `mergedCount`
+  /// rather than spawning a second tracker entry for it. No
+  /// `targetUserName` is set -- the anomaly implicates a *group*, and
+  /// PRD's own wording is "flag to review," not "auto-punish," so this
+  /// intentionally does not pre-assign a repeat-offender strike to
+  /// anyone; that stays a human decision made through the normal
+  /// resolveReport action sheet.
+  void sweepLineupAnomalies(
+    List<MatchRecord> matches, {
+    DateTime Function() now = DateTime.now,
+  }) {
+    for (final anomaly in detectDailyLineupAnomalies(matches, now: now)) {
+      submitReport(
+        targetType: 'Match lineup',
+        targetLabel: anomaly.squad.join(', '),
+        reason: ReportReason.fakeScore,
+        subReason: 'Same lineup playing daily',
+        reporterName: systemFraudDetectionReporterName,
+        now: now,
+      );
+    }
   }
 
   /// PRD: "Blocking: blocker & blocked become invisible to each other
