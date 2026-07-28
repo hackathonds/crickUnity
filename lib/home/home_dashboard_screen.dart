@@ -18,6 +18,7 @@ import 'onboarding_checklist_widget.dart';
 import 'widgets/cricket_home_widgets.dart';
 import 'widgets/money_rewards_home_widgets.dart';
 import 'widgets/social_progress_home_widgets.dart';
+import 'widgets/weather_home_widget.dart';
 
 /// DS §7.1 screen 1 (Home): "app bar: avatar 32 · greeting/context
 /// title · search · bell · coin chip → quick-chips row (max 3 urgent)
@@ -224,7 +225,6 @@ class _HomeWidgetBody extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final colors = Theme.of(context).extension<AppColors>()!;
     switch (id) {
       case HomeWidgetId.pendingPayments:
         return const PendingPaymentsBody();
@@ -273,10 +273,7 @@ class _HomeWidgetBody extends ConsumerWidget {
       case HomeWidgetId.tournamentUpdates:
         return const TournamentUpdatesBody();
       case HomeWidgetId.weather:
-        return Text(
-          'Weather is a later story (E18-06).',
-          style: AppTypography.caption.copyWith(color: colors.textTertiary),
-        );
+        return const WeatherHomeWidgetBody();
     }
   }
 }
