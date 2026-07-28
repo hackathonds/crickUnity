@@ -2,6 +2,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../expenses/expense_models.dart';
 import '../expenses/expenses_provider.dart';
+import '../matches/match_models.dart';
+import '../matches/matches_provider.dart';
+import '../matches/scoring_provider.dart';
 import '../rewards/rewards_models.dart' show coinsExpiringWithin;
 import '../rewards/rewards_provider.dart';
 import '../social/composer_screen.dart' show composerViewerName;
@@ -18,11 +21,19 @@ class HomeDashboardState {
   final Set<HomeWidgetId> hidden;
   final Map<HomeWidgetId, DateTime> lastUpdated;
 
+  /// PRD §4.11 (Nearby Matches): "Requires location permission; else
+  /// shows 'Enable location to find cricket around you.'" No real
+  /// device location API exists in this codebase -- a flagged mock
+  /// toggle stands in, same convention as every other missing-device-
+  /// API gap this session (camera, share, etc.).
+  final bool locationPermissionGranted;
+
   const HomeDashboardState({
     this.preset = HomeRolePreset.playerFirst,
     this.pinned = const [],
     this.hidden = const {},
     this.lastUpdated = const {},
+    this.locationPermissionGranted = false,
   });
 
   HomeDashboardState copyWith({
@@ -30,12 +41,15 @@ class HomeDashboardState {
     List<HomeWidgetId>? pinned,
     Set<HomeWidgetId>? hidden,
     Map<HomeWidgetId, DateTime>? lastUpdated,
+    bool? locationPermissionGranted,
   }) {
     return HomeDashboardState(
       preset: preset ?? this.preset,
       pinned: pinned ?? this.pinned,
       hidden: hidden ?? this.hidden,
       lastUpdated: lastUpdated ?? this.lastUpdated,
+      locationPermissionGranted:
+          locationPermissionGranted ?? this.locationPermissionGranted,
     );
   }
 }
@@ -85,6 +99,10 @@ class HomeDashboardNotifier extends Notifier<HomeDashboardState> {
     state = state.copyWith(pinned: const [], hidden: const {});
   }
 
+  void grantLocationPermission() {
+    state = state.copyWith(locationPermissionGranted: true);
+  }
+
   /// PRD §4: "Pull-to-refresh refreshes all." Touches every widget's
   /// recency stamp so the recency tier of the ordering reflects "just
   /// refreshed," and re-derivation of urgency (done at read-time by
@@ -132,6 +150,34 @@ List<HomeWidgetInstance> computeHomeWidgets(WidgetRef ref) {
   final coinsExpiringSoon =
       coinsExpiringWithin(rewards.coinBatches, 7, now: () => now) > 0;
 
+  final myMatches = ref
+      .watch(matchesProvider)
+      .matches
+      .where(
+        (m) =>
+            m.squadNames.contains(composerViewerName) &&
+            m.status == MatchStatus.accepted,
+      )
+      .toList();
+  final needsAvailabilityResponse = myMatches.any(
+    (m) =>
+        m.availabilityPollSent &&
+        !m.availabilityResponses.containsKey(composerViewerName),
+  );
+  final hasMatchWithin24h = myMatches.any((m) {
+    final until = m.draft.dateTime.difference(now);
+    return until.inMinutes > 0 && until <= const Duration(hours: 24);
+  });
+  final hasMatchToday = myMatches.any(
+    (m) =>
+        m.draft.dateTime.year == now.year &&
+        m.draft.dateTime.month == now.month &&
+        m.draft.dateTime.day == now.day,
+  );
+  final innings = ref.watch(inningsProvider);
+  final hasLiveMatch =
+      !innings.isFullyConfirmed && innings.deliveries.isNotEmpty;
+
   HomeWidgetUrgency urgencyFor(HomeWidgetId id) {
     switch (id) {
       case HomeWidgetId.pendingPayments:
@@ -142,16 +188,28 @@ List<HomeWidgetInstance> computeHomeWidgets(WidgetRef ref) {
         return coinsExpiringSoon
             ? HomeWidgetUrgency.timeSensitive
             : HomeWidgetUrgency.informational;
+      case HomeWidgetId.upcomingMatches:
+        if (needsAvailabilityResponse) return HomeWidgetUrgency.actionNeeded;
+        if (hasMatchWithin24h) return HomeWidgetUrgency.timeSensitive;
+        return HomeWidgetUrgency.informational;
+      case HomeWidgetId.todaysActivity:
+        return hasMatchToday
+            ? HomeWidgetUrgency.timeSensitive
+            : HomeWidgetUrgency.informational;
+      case HomeWidgetId.liveMatches:
+        return HomeWidgetUrgency.timeSensitive;
       default:
         return HomeWidgetUrgency.informational;
     }
   }
 
-  // PRD §4.19: payer-only, and implicitly empty-hiding like every
-  // other "only when relevant" widget this session (e.g. §4.6 Rewards,
-  // §4.16 Messages self-hide when empty).
+  // PRD §4.19/§4.12: payer-only / live-only widgets self-hide when
+  // there's nothing to show, same convention as every other "only
+  // when relevant" widget this session (e.g. §4.6 Rewards, §4.16
+  // Messages).
   final selfHidden = <HomeWidgetId>{
     if (!hasAnyPendingPayment) HomeWidgetId.pendingPayments,
+    if (!hasLiveMatch) HomeWidgetId.liveMatches,
   };
 
   final instances = [
