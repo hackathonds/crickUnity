@@ -89,6 +89,7 @@ class _AddEditExpenseScreenState extends ConsumerState<AddEditExpenseScreen> {
   final Map<String, int> _customAmounts = {};
   final Map<String, int> _shareWeights = {};
   final Map<String, int> _percentages = {};
+  final Map<String, ExpenseRoleTag> _roleTags = {};
   final List<_ItemEntry> _items = [];
   late String _payerName = widget.viewerName;
   final Map<String, int> _extraPayerAmounts = {};
@@ -164,6 +165,10 @@ class _AddEditExpenseScreenState extends ConsumerState<AddEditExpenseScreen> {
         return weightedSplit(_effectiveAmount, {
           for (final p in people) p: _percentages[p] ?? 0,
         }, payerName: _payerName);
+      case SplitMethod.roleBased:
+        return roleBasedSplit(_effectiveAmount, {
+          for (final p in people) p: _roleTags[p] ?? ExpenseRoleTag.regular,
+        }, payerName: _payerName);
       case SplitMethod.itemized:
         final totals = <String, int>{};
         for (final item in _items) {
@@ -211,6 +216,7 @@ class _AddEditExpenseScreenState extends ConsumerState<AddEditExpenseScreen> {
       case SplitMethod.equal:
       case SplitMethod.attendanceBased:
       case SplitMethod.shares:
+      case SplitMethod.roleBased:
         return true;
       case SplitMethod.custom:
         return _effectiveAmount -
@@ -233,6 +239,7 @@ class _AddEditExpenseScreenState extends ConsumerState<AddEditExpenseScreen> {
       case SplitMethod.equal:
       case SplitMethod.attendanceBased:
       case SplitMethod.shares:
+      case SplitMethod.roleBased:
         return 'Splits computed automatically -- remainder goes to the payer.';
       case SplitMethod.custom:
       case SplitMethod.itemized:
@@ -1390,6 +1397,39 @@ class _AddEditExpenseScreenState extends ConsumerState<AddEditExpenseScreen> {
                         () => _percentages[name] = int.tryParse(v) ?? 0,
                       ),
                     ),
+                  ),
+                ],
+              ),
+            ),
+        ];
+      case SplitMethod.roleBased:
+        return [
+          for (final name in people)
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: AppSpacing.xs / 2),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    name,
+                    style: AppTypography.body.copyWith(
+                      color: colors.textPrimary,
+                    ),
+                  ),
+                  Wrap(
+                    spacing: AppSpacing.sm,
+                    children: [
+                      for (final tag in ExpenseRoleTag.values)
+                        ChoiceChip(
+                          key: ValueKey('roleTagChip_${name}_${tag.name}'),
+                          label: Text(expenseRoleTagLabels[tag]!),
+                          selected:
+                              (_roleTags[name] ?? ExpenseRoleTag.regular) ==
+                              tag,
+                          onSelected: (_) =>
+                              setState(() => _roleTags[name] = tag),
+                        ),
+                    ],
                   ),
                 ],
               ),

@@ -73,11 +73,12 @@ const Map<ExpenseCategory, IconData> expenseCategoryIcons = {
 };
 
 /// DS §7-49: "method segmented (Equal/Custom/Shares/%/Items/
-/// Attendance)." PRD §11.3 additionally names a 7th method,
-/// Role-based ("guests pay double, scorer exempt") -- not in DS's
-/// literal segmented control, and functionally just a per-person
-/// weight, so it folds into [shares] rather than getting its own
-/// segment; flagged as a judgment call, not a silent drop.
+/// Attendance)." PRD §11.3 additionally names a 7th method, Role-based
+/// ("guests pay double, scorer exempt") -- not in DS's literal
+/// segmented control. E5-03 originally folded it into [shares] as a
+/// flagged judgment call; AC amendment #4 explicitly reverses that
+/// call ("methods list must be complete, not just equal/custom"), so
+/// it's now its own selectable method ([roleBased]).
 enum SplitMethod {
   equal,
   custom,
@@ -85,6 +86,7 @@ enum SplitMethod {
   percentages,
   itemized,
   attendanceBased,
+  roleBased,
 }
 
 const Map<SplitMethod, String> splitMethodLabels = {
@@ -94,7 +96,40 @@ const Map<SplitMethod, String> splitMethodLabels = {
   SplitMethod.percentages: '%',
   SplitMethod.itemized: 'Items',
   SplitMethod.attendanceBased: 'Attendance',
+  SplitMethod.roleBased: 'Role-based',
 };
+
+/// AC amendment #4 (PRD §11.3): "Role-based (e.g., 'guests pay
+/// double', 'scorer exempt')." The two named examples are the full
+/// PRD wording -- no broader role taxonomy is specified, so this is
+/// the minimal 3-tag set that covers both ("guest" doubles the weight,
+/// "exempt" zeroes it, "regular" is the default single share).
+enum ExpenseRoleTag { regular, guest, exempt }
+
+const Map<ExpenseRoleTag, String> expenseRoleTagLabels = {
+  ExpenseRoleTag.regular: 'Regular',
+  ExpenseRoleTag.guest: 'Guest (2x)',
+  ExpenseRoleTag.exempt: 'Exempt',
+};
+
+const Map<ExpenseRoleTag, int> _expenseRoleTagWeights = {
+  ExpenseRoleTag.regular: 1,
+  ExpenseRoleTag.guest: 2,
+  ExpenseRoleTag.exempt: 0,
+};
+
+/// Reuses [weightedSplit] rather than a parallel computation --
+/// role tags are just a named convention for picking a weight.
+List<SplitShare> roleBasedSplit(
+  int amount,
+  Map<String, ExpenseRoleTag> roleTags, {
+  String? payerName,
+}) {
+  return weightedSplit(amount, {
+    for (final entry in roleTags.entries)
+      entry.key: _expenseRoleTagWeights[entry.value]!,
+  }, payerName: payerName);
+}
 
 enum ExpenseApprovalState { none, pendingApproval, approved }
 
