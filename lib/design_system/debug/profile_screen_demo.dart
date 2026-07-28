@@ -5,6 +5,7 @@ import '../../profile/achievements_wall_screen.dart';
 import '../../profile/activity_calendar_models.dart';
 import '../../profile/activity_calendar_screen.dart';
 import '../../profile/edit_profile_screen.dart';
+import '../../profile/follower_models.dart';
 import '../../profile/profile_models.dart';
 import '../../profile/profile_screen.dart';
 import '../components/app_dropdown_field.dart';
@@ -25,10 +26,17 @@ class _ProfileScreenDemoState extends State<ProfileScreenDemo> {
   bool _isMinor = false;
   bool _isFollowing = false;
   bool _statsVerified = true;
+  bool _viewerIsRestricted = false;
   late List<String> _styleTags = mockPlayerProfile().styleTags;
 
   @override
   Widget build(BuildContext context) {
+    // E16-02: a restricted follower's effective relation silently
+    // downgrades to public -- they never see any indication of this.
+    final effectiveRelation = resolveViewerRelation(
+      actual: _relation,
+      viewerIsRestricted: _viewerIsRestricted,
+    );
     final base = mockPlayerProfile();
     final profile = PlayerProfile(
       name: base.name,
@@ -65,7 +73,7 @@ class _ProfileScreenDemoState extends State<ProfileScreenDemo> {
       ),
       body: ProfileScreen(
         profile: profile,
-        relation: _relation,
+        relation: effectiveRelation,
         isFollowing: _isFollowing,
         onFollow: () => setState(() => _isFollowing = !_isFollowing),
         onStyleTagsChanged: (tags) => setState(() => _styleTags = tags),
@@ -82,7 +90,7 @@ class _ProfileScreenDemoState extends State<ProfileScreenDemo> {
           MaterialPageRoute(
             builder: (_) => ActivityCalendarScreen(
               entries: mockActivityEntries(),
-              relation: _relation,
+              relation: effectiveRelation,
             ),
           ),
         ),
@@ -136,6 +144,18 @@ class _ProfileScreenDemoState extends State<ProfileScreenDemo> {
                 value: _statsVerified,
                 onChanged: (value) => setState(() {
                   setSheetState(() => _statsVerified = value);
+                }),
+              ),
+              SwitchListTile(
+                key: const ValueKey('profileDemoRestrictedSwitch'),
+                title: const Text('Viewer is Restricted (E16-02)'),
+                subtitle: const Text(
+                  'Only changes anything when relation is Follower -- '
+                  'silently renders as Public',
+                ),
+                value: _viewerIsRestricted,
+                onChanged: (value) => setState(() {
+                  setSheetState(() => _viewerIsRestricted = value);
                 }),
               ),
             ],
