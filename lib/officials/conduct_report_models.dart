@@ -46,6 +46,8 @@ enum ConductReportStatus {
   actionTaken,
   dismissed,
   appealed,
+  appealUpheld,
+  appealOverturned,
 }
 
 const Map<ConductReportStatus, String> conductReportStatusLabels = {
@@ -54,6 +56,8 @@ const Map<ConductReportStatus, String> conductReportStatusLabels = {
   ConductReportStatus.actionTaken: 'Action taken',
   ConductReportStatus.dismissed: 'Dismissed',
   ConductReportStatus.appealed: 'Appeal submitted',
+  ConductReportStatus.appealUpheld: 'Appeal upheld -- action reversed',
+  ConductReportStatus.appealOverturned: 'Appeal reviewed -- action stands',
 };
 
 /// PRD's minimum -- "description (min 30 chars)."
