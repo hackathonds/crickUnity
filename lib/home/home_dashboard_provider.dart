@@ -5,6 +5,8 @@ import '../expenses/expenses_provider.dart';
 import '../matches/match_models.dart';
 import '../matches/matches_provider.dart';
 import '../matches/scoring_provider.dart';
+import '../recognition/challenges_provider.dart';
+import '../rewards/luck_provider.dart';
 import '../rewards/rewards_models.dart' show coinsExpiringWithin;
 import '../rewards/rewards_provider.dart';
 import '../social/composer_screen.dart' show composerViewerName;
@@ -178,14 +180,44 @@ List<HomeWidgetInstance> computeHomeWidgets(WidgetRef ref) {
   final hasLiveMatch =
       !innings.isFullyConfirmed && innings.deliveries.isNotEmpty;
 
+  final luck = ref.watch(luckLayerProvider);
+  final canSpin =
+      ref
+          .read(luckLayerProvider.notifier)
+          .spinBlockReason(viewerLevel: rewards.level) ==
+      null;
+  final hasUnclaimedRewards =
+      luck.scratchCardsAvailable > 0 ||
+      canSpin ||
+      rewards.ceremonyQueue.isNotEmpty;
+
+  final myChallenges = ref
+      .watch(challengesProvider)
+      .challenges
+      .where((c) => c.participantNamed(composerViewerName) != null)
+      .toList();
+  final hasNearCompleteChallenge = myChallenges.any((c) {
+    final mine = c.participantNamed(composerViewerName)!;
+    return c.target > 0 && mine.progress / c.target >= 0.8;
+  });
+
   HomeWidgetUrgency urgencyFor(HomeWidgetId id) {
     switch (id) {
       case HomeWidgetId.pendingPayments:
+      case HomeWidgetId.expenseSummary:
         if (hasOverduePayment) return HomeWidgetUrgency.actionNeeded;
         if (hasAnyPendingPayment) return HomeWidgetUrgency.timeSensitive;
         return HomeWidgetUrgency.informational;
       case HomeWidgetId.coinBalance:
         return coinsExpiringSoon
+            ? HomeWidgetUrgency.timeSensitive
+            : HomeWidgetUrgency.informational;
+      case HomeWidgetId.rewards:
+        return hasUnclaimedRewards
+            ? HomeWidgetUrgency.timeSensitive
+            : HomeWidgetUrgency.informational;
+      case HomeWidgetId.challenges:
+        return hasNearCompleteChallenge
             ? HomeWidgetUrgency.timeSensitive
             : HomeWidgetUrgency.informational;
       case HomeWidgetId.upcomingMatches:
@@ -203,13 +235,14 @@ List<HomeWidgetInstance> computeHomeWidgets(WidgetRef ref) {
     }
   }
 
-  // PRD §4.19/§4.12: payer-only / live-only widgets self-hide when
-  // there's nothing to show, same convention as every other "only
-  // when relevant" widget this session (e.g. §4.6 Rewards, §4.16
-  // Messages).
+  // PRD §4.19/§4.12/§4.6: payer-only / live-only / unclaimed-only
+  // widgets self-hide when there's nothing to show, same convention
+  // as every other "only when relevant" widget this session.
   final selfHidden = <HomeWidgetId>{
     if (!hasAnyPendingPayment) HomeWidgetId.pendingPayments,
     if (!hasLiveMatch) HomeWidgetId.liveMatches,
+    if (!hasUnclaimedRewards) HomeWidgetId.rewards,
+    if (myChallenges.isEmpty) HomeWidgetId.challenges,
   };
 
   final instances = [

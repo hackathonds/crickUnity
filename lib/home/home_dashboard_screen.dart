@@ -6,8 +6,6 @@ import '../design_system/components/app_coin_chip.dart';
 import '../design_system/tokens/app_colors.dart';
 import '../design_system/tokens/app_spacing.dart';
 import '../design_system/tokens/app_typography.dart';
-import '../expenses/expense_models.dart';
-import '../expenses/expenses_provider.dart';
 import '../notifications/notification_center_screen.dart';
 import '../rewards/rewards_provider.dart';
 import '../search/global_search_screen.dart';
@@ -18,6 +16,7 @@ import 'home_widget_models.dart';
 import 'onboarding_checklist_provider.dart';
 import 'onboarding_checklist_widget.dart';
 import 'widgets/cricket_home_widgets.dart';
+import 'widgets/money_rewards_home_widgets.dart';
 
 /// DS §7.1 screen 1 (Home): "app bar: avatar 32 · greeting/context
 /// title · search · bell · coin chip → quick-chips row (max 3 urgent)
@@ -211,10 +210,11 @@ class _HomeWidgetCard extends ConsumerWidget {
   }
 }
 
-/// E18-01 wired [HomeWidgetId.pendingPayments]/[coinBalance] to real
-/// state; E18-03 (this story) adds the cricket batch --
-/// [upcomingMatches]/[todaysActivity]/[liveMatches]/[nearbyMatches].
-/// The remaining widgets' real content is E18-04/05's job.
+/// E18-03 added the cricket batch
+/// ([upcomingMatches]/[todaysActivity]/[liveMatches]/[nearbyMatches]);
+/// E18-04 (this story) adds the money & rewards batch
+/// ([expenseSummary]/[pendingPayments]/[coinBalance]/[rewards]/
+/// [challenges]). The social & progress batch is E18-05's job.
 class _HomeWidgetBody extends ConsumerWidget {
   final HomeWidgetId id;
   const _HomeWidgetBody({required this.id});
@@ -224,29 +224,15 @@ class _HomeWidgetBody extends ConsumerWidget {
     final colors = Theme.of(context).extension<AppColors>()!;
     switch (id) {
       case HomeWidgetId.pendingPayments:
-        final expenses = ref.watch(expensesProvider).expenses;
-        final unpaid = expenses.where(
-          (e) =>
-              !e.isDeleted &&
-              e.approvalState != ExpenseApprovalState.pendingApproval &&
-              e.netFor(composerViewerName) < 0 &&
-              e.splitAmong.any((s) => s.name == composerViewerName),
-        );
-        final total = unpaid.fold(
-          0,
-          (sum, e) => sum + (-e.netFor(composerViewerName)),
-        );
-        return Text(
-          '₹$total across ${unpaid.length} pending payment'
-          '${unpaid.length == 1 ? '' : 's'}',
-          style: AppTypography.stat.copyWith(color: colors.textPrimary),
-        );
+        return const PendingPaymentsBody();
       case HomeWidgetId.coinBalance:
-        final rewards = ref.watch(rewardsProvider);
-        return Text(
-          '${rewards.coinBalance} coins',
-          style: AppTypography.stat.copyWith(color: colors.coin),
-        );
+        return const CoinBalanceBody();
+      case HomeWidgetId.expenseSummary:
+        return const ExpenseSummaryBody();
+      case HomeWidgetId.rewards:
+        return const RewardsBody();
+      case HomeWidgetId.challenges:
+        return const ChallengesBody();
       case HomeWidgetId.upcomingMatches:
         return const UpcomingMatchesBody();
       case HomeWidgetId.todaysActivity:
