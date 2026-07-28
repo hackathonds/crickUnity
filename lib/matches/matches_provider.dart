@@ -108,6 +108,26 @@ class MatchesNotifier extends Notifier<MatchesState> {
     );
   }
 
+  /// E17-03 (DS §1.5): the in-app availability-response row's undo
+  /// snackbar reverts to no-response, rather than re-showing a second
+  /// confirm step.
+  void clearAvailabilityResponse(String matchId, String playerName) {
+    state = state.copyWith(
+      matches: [
+        for (final m in state.matches)
+          if (m.id == matchId)
+            m.copyWith(
+              availabilityResponses: {
+                for (final entry in m.availabilityResponses.entries)
+                  if (entry.key != playerName) entry.key: entry.value,
+              },
+            )
+          else
+            m,
+      ],
+    );
+  }
+
   void acceptMatch(String matchId, {DateTime Function() now = DateTime.now}) {
     state = state.copyWith(
       matches: [

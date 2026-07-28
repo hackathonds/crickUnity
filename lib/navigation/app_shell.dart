@@ -9,11 +9,11 @@ import '../design_system/tokens/app_colors.dart';
 import '../design_system/tokens/app_motion.dart';
 import '../design_system/tokens/app_spacing.dart';
 import '../design_system/tokens/app_typography.dart';
+import '../matches/live_match_view_screen.dart';
 import '../roles/active_role_view_provider.dart';
 import '../roles/current_roles_provider.dart';
 import '../roles/user_role.dart';
 import '../widgets/app_drawer.dart';
-import '../widgets/placeholder_screen.dart';
 import 'pinned_live_match_provider.dart';
 import 'tab_badges_provider.dart';
 import 'tab_interaction_providers.dart';
@@ -45,6 +45,11 @@ class AppShell extends ConsumerWidget {
     }
   }
 
+  /// DS §1.5 "Open my next match": budget 2 (long-press Matches tab ->
+  /// pinned next). E4-11's real [LiveMatchViewScreen] now exists -- this
+  /// app has only one mock live match at a time (no multi-match model),
+  /// so [pinnedLiveMatchProvider]'s label is enough to know *that* a
+  /// match is pinned; the destination is the one real live match.
   void _onLongPressMatches(BuildContext context, WidgetRef ref) {
     final pinned = ref.read(pinnedLiveMatchProvider);
     if (pinned == null) {
@@ -54,9 +59,7 @@ class AppShell extends ConsumerWidget {
       return;
     }
     Navigator.of(context, rootNavigator: true).push(
-      MaterialPageRoute(
-        builder: (_) => PlaceholderScreen(title: 'Live: $pinned'),
-      ),
+      MaterialPageRoute(builder: (_) => const LiveMatchViewScreen()),
     );
   }
 
