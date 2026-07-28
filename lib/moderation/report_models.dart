@@ -35,6 +35,12 @@ const Map<ReportStatus, String> reportStatusLabels = {
 /// [mergedCount] backs DS's "duplicate-report merge notice inline" --
 /// a 2nd report on the same target+reason increments this rather than
 /// creating a second tracker entry.
+///
+/// [reportedExcerpt] backs PRD §2.16's Admin restriction: "cannot
+/// access private messages except reported threads (reported excerpt
+/// only)." For message-type reports this is the only message content
+/// ever surfaced to Admin/Super Admin -- the console never reads the
+/// full chat_provider.dart thread.
 class Report {
   final String id;
   final String targetType;
@@ -48,6 +54,7 @@ class Report {
   final ReportStatus status;
   final int mergedCount;
   final DateTime createdAt;
+  final String? reportedExcerpt;
 
   const Report({
     required this.id,
@@ -62,6 +69,7 @@ class Report {
     this.status = ReportStatus.pending,
     this.mergedCount = 1,
     required this.createdAt,
+    this.reportedExcerpt,
   });
 
   Report copyWith({ReportStatus? status, int? mergedCount}) {
@@ -78,6 +86,7 @@ class Report {
       status: status ?? this.status,
       mergedCount: mergedCount ?? this.mergedCount,
       createdAt: createdAt,
+      reportedExcerpt: reportedExcerpt,
     );
   }
 }
