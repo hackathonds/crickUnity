@@ -96,3 +96,35 @@ String offenderStageFor(int strikes) {
   final index = (strikes - 1).clamp(0, offenderLadderStages.length - 1);
   return offenderLadderStages[index];
 }
+
+/// PRD §16 (Admin): "Review reports; suspend content/accounts with
+/// reason codes." DS §7-69: "action sheet (reason codes mandatory) ...
+/// audit log." No PRD/DS list of exact reason codes exists -- flagged
+/// judgment call, one code per plausible outcome.
+const List<String> adminActionReasonCodes = [
+  'Policy violation -- content removed',
+  'Policy violation -- account actioned',
+  'Insufficient evidence -- no action',
+  'Duplicate/resolved elsewhere',
+];
+
+class AuditLogEntry {
+  final String reportId;
+  final String targetLabel;
+  final bool actionTaken;
+  final String reasonCode;
+  final DateTime decidedAt;
+
+  const AuditLogEntry({
+    required this.reportId,
+    required this.targetLabel,
+    required this.actionTaken,
+    required this.reasonCode,
+    required this.decidedAt,
+  });
+}
+
+/// DS §7-69: "SLA countdown chips." PRD names "reviewed within 24h" as
+/// the target, not a hard rule elsewhere -- reused here as the SLA
+/// window.
+const Duration reportSlaWindow = Duration(hours: 24);

@@ -140,6 +140,7 @@ import '../../officials/knowledge_hub_screen.dart';
 import '../../streaming/go_live_screen.dart';
 import '../../discover/discover_screen.dart';
 import '../../marketplace/gear_exchange_screen.dart';
+import '../../moderation/admin_console_screen.dart';
 import '../../privacy/privacy_center_screen.dart';
 import '../../guardian/guardian_view_screen.dart';
 import '../../medical/captain_medical_view_screen.dart';
@@ -727,6 +728,16 @@ class DebugMenuScreen extends StatelessWidget {
             ),
             onTap: () => Navigator.of(context).push(
               MaterialPageRoute(builder: (_) => const CalendarSyncScreen()),
+            ),
+          ),
+          ListTile(
+            title: const Text('Admin console'),
+            subtitle: const Text(
+              'E16-11 — queue rows, evidence preview, action sheet '
+              '(reason codes mandatory), audit log, SLA chips, Theme-5',
+            ),
+            onTap: () => Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => const AdminConsoleScreen()),
             ),
           ),
           ListTile(
