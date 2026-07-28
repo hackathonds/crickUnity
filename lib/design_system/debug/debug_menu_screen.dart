@@ -117,11 +117,15 @@ import 'members_roles_demo.dart';
 import '../../teams/selection_board_screen.dart';
 import '../../teams/carpool_screen.dart';
 import '../../teams/duty_roster_screen.dart';
+import '../../coaching/my_academy_screen.dart';
+import '../../grounds/my_bookings_screen.dart';
+import '../../matches/my_matches_screen.dart';
 import '../../teams/kit_inventory_screen.dart';
 import '../../teams/peer_rating_aggregate_screen.dart';
 import '../../teams/my_teams_screen.dart';
 import '../../teams/recruitment_board_screen.dart';
 import '../../teams/season_summary_models.dart';
+import '../../tournaments/my_tournaments_screen.dart';
 import '../../teams/team_chemistry_models.dart';
 import '../../teams/team_chemistry_screen.dart';
 import '../../teams/season_summary_screen.dart';
@@ -1112,9 +1116,47 @@ class DebugMenuScreen extends StatelessWidget {
               'Drawer fix follow-up — role chips, default/mute/leave, '
               'empty create/join CTAs',
             ),
-            onTap: () => Navigator.of(context).push(
-              MaterialPageRoute(builder: (_) => const MyTeamsScreen()),
+            onTap: () => Navigator.of(
+              context,
+            ).push(MaterialPageRoute(builder: (_) => const MyTeamsScreen())),
+          ),
+          ListTile(
+            title: const Text('My Matches (drawer aggregator)'),
+            subtitle: const Text(
+              'Drawer fix follow-up — Upcoming/Live/Recent segments',
             ),
+            onTap: () => Navigator.of(
+              context,
+            ).push(MaterialPageRoute(builder: (_) => const MyMatchesScreen())),
+          ),
+          ListTile(
+            title: const Text('My Tournaments (drawer aggregator)'),
+            subtitle: const Text(
+              'Drawer fix follow-up — registered tournaments, fixtures/'
+              'points/bracket menu',
+            ),
+            onTap: () => Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => const MyTournamentsScreen()),
+            ),
+          ),
+          ListTile(
+            title: const Text('My Bookings (drawer aggregator)'),
+            subtitle: const Text(
+              'Drawer fix follow-up — every booking links to its ticket',
+            ),
+            onTap: () => Navigator.of(
+              context,
+            ).push(MaterialPageRoute(builder: (_) => const MyBookingsScreen())),
+          ),
+          ListTile(
+            title: const Text('My Academy (drawer aggregator)'),
+            subtitle: const Text(
+              'Drawer fix follow-up — quick links to Training Log + '
+              'Compliance Vault',
+            ),
+            onTap: () => Navigator.of(
+              context,
+            ).push(MaterialPageRoute(builder: (_) => const MyAcademyScreen())),
           ),
           ListTile(
             title: const Text('Recruitment board (Free agent)'),
@@ -2407,9 +2449,8 @@ class DebugMenuScreen extends StatelessWidget {
             ),
             onTap: () => Navigator.of(context).push(
               MaterialPageRoute(
-                builder: (_) => const SearchedPlayerProfileScreen(
-                  playerName: 'Priya Nair',
-                ),
+                builder: (_) =>
+                    const SearchedPlayerProfileScreen(playerName: 'Priya Nair'),
               ),
             ),
           ),
