@@ -1,3 +1,5 @@
+import 'team_chemistry_models.dart';
+
 /// PRD §6.19: "Milestones auto-detected (50th win, 100th match, first
 /// championship) -> milestone card + team-wide celebration post +
 /// commemorative badge to all members on roster at that time."
@@ -74,12 +76,10 @@ class WrapCard {
 /// (enough for a "record" and a "best win" to be meaningful at all).
 const int seasonSummaryMinMatches = 3;
 
-/// PRD §6.28's Chemistry score is a real, team-private computed metric
-/// from Epic E3-12 (Peer ratings + chemistry) -- but that story is
-/// itself blocked on E4-10 (post-match peer-rating window), which needs
-/// a real Match module that doesn't exist yet. The chemistry figure in
-/// this wrap is therefore mock data, same honest-gap treatment as the
-/// QR-code placeholder in Team Invite (E3-03).
+/// PRD §6.28's Chemistry score is computed by Epic E3-12 (Peer ratings +
+/// chemistry) -- [chemistryTrendPercent] here mirrors [TeamChemistry
+/// .trendPercent] from `team_chemistry_models.dart`, that story's
+/// canonical source.
 class SeasonSummaryData {
   final int matchesPlayed;
   final int winsCount;
@@ -149,7 +149,7 @@ class SeasonSummaryData {
 }
 
 /// Mock seed data for the debug demo and tests.
-SeasonSummaryData mockSeasonSummary() => const SeasonSummaryData(
+SeasonSummaryData mockSeasonSummary() => SeasonSummaryData(
   matchesPlayed: 105,
   winsCount: 52,
   lossesCount: 40,
@@ -160,7 +160,7 @@ SeasonSummaryData mockSeasonSummary() => const SeasonSummaryData(
   topWicketTakerName: 'Priya Nair',
   topWicketTakerWickets: 24,
   bestWinDescription: 'Chased 187 in the last over vs Central Warriors',
-  chemistryTrendPercent: -12,
+  chemistryTrendPercent: mockTeamChemistry().trendPercent,
   moneyCollectedRupees: 48000,
   moneySpentRupees: 41500,
   perHeadCostRupees: 350,
