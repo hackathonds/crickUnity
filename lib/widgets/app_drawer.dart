@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../academies/academy_console_screen.dart';
 import '../clubs/club_home_screen.dart';
 import '../coaching/coach_console_screen.dart';
+import '../coaching/my_academy_screen.dart';
 import '../design_system/tokens/app_colors.dart';
 import '../design_system/tokens/app_spacing.dart';
 import '../design_system/tokens/app_typography.dart';
@@ -11,7 +12,9 @@ import '../expenses/expenses_home_screen.dart';
 import '../expenses/reports_screen.dart';
 import '../expenses/settle_up_screen.dart';
 import '../expenses/treasury_screen.dart';
+import '../grounds/my_bookings_screen.dart';
 import '../grounds/owner_console_screen.dart';
+import '../matches/my_matches_screen.dart';
 import '../notifications/notification_center_screen.dart';
 import '../officials/officials_console_screen.dart';
 import '../privacy/privacy_center_screen.dart';
@@ -31,6 +34,7 @@ import '../roles/current_roles_provider.dart';
 import '../settings/localization_settings_screen.dart';
 import '../sponsors/sponsor_console_screen.dart';
 import '../teams/my_teams_screen.dart';
+import '../tournaments/my_tournaments_screen.dart';
 import '../tournaments/organizer_console_screen.dart';
 import 'unbuilt_destination_screen.dart';
 
@@ -42,12 +46,18 @@ import 'unbuilt_destination_screen.dart';
 /// Every item used to push a generic `PlaceholderScreen` regardless of
 /// whether a real destination existed -- by the time this was revisited,
 /// most of them did (each built by its own later story). This wires
-/// every genuine destination for real; the handful with no real screen
-/// anywhere in the app (My Matches/Tournaments/Bookings/Academy
-/// aggregator lists, a standalone Captain Console, Help, Report a
-/// Problem) get an honest, explained gap notice instead of a silent
-/// mis-navigation or a bare "placeholder content" line. My Teams was
-/// one of these too, until its own switcher screen was built.
+/// every genuine destination for real. My Teams/My Matches/My
+/// Tournaments/My Bookings/My Academy each got their own aggregator
+/// screen even though only My Teams and My Matches have a dedicated DS
+/// spec (screens 10 and 23) -- the other three's "list of things I'm in"
+/// concept is a direct, non-invented consequence of their name and the
+/// per-instance screens that already exist for their contents (see each
+/// screen's own doc comment for the exact reasoning). Captain Console
+/// has no screen of its own anywhere in DS/backlog and routes to My
+/// Teams instead of a redundant one. Help and Report a Problem are the
+/// two items with zero PRD/DS grounding at all -- per CLAUDE.md's "never
+/// guess behavior" rule, they keep an honest, explained gap notice
+/// instead of invented content.
 ///
 /// No session/auth concept exists anywhere in this app (confirmed by a
 /// full-codebase search) -- "Log out" cannot actually reset anything, so
@@ -265,48 +275,24 @@ class _DrawerSection extends StatelessWidget {
         return const ClubHomeScreen();
       case 'Sponsor Console':
         return const SponsorConsoleScreen();
+      // No console screen exists independent of a specific team -- every
+      // team feature (selection, availability, treasury) is reached from
+      // that team's own home page today, not a cross-team captain
+      // console. My Teams is the real entry point into that, so it
+      // routes here rather than to a redundant, never-specified screen.
       case 'Captain Console':
-        return const UnbuiltDestinationScreen(
-          title: 'Captain Console',
-          explanation:
-              'No console screen exists independent of a specific team -- '
-              "every team feature (selection, availability, treasury) is "
-              "reached from that team's own home page today, not a "
-              'cross-team captain console.',
-        );
+        return const MyTeamsScreen();
 
       case 'My Teams':
         return const MyTeamsScreen();
       case 'My Matches':
-        return const UnbuiltDestinationScreen(
-          title: 'My Matches',
-          explanation:
-              'No matches-list/home screen exists yet -- only individual '
-              'match screens once a specific match is already known.',
-        );
+        return const MyMatchesScreen();
       case 'My Tournaments':
-        return const UnbuiltDestinationScreen(
-          title: 'My Tournaments',
-          explanation:
-              'No tournaments-list screen exists yet -- only individual '
-              'tournament screens (fixtures, points table, brackets) once '
-              'a specific tournament is already known.',
-        );
+        return const MyTournamentsScreen();
       case 'My Bookings':
-        return const UnbuiltDestinationScreen(
-          title: 'My Bookings',
-          explanation:
-              'No viewer-scoped bookings list exists yet -- only a single '
-              "booking's own ticket screen once its id is already known.",
-        );
+        return const MyBookingsScreen();
       case 'My Academy':
-        return const UnbuiltDestinationScreen(
-          title: 'My Academy',
-          explanation:
-              'Only the academy owner/staff console exists -- no '
-              "student-facing \"my academy\" screen (batches, fees, "
-              'progress) has been built yet.',
-        );
+        return const MyAcademyScreen();
       case 'Help':
         return const UnbuiltDestinationScreen(
           title: 'Help',
