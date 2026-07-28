@@ -86,6 +86,25 @@ class ConductReportNotifier extends Notifier<ConductReportState> {
       ],
     );
   }
+
+  /// PRD §2.17 (Super Admin): "final appeal authority." The only real
+  /// appeal state in this app (ConductReportStatus.appealed) resolves
+  /// here rather than a parallel appeals system.
+  void resolveAppeal(String reportId, {required bool upheld}) {
+    state = state.copyWith(
+      reports: [
+        for (final r in state.reports)
+          if (r.id == reportId)
+            r.copyWith(
+              status: upheld
+                  ? ConductReportStatus.appealUpheld
+                  : ConductReportStatus.appealOverturned,
+            )
+          else
+            r,
+      ],
+    );
+  }
 }
 
 final conductReportProvider =

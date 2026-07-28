@@ -140,6 +140,8 @@ import '../../officials/knowledge_hub_screen.dart';
 import '../../streaming/go_live_screen.dart';
 import '../../discover/discover_screen.dart';
 import '../../marketplace/gear_exchange_screen.dart';
+import '../../governance/economy_changelog_screen.dart';
+import '../../governance/economy_console_screen.dart';
 import '../../moderation/admin_console_screen.dart';
 import '../../privacy/privacy_center_screen.dart';
 import '../../guardian/guardian_view_screen.dart';
@@ -751,6 +753,27 @@ class DebugMenuScreen extends StatelessWidget {
               MaterialPageRoute(
                 builder: (_) => const AdminConsoleScreen(isSuperAdmin: true),
               ),
+            ),
+          ),
+          ListTile(
+            title: const Text('Super Admin economy console'),
+            subtitle: const Text(
+              'E16-12 — coin/XP rates + fee policies (dual co-sign), '
+              'feature flags per region, admin accounts, final appeal '
+              'authority, platform status banner, public changelog',
+            ),
+            onTap: () => Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => const EconomyConsoleScreen()),
+            ),
+          ),
+          ListTile(
+            title: const Text('Public changelog ("What\'s changed")'),
+            subtitle: const Text(
+              'E16-12 — public surface for coin/fee policy changes '
+              '(PRD §2.17)',
+            ),
+            onTap: () => Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => const EconomyChangelogScreen()),
             ),
           ),
           ListTile(
