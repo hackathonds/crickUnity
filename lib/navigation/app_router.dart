@@ -4,7 +4,7 @@ import 'package:go_router/go_router.dart';
 import '../design_system/debug/debug_menu_screen.dart';
 import '../design_system/tokens/app_motion.dart';
 import '../design_system/tokens/app_spacing.dart';
-import '../home/onboarding_checklist_widget.dart';
+import '../home/home_dashboard_screen.dart';
 import '../settings/appearance_settings_screen.dart';
 import '../widgets/placeholder_screen.dart';
 import '../widgets/tab_root_screen.dart';
@@ -58,6 +58,7 @@ GoRoute buildBranchRoute({
   required int branchIndex,
   bool showDrawerAvatar = false,
   Widget? extra,
+  Widget Function(BuildContext, GoRouterState)? rootBuilder,
 }) {
   GoRoute nextRoute(String parentPath, int depth) {
     final path = '$parentPath/next';
@@ -77,13 +78,15 @@ GoRoute buildBranchRoute({
 
   return GoRoute(
     path: rootPath,
-    builder: (context, state) => TabRootScreen(
-      title: rootTitle,
-      branchIndex: branchIndex,
-      path: rootPath,
-      showDrawerAvatar: showDrawerAvatar,
-      extra: extra,
-    ),
+    builder:
+        rootBuilder ??
+        (context, state) => TabRootScreen(
+          title: rootTitle,
+          branchIndex: branchIndex,
+          path: rootPath,
+          showDrawerAvatar: showDrawerAvatar,
+          extra: extra,
+        ),
     routes: [nextRoute(rootPath, 1)],
   );
 }
@@ -106,7 +109,7 @@ GoRouter createAppRouter() => GoRouter(
               rootTitle: 'Home',
               branchIndex: 0,
               showDrawerAvatar: true,
-              extra: const OnboardingChecklistWidget(),
+              rootBuilder: (context, state) => const HomeDashboardScreen(),
             ),
           ],
         ),
