@@ -16,7 +16,12 @@
 /// one canonical per-tournament destination) -- flagged; scanning a
 /// tournament QR confirms the match and names the tournament rather
 /// than mis-navigating to an arbitrary sub-screen.
-enum QrObjectType { ground, tournament, club, group, booking }
+///
+/// `profile` closes the "profile" half of PRD's parenthetical list
+/// (player search & follow) -- `team`/`match` are still absent (no
+/// canonical single-screen destination exists for either yet, same
+/// caveat as `tournament` above).
+enum QrObjectType { ground, tournament, club, group, booking, profile }
 
 class QrCodeEntry {
   final String code;

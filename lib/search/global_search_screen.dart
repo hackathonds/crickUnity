@@ -18,6 +18,7 @@ import 'qr_scanner_screen.dart';
 import 'search_filter_models.dart';
 import 'search_models.dart';
 import 'search_provider.dart';
+import 'searched_player_profile_screen.dart';
 
 /// PRD §16 (Search): Global Search with grouped results + zero-state.
 /// See search_models.dart's top-of-file note for the exact quote and
@@ -509,22 +510,34 @@ class _ResultGroup extends StatelessWidget {
           for (final result in shown)
             Padding(
               padding: const EdgeInsets.symmetric(vertical: AppSpacing.xs),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    result.title,
-                    style: AppTypography.body.copyWith(
-                      color: colors.textPrimary,
+              child: InkWell(
+                key: ValueKey('searchResultRow_${result.type.name}_${result.id}'),
+                onTap: result.type == SearchResultType.player
+                    ? () => Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) => SearchedPlayerProfileScreen(
+                            playerName: result.id,
+                          ),
+                        ),
+                      )
+                    : null,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      result.title,
+                      style: AppTypography.body.copyWith(
+                        color: colors.textPrimary,
+                      ),
                     ),
-                  ),
-                  Text(
-                    result.subtitle,
-                    style: AppTypography.caption.copyWith(
-                      color: colors.textTertiary,
+                    Text(
+                      result.subtitle,
+                      style: AppTypography.caption.copyWith(
+                        color: colors.textTertiary,
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
           if (results.length > _collapsedCount)
