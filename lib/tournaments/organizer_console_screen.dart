@@ -8,6 +8,7 @@ import '../design_system/tokens/app_spacing.dart';
 import '../design_system/tokens/app_typography.dart';
 import 'ledger_models.dart';
 import 'ledger_provider.dart';
+import 'officials_directory_screen.dart';
 import 'registration_models.dart';
 import 'registrations_provider.dart';
 import 'tournament_models.dart';
@@ -92,7 +93,21 @@ class _OrganizerConsoleScreenState
         .toList();
 
     return Scaffold(
-      appBar: AppBar(title: Text('Organizer console · ${tournament.name}')),
+      appBar: AppBar(
+        title: Text('Organizer console · ${tournament.name}'),
+        actions: [
+          IconButton(
+            key: const ValueKey('officialsDirectoryButton'),
+            icon: const Icon(Icons.groups_outlined),
+            tooltip: 'Officials directory',
+            onPressed: () => Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (_) => const OfficialsDirectoryScreen(),
+              ),
+            ),
+          ),
+        ],
+      ),
       body: ListView(
         padding: const EdgeInsets.all(AppSpacing.lg),
         children: [
