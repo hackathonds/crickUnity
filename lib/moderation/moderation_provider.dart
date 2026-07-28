@@ -7,12 +7,14 @@ class ModerationState {
   final Map<String, int> offenderStrikes;
   final Set<String> blockedNames;
   final bool hideOffensiveComments;
+  final List<AuditLogEntry> auditLog;
 
   const ModerationState({
     this.reports = const [],
     this.offenderStrikes = const {},
     this.blockedNames = const {},
     this.hideOffensiveComments = true,
+    this.auditLog = const [],
   });
 
   ModerationState copyWith({
@@ -20,6 +22,7 @@ class ModerationState {
     Map<String, int>? offenderStrikes,
     Set<String>? blockedNames,
     bool? hideOffensiveComments,
+    List<AuditLogEntry>? auditLog,
   }) {
     return ModerationState(
       reports: reports ?? this.reports,
@@ -27,6 +30,7 @@ class ModerationState {
       blockedNames: blockedNames ?? this.blockedNames,
       hideOffensiveComments:
           hideOffensiveComments ?? this.hideOffensiveComments,
+      auditLog: auditLog ?? this.auditLog,
     );
   }
 }
@@ -87,10 +91,19 @@ class ModerationNotifier extends Notifier<ModerationState> {
     return false;
   }
 
-  /// No real trust & safety review queue exists -- a debug control in
-  /// moderation_settings_screen.dart resolves reports, since real
-  /// review requires a moderator role/queue this session hasn't built.
-  void resolveReport(String reportId, {required bool actionTaken}) {
+  /// E16-11's real Admin console (admin_console_screen.dart) always
+  /// passes an explicit [reasonCode] -- DS §7-69: "action sheet (reason
+  /// codes mandatory) ... audit log." moderation_settings_screen.dart's
+  /// own debug control predates that console and has no reason-code UI,
+  /// so [reasonCode] stays optional here with a generic fallback rather
+  /// than breaking that call site.
+  void resolveReport(
+    String reportId, {
+    required bool actionTaken,
+    String? reasonCode,
+    String adminName = 'Admin',
+    DateTime Function() now = DateTime.now,
+  }) {
     final index = state.reports.indexWhere((r) => r.id == reportId);
     if (index < 0) return;
     final report = state.reports[index];
@@ -100,7 +113,24 @@ class ModerationNotifier extends Notifier<ModerationState> {
           ? ReportStatus.reviewedActionTaken
           : ReportStatus.reviewedNoAction,
     );
-    state = state.copyWith(reports: updated);
+    final resolvedReasonCode =
+        reasonCode ??
+        (actionTaken
+            ? adminActionReasonCodes.first
+            : adminActionReasonCodes[2]);
+    state = state.copyWith(
+      reports: updated,
+      auditLog: [
+        AuditLogEntry(
+          reportId: reportId,
+          targetLabel: report.targetLabel,
+          actionTaken: actionTaken,
+          reasonCode: resolvedReasonCode,
+          decidedAt: now(),
+        ),
+        ...state.auditLog,
+      ],
+    );
 
     if (actionTaken && report.targetUserName != null) {
       final name = report.targetUserName!;
