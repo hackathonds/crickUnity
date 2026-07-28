@@ -58,6 +58,7 @@ import '../../matches/live_match_view_screen.dart';
 import '../../matches/post_match_summary_screen.dart';
 import '../../matches/scoring_provider.dart';
 import '../../matches/matches_provider.dart';
+import '../../matches/tv_scoreboard_screen.dart';
 import '../../matches/toss_screen.dart';
 import '../../onboarding/onboarding_flow.dart';
 import '../../rewards/achievements_provider.dart';
@@ -157,6 +158,7 @@ import '../../deeplinks/deep_link_screen.dart';
 import '../../deeplinks/launcher_shortcuts_screen.dart';
 import '../../sandbox/sandbox_scoring_screen.dart';
 import '../../settings/data_controls_screen.dart';
+import '../../settings/wearable_glances_screen.dart';
 import '../../verification/verification_screen.dart';
 import '../../marketplace/shops_directory_screen.dart';
 import '../../sponsors/sponsor_console_screen.dart';
@@ -694,6 +696,16 @@ class DebugMenuScreen extends StatelessWidget {
             ),
             onTap: () => Navigator.of(context).push(
               MaterialPageRoute(builder: (_) => const DataControlsScreen()),
+            ),
+          ),
+          ListTile(
+            title: const Text('Wearable glances'),
+            subtitle: const Text(
+              'E16-09 — no PRD/DS grounding exists; open-question notice, '
+              'not a guessed watch face',
+            ),
+            onTap: () => Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => const WearableGlancesScreen()),
             ),
           ),
           ListTile(
@@ -1552,6 +1564,16 @@ class DebugMenuScreen extends StatelessWidget {
               MaterialPageRoute(
                 builder: (_) => const LiveMatchViewScreen(isScorer: true),
               ),
+            ),
+          ),
+          ListTile(
+            title: const Text('TV Scoreboard mode'),
+            subtitle: const Text(
+              'E16-09 — AppScoreboard ×3 scale, dark high-contrast, '
+              'auto-cycling batter/bowler strips every 8s',
+            ),
+            onTap: () => Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => const TvScoreboardScreen()),
             ),
           ),
           ListTile(
