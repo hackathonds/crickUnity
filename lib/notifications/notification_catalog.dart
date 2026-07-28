@@ -653,6 +653,32 @@ List<NotificationCard> _moderationCards(Ref ref, DateTime now) {
           actions: const [NotificationActionType.respond],
           createdAt: r.createdAt,
         ),
+    // PRD: "repeat-offender ladder ... (each with notice + appeal)."
+    // This is the notice half -- one card per resolved report that
+    // actually advanced the viewer's ladder stage
+    // (moderation_provider.dart's resolveReport bakes the stage reached
+    // onto the report itself, since the live strike total keeps moving
+    // as later reports resolve). "Dispute" marks read like every other
+    // non-Pay action in this file rather than deep-linking to a real
+    // appeals review -- no such flow exists anywhere in this app (same
+    // flagged gap band_breakdown_screen.dart already names for the
+    // Trust/Sportsmanship score's own appeal link).
+    for (final Report r in reports)
+      if (r.targetUserName == composerViewerName &&
+          r.status == ReportStatus.reviewedActionTaken &&
+          r.ladderStageApplied != null)
+        NotificationCard(
+          id: 'moderation-strike-${r.id}',
+          tab: NotificationTab.forYou,
+          entityName: 'CricUnity Safety',
+          title:
+              'Your account received a moderation strike: '
+              '${r.ladderStageApplied} (${reportReasonLabels[r.reason]})',
+          priority: NotificationPriority.p0,
+          channel: NotificationChannel.safetyAccount,
+          actions: const [NotificationActionType.dispute],
+          createdAt: r.createdAt,
+        ),
   ];
 }
 
