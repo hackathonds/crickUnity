@@ -38,10 +38,17 @@ class AppTimeline extends StatelessWidget {
   final List<AppTimelineEntry> entries;
   final String Function(DateTime date) dateLabelBuilder;
 
+  /// True when this timeline is embedded inside another scroll view
+  /// (e.g. a profile tab body) rather than owning the whole screen --
+  /// sizes to content and defers scrolling to the ancestor instead of
+  /// erroring on unbounded height.
+  final bool shrinkWrap;
+
   const AppTimeline({
     super.key,
     required this.entries,
     required this.dateLabelBuilder,
+    this.shrinkWrap = false,
   });
 
   @override
@@ -56,6 +63,8 @@ class AppTimeline extends StatelessWidget {
     }
 
     return CustomScrollView(
+      shrinkWrap: shrinkWrap,
+      physics: shrinkWrap ? const NeverScrollableScrollPhysics() : null,
       slivers: [
         for (final group in groups) ...[
           SliverPersistentHeader(

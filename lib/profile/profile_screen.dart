@@ -16,6 +16,7 @@ import 'profile_locked_card.dart';
 import 'profile_models.dart';
 import 'profile_overview_tab.dart';
 import 'profile_self_menu_sheet.dart';
+import 'profile_timeline_tab.dart';
 
 const List<String> _profileTabLabels = [
   'Overview',
@@ -29,9 +30,10 @@ const List<String> _profileTabLabels = [
 /// row per relation, pinned badge strip, sticky stat header strip, tabs.
 ///
 /// Stats tab is E2-03 (career_stats_screen.dart), now built now that its
-/// E13-01 chart-library dependency shipped. Media/Timeline still have no
-/// data model -- both render a placeholder noting their real story, same
-/// "stand-in for a later screen" pattern used throughout E1.
+/// E13-01 chart-library dependency shipped. Timeline tab is E2-09
+/// (profile_timeline_tab.dart). Media still has no data model -- it
+/// renders a placeholder noting its real story, same "stand-in for a
+/// later screen" pattern used throughout E1.
 ///
 /// Interpretation: DS's own anatomy line lists a Message action for
 /// "other" viewers generally, but the screen's edge-case note says "no
@@ -235,9 +237,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       2 => const _ProfileTabPlaceholder(
         text: 'Media auto-albums are a later story.',
       ),
-      _ => const _ProfileTabPlaceholder(
-        text: 'The life-in-cricket timeline is a later story.',
-      ),
+      _ => const ProfileTimelineTab(),
     };
   }
 }
