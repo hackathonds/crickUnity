@@ -174,6 +174,36 @@ class MatchesNotifier extends Notifier<MatchesState> {
     );
   }
 
+  /// AC amendment #3 (PRD §7.1): "'Challenge a friend/team' entry
+  /// creates a challenge card the receiver accepts into the wizard." A
+  /// challenge is lighter-weight than a Friendly invite -- the receiver
+  /// fills in ground/time as part of accepting, in one step, rather
+  /// than a blind Accept on a fully sender-authored draft.
+  void acceptChallengeWithDetails(
+    String matchId, {
+    required String groundName,
+    required DateTime dateTime,
+    DateTime Function() now = DateTime.now,
+  }) {
+    state = state.copyWith(
+      matches: [
+        for (final m in state.matches)
+          if (m.id == matchId)
+            _confirm(
+              m.copyWith(
+                draft: m.draft.copyWith(
+                  groundName: groundName,
+                  dateTime: dateTime,
+                ),
+              ),
+              now,
+            )
+          else
+            m,
+      ],
+    );
+  }
+
   MatchRecord _confirm(MatchRecord m, DateTime Function() now) {
     return m.copyWith(
       status: MatchStatus.accepted,
