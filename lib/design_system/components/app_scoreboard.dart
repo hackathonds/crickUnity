@@ -199,6 +199,8 @@ class AppScoreboardState extends State<AppScoreboard>
                       widget.tvCyclingStrips.length]
                 : widget.contextStrip,
             key: const ValueKey('appScoreboardContextStrip'),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
             style: AppTypography.caption.copyWith(
               fontSize: 13 * scale,
               color: colors.textSecondary,

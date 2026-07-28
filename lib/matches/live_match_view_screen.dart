@@ -19,6 +19,7 @@ import 'gallery_screen.dart';
 import 'scorecard_screen.dart';
 import 'scoring_models.dart';
 import 'scoring_provider.dart';
+import 'tv_scoreboard_screen.dart';
 
 /// DS §7 screen 28 (Live Match View, spectator): "{Scoreboard} -> tabs
 /// Commentary(default)/Scorecard/Charts/Gallery; commentary auto-scroll
@@ -97,7 +98,19 @@ class _LiveMatchViewScreenState extends ConsumerState<LiveMatchViewScreen>
     final isOnline = ref.watch(isOnlineProvider);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Match')),
+      appBar: AppBar(
+        title: const Text('Match'),
+        actions: [
+          IconButton(
+            key: const ValueKey('openTvModeButton'),
+            icon: const Icon(Icons.tv_outlined),
+            tooltip: 'TV mode',
+            onPressed: () => Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => const TvScoreboardScreen()),
+            ),
+          ),
+        ],
+      ),
       body: Column(
         children: [
           Container(
