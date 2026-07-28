@@ -20,6 +20,8 @@ class FollowGraphState {
 
   bool isRestricted(String name) => restrictedNames.contains(name);
 
+  bool isFollowing(String name) => following.any((f) => f.name == name);
+
   FollowGraphState copyWith({
     List<FollowerEntry>? followers,
     List<FollowerEntry>? following,
@@ -35,6 +37,15 @@ class FollowGraphNotifier extends Notifier<FollowGraphState> {
   @override
   FollowGraphState build() =>
       FollowGraphState(followers: mockFollowers(), following: mockFollowing());
+
+  /// A brand-new follow relationship (e.g. following a player found via
+  /// Search/QR, PRD §16) -- idempotent no-op if already following.
+  void follow(String name) {
+    if (state.following.any((f) => f.name == name)) return;
+    state = state.copyWith(
+      following: [...state.following, FollowerEntry(name: name)],
+    );
+  }
 
   /// PRD §12.8: "restrict (they see public-only without knowing)" -- a
   /// silent toggle, never notifies the restricted follower.

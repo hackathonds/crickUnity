@@ -12,6 +12,7 @@ import '../grounds/ground_profile_screen.dart';
 import '../social/group_detail_screen.dart';
 import 'qr_models.dart';
 import 'qr_registry.dart';
+import 'searched_player_profile_screen.dart';
 
 /// PRD §16: "QR Search: camera icon -> scan any CricUnity QR (profile/
 /// team/ground/match/tournament) -> jump straight to object; also
@@ -47,6 +48,13 @@ class _QrScannerScreenState extends ConsumerState<QrScannerScreen> {
 
   void _jumpTo(QrCodeEntry entry) {
     switch (entry.type) {
+      case QrObjectType.profile:
+        Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (_) =>
+                SearchedPlayerProfileScreen(playerName: entry.targetId),
+          ),
+        );
       case QrObjectType.ground:
         Navigator.of(context).push(
           MaterialPageRoute(

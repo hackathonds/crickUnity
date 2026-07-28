@@ -5,6 +5,7 @@ import '../grounds/booking_models.dart';
 import '../grounds/bookings_provider.dart';
 import '../grounds/grounds_provider.dart';
 import '../social/groups_provider.dart';
+import '../teams/selection_board_models.dart' show mockSelectionPool;
 import '../tournaments/tournament_models.dart';
 import '../tournaments/tournaments_provider.dart';
 import 'qr_models.dart';
@@ -59,6 +60,19 @@ List<QrCodeEntry> availableQrCodes(WidgetRef ref) {
         type: QrObjectType.group,
         label: group.name,
         targetId: group.id,
+      ),
+    );
+  }
+
+  // Same player pool Global Search matches against (search_provider.dart)
+  // -- a QR-bearing profile is the same identity, not a second directory.
+  for (final player in mockSelectionPool()) {
+    entries.add(
+      QrCodeEntry(
+        code: 'QR-PROFILE-${player.name}',
+        type: QrObjectType.profile,
+        label: player.name,
+        targetId: player.name,
       ),
     );
   }

@@ -25,6 +25,7 @@ import '../../grounds/booking_flow_screen.dart';
 import '../../notifications/notification_center_screen.dart';
 import '../../search/global_search_screen.dart';
 import '../../search/qr_scanner_screen.dart';
+import '../../search/searched_player_profile_screen.dart';
 import '../../grounds/ground_profile_screen.dart';
 import '../../grounds/grounds_discovery_screen.dart';
 import '../../grounds/caretaker_mode_screen.dart';
@@ -2386,6 +2387,20 @@ class DebugMenuScreen extends StatelessWidget {
             onTap: () => Navigator.of(
               context,
             ).push(MaterialPageRoute(builder: (_) => const QrScannerScreen())),
+          ),
+          ListTile(
+            title: const Text('Searched player profile + follow'),
+            subtitle: const Text(
+              'E12-01 addendum — search/QR result -> real profile, real '
+              'Follow via followGraphProvider (E16-02)',
+            ),
+            onTap: () => Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (_) => const SearchedPlayerProfileScreen(
+                  playerName: 'Priya Nair',
+                ),
+              ),
+            ),
           ),
           ListTile(
             title: const Text('Club home + console'),
