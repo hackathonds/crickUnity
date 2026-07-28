@@ -241,6 +241,18 @@ class AppIconButton extends StatelessWidget {
 
 /// Inline Yes/No decision chip — DS §3.1's Chip-action row (36h, r-full,
 /// `surfaceAlt` fill). `selected` tints the border/text `primary`.
+///
+/// E16-10 finding (not fixed here): this 36h pill sits directly inside
+/// [AppPressable], whose hit area is exactly its child's rendered size --
+/// a real ~36px tap target, under non-negotiable #5's 44px floor. Padding
+/// the tap target to 44h (tried during this audit) pushes every fixed-
+/// height `Wrap` of chips over budget -- `style_tag_picker_sheet.dart`'s
+/// sheet, `team_home_screen.dart`'s >4-tab fallback row, and others all
+/// overflowed once each chip grew 8px taller. Fixing this properly means
+/// reviewing every one of those call sites' layouts, not just this
+/// component -- flagged as an open question for a dedicated follow-up
+/// story rather than a change that trades one defect for several new
+/// overflow regressions.
 class AppChipActionButton extends StatelessWidget {
   final String label;
   final VoidCallback? onPressed;
