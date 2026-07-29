@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../persistence/persisted_notifier.dart';
 import '../profile/achievement_models.dart';
 import 'achievements_models.dart';
 import 'rewards_models.dart';
@@ -23,6 +24,26 @@ class AchievementsState {
       timeline: timeline ?? this.timeline,
     );
   }
+
+  Map<String, dynamic> toJson() => {
+    'progress': {
+      for (final entry in progress.entries)
+        entry.key.name: entry.value.toJson(),
+    },
+    'timeline': timeline,
+  };
+
+  factory AchievementsState.fromJson(Map<String, dynamic> json) {
+    return AchievementsState(
+      progress: {
+        for (final entry in (json['progress'] as Map<String, dynamic>).entries)
+          TieredBadgeId.values.byName(entry.key): TieredBadgeProgress.fromJson(
+            entry.value as Map<String, dynamic>,
+          ),
+      },
+      timeline: [for (final t in json['timeline'] as List) t as String],
+    );
+  }
 }
 
 /// E6-04 -- badge engine for the 3 tiered badges (see
@@ -30,9 +51,19 @@ class AchievementsState {
 /// already exist elsewhere this session: scoring_provider.dart's
 /// zero-dispute ripple and streaks_provider.dart's playing-streak
 /// milestone detection, rather than a standalone mock trigger.
-class AchievementsNotifier extends Notifier<AchievementsState> {
+class AchievementsNotifier extends PersistedNotifier<AchievementsState> {
   @override
-  AchievementsState build() => const AchievementsState();
+  String get persistenceKey => 'achievements_v1';
+
+  @override
+  AchievementsState seed() => const AchievementsState();
+
+  @override
+  Map<String, dynamic> toJson(AchievementsState value) => value.toJson();
+
+  @override
+  AchievementsState fromJson(Map<String, dynamic> json) =>
+      AchievementsState.fromJson(json);
 
   void _applyCounter(TieredBadgeId id, int newCounter) {
     final tiers = badgeTiers[id]!;

@@ -1,5 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../persistence/persisted_notifier.dart';
+
 /// PRD §13.6 ("CricUnity Pro") + DS §11.14 ("Family = manage-members
 /// screen, 4 slots"). No PRD text distinguishes a separate "Family"
 /// price tier from solo Pro beyond DS naming both on one paywall --
@@ -35,15 +37,41 @@ class PremiumState {
       guardianBundleBySlot: guardianBundleBySlot ?? this.guardianBundleBySlot,
     );
   }
+
+  Map<String, dynamic> toJson() => {
+    'plan': plan.name,
+    'familySlots': familySlots,
+    'guardianBundleBySlot': guardianBundleBySlot,
+  };
+
+  factory PremiumState.fromJson(Map<String, dynamic> json) {
+    return PremiumState(
+      plan: PremiumPlan.values.byName(json['plan'] as String),
+      familySlots: [for (final s in json['familySlots'] as List) s as String?],
+      guardianBundleBySlot: [
+        for (final b in json['guardianBundleBySlot'] as List) b as bool,
+      ],
+    );
+  }
 }
 
 /// PRD §13.6's "Rule: Pro never affects rankings, Trust, or
 /// verification -- competitive integrity is unbuyable." This notifier
 /// only ever gates the coin multiplier and Family slots -- nothing here
 /// touches ranking/Trust/verification state anywhere in the codebase.
-class PremiumNotifier extends Notifier<PremiumState> {
+class PremiumNotifier extends PersistedNotifier<PremiumState> {
   @override
-  PremiumState build() => const PremiumState();
+  String get persistenceKey => 'premium_v1';
+
+  @override
+  PremiumState seed() => const PremiumState();
+
+  @override
+  Map<String, dynamic> toJson(PremiumState value) => value.toJson();
+
+  @override
+  PremiumState fromJson(Map<String, dynamic> json) =>
+      PremiumState.fromJson(json);
 
   void subscribe(PremiumPlan plan) {
     state = state.copyWith(plan: plan);

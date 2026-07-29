@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../persistence/persisted_notifier.dart';
 import 'missions_models.dart';
 import 'rewards_provider.dart';
 
@@ -36,12 +37,63 @@ class MissionsState {
       roleRotationIndex: roleRotationIndex ?? this.roleRotationIndex,
     );
   }
+
+  Map<String, dynamic> toJson() => {
+    'instancesByTier': {
+      for (final entry in instancesByTier.entries)
+        entry.key.name: [for (final i in entry.value) i.toJson()],
+    },
+    'periodKeyByTier': {
+      for (final entry in periodKeyByTier.entries)
+        entry.key.name: entry.value.toIso8601String(),
+    },
+    'refreshTokens': {
+      for (final entry in refreshTokens.entries) entry.key.name: entry.value,
+    },
+    'roleRotationIndex': roleRotationIndex,
+  };
+
+  factory MissionsState.fromJson(Map<String, dynamic> json) {
+    return MissionsState(
+      instancesByTier: {
+        for (final entry
+            in (json['instancesByTier'] as Map<String, dynamic>).entries)
+          MissionTier.values.byName(entry.key): [
+            for (final i in entry.value as List)
+              MissionInstance.fromJson(i as Map<String, dynamic>),
+          ],
+      },
+      periodKeyByTier: {
+        for (final entry
+            in (json['periodKeyByTier'] as Map<String, dynamic>).entries)
+          MissionTier.values.byName(entry.key): DateTime.parse(
+            entry.value as String,
+          ),
+      },
+      refreshTokens: {
+        for (final entry
+            in (json['refreshTokens'] as Map<String, dynamic>).entries)
+          MissionTier.values.byName(entry.key): entry.value as int,
+      },
+      roleRotationIndex: json['roleRotationIndex'] as int? ?? 0,
+    );
+  }
 }
 
 /// DS §7-54 (Missions Board) + PRD §13.2 -- E6-03's missions engine.
-class MissionsNotifier extends Notifier<MissionsState> {
+class MissionsNotifier extends PersistedNotifier<MissionsState> {
   @override
-  MissionsState build() => const MissionsState();
+  String get persistenceKey => 'missions_v1';
+
+  @override
+  MissionsState seed() => const MissionsState();
+
+  @override
+  Map<String, dynamic> toJson(MissionsState value) => value.toJson();
+
+  @override
+  MissionsState fromJson(Map<String, dynamic> json) =>
+      MissionsState.fromJson(json);
 
   DateTime _periodKeyFor(MissionTier tier, DateTime now) {
     return switch (tier) {

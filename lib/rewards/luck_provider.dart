@@ -2,6 +2,7 @@ import 'dart:math';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../persistence/persisted_notifier.dart';
 import 'luck_models.dart';
 import 'rewards_provider.dart';
 
@@ -48,6 +49,33 @@ class LuckState {
       pastDraws: pastDraws ?? this.pastDraws,
     );
   }
+
+  Map<String, dynamic> toJson() => {
+    'scratchCardsAvailable': scratchCardsAvailable,
+    'consecutiveBlanks': consecutiveBlanks,
+    'lastSpinDate': lastSpinDate?.toIso8601String(),
+    'ticketsClaimedThisMonth': ticketsClaimedThisMonth,
+    'ticketsClaimedMonthKey': ticketsClaimedMonthKey,
+    'log': log,
+    'pastDraws': [for (final d in pastDraws) d.toJson()],
+  };
+
+  factory LuckState.fromJson(Map<String, dynamic> json) {
+    return LuckState(
+      scratchCardsAvailable: json['scratchCardsAvailable'] as int? ?? 0,
+      consecutiveBlanks: json['consecutiveBlanks'] as int? ?? 0,
+      lastSpinDate: json['lastSpinDate'] != null
+          ? DateTime.parse(json['lastSpinDate'] as String)
+          : null,
+      ticketsClaimedThisMonth: json['ticketsClaimedThisMonth'] as int? ?? 0,
+      ticketsClaimedMonthKey: json['ticketsClaimedMonthKey'] as int?,
+      log: [for (final l in json['log'] as List) l as String],
+      pastDraws: [
+        for (final d in json['pastDraws'] as List)
+          LuckyDrawResult.fromJson(d as Map<String, dynamic>),
+      ],
+    );
+  }
 }
 
 /// PRD §13.1: "500 coins earned (not spent) that month" -> 1 ticket.
@@ -55,11 +83,20 @@ int ticketsEarnedThisMonth(RewardsState rewards) =>
     rewards.coinsEarnedThisMonth ~/ 500;
 
 /// PRD §13.4 -- E6-06's Luck Layer engine.
-class LuckLayerNotifier extends Notifier<LuckState> {
+class LuckLayerNotifier extends PersistedNotifier<LuckState> {
   final Random _random = Random();
 
   @override
-  LuckState build() => const LuckState();
+  String get persistenceKey => 'luck_layer_v1';
+
+  @override
+  LuckState seed() => const LuckState();
+
+  @override
+  Map<String, dynamic> toJson(LuckState value) => value.toJson();
+
+  @override
+  LuckState fromJson(Map<String, dynamic> json) => LuckState.fromJson(json);
 
   /// Wired from streaks_provider.dart's day-30 login streak milestone
   /// (previously a flagged "mock -- Luck Layer/E6-06 not built yet"

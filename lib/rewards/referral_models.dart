@@ -30,4 +30,20 @@ class ReferralEntry {
       joinedAt: joinedAt,
     );
   }
+
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'name': name,
+    'status': status.name,
+    'joinedAt': joinedAt.toIso8601String(),
+  };
+
+  factory ReferralEntry.fromJson(Map<String, dynamic> json) {
+    return ReferralEntry(
+      id: json['id'] as String,
+      name: json['name'] as String,
+      status: ReferralStatus.values.byName(json['status'] as String),
+      joinedAt: DateTime.parse(json['joinedAt'] as String),
+    );
+  }
 }

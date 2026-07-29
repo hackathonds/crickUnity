@@ -191,4 +191,24 @@ class VoucherRedemption {
       status: status ?? this.status,
     );
   }
+
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'listingId': listingId,
+    'code': code,
+    'redeemedAt': redeemedAt.toIso8601String(),
+    'redeemByDate': redeemByDate.toIso8601String(),
+    'status': status.name,
+  };
+
+  factory VoucherRedemption.fromJson(Map<String, dynamic> json) {
+    return VoucherRedemption(
+      id: json['id'] as String,
+      listingId: json['listingId'] as String,
+      code: json['code'] as String,
+      redeemedAt: DateTime.parse(json['redeemedAt'] as String),
+      redeemByDate: DateTime.parse(json['redeemByDate'] as String),
+      status: RedemptionStatus.values.byName(json['status'] as String),
+    );
+  }
 }

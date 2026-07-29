@@ -121,6 +121,22 @@ class CeremonyEvent {
     this.badgeName,
     this.tierLabel,
   });
+
+  Map<String, dynamic> toJson() => {
+    'type': type.name,
+    'level': level,
+    'badgeName': badgeName,
+    'tierLabel': tierLabel,
+  };
+
+  factory CeremonyEvent.fromJson(Map<String, dynamic> json) {
+    return CeremonyEvent(
+      type: CeremonyType.values.byName(json['type'] as String),
+      level: json['level'] as int?,
+      badgeName: json['badgeName'] as String?,
+      tierLabel: json['tierLabel'] as String?,
+    );
+  }
 }
 
 /// PRD §13.1: "Coins (spendable; expire 12 months after earning, FIFO
@@ -146,6 +162,20 @@ class CoinBatch {
     remaining: remaining ?? this.remaining,
     earnedAt: earnedAt,
   );
+
+  Map<String, dynamic> toJson() => {
+    'amount': amount,
+    'remaining': remaining,
+    'earnedAt': earnedAt.toIso8601String(),
+  };
+
+  factory CoinBatch.fromJson(Map<String, dynamic> json) {
+    return CoinBatch(
+      amount: json['amount'] as int,
+      remaining: json['remaining'] as int,
+      earnedAt: DateTime.parse(json['earnedAt'] as String),
+    );
+  }
 }
 
 /// PRD §13.1's "expiry warnings at 30/7 days" -- coins from the
