@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../persistence/persisted_notifier.dart';
 import 'privacy_models.dart';
 
 /// PRD §17: "minors get locked-stricter defaults." No PRD-given mapping
@@ -44,11 +45,46 @@ class PrivacySettingsState {
       previewAsLevel: previewAsLevel ?? this.previewAsLevel,
     );
   }
+
+  Map<String, dynamic> toJson() => {
+    'settings': {
+      for (final entry in settings.entries) entry.key.name: entry.value.name,
+    },
+    'viewerIsMinor': viewerIsMinor,
+    'viewerIsRankedPlayer': viewerIsRankedPlayer,
+    'previewAsLevel': previewAsLevel.name,
+  };
+
+  factory PrivacySettingsState.fromJson(Map<String, dynamic> json) {
+    return PrivacySettingsState(
+      settings: {
+        for (final entry in (json['settings'] as Map<String, dynamic>).entries)
+          PrivacySurface.values.byName(entry.key): AudienceLevel.values.byName(
+            entry.value as String,
+          ),
+      },
+      viewerIsMinor: json['viewerIsMinor'] as bool? ?? false,
+      viewerIsRankedPlayer: json['viewerIsRankedPlayer'] as bool? ?? false,
+      previewAsLevel: AudienceLevel.values.byName(
+        json['previewAsLevel'] as String,
+      ),
+    );
+  }
 }
 
-class PrivacyNotifier extends Notifier<PrivacySettingsState> {
+class PrivacyNotifier extends PersistedNotifier<PrivacySettingsState> {
   @override
-  PrivacySettingsState build() {
+  String get persistenceKey => 'privacy_v1';
+
+  @override
+  Map<String, dynamic> toJson(PrivacySettingsState value) => value.toJson();
+
+  @override
+  PrivacySettingsState fromJson(Map<String, dynamic> json) =>
+      PrivacySettingsState.fromJson(json);
+
+  @override
+  PrivacySettingsState seed() {
     return PrivacySettingsState(
       settings: {
         for (final config in privacySurfaceConfigs)

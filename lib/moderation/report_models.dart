@@ -109,6 +109,42 @@ class Report {
       ladderStageApplied: ladderStageApplied ?? this.ladderStageApplied,
     );
   }
+
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'targetType': targetType,
+    'targetLabel': targetLabel,
+    'targetUserName': targetUserName,
+    'reason': reason.name,
+    'subReason': subReason,
+    'hasEvidence': hasEvidence,
+    'anonymous': anonymous,
+    'reporterName': reporterName,
+    'status': status.name,
+    'mergedCount': mergedCount,
+    'createdAt': createdAt.toIso8601String(),
+    'reportedExcerpt': reportedExcerpt,
+    'ladderStageApplied': ladderStageApplied,
+  };
+
+  factory Report.fromJson(Map<String, dynamic> json) {
+    return Report(
+      id: json['id'] as String,
+      targetType: json['targetType'] as String,
+      targetLabel: json['targetLabel'] as String,
+      targetUserName: json['targetUserName'] as String?,
+      reason: ReportReason.values.byName(json['reason'] as String),
+      subReason: json['subReason'] as String?,
+      hasEvidence: json['hasEvidence'] as bool? ?? false,
+      anonymous: json['anonymous'] as bool? ?? false,
+      reporterName: json['reporterName'] as String,
+      status: ReportStatus.values.byName(json['status'] as String),
+      mergedCount: json['mergedCount'] as int? ?? 1,
+      createdAt: DateTime.parse(json['createdAt'] as String),
+      reportedExcerpt: json['reportedExcerpt'] as String?,
+      ladderStageApplied: json['ladderStageApplied'] as String?,
+    );
+  }
 }
 
 /// PRD: "repeat-offender ladder: warn -> mute 24h -> suspend 7d -> ban
@@ -158,6 +194,26 @@ class AuditLogEntry {
     required this.decidedAt,
     this.ladderStageApplied,
   });
+
+  Map<String, dynamic> toJson() => {
+    'reportId': reportId,
+    'targetLabel': targetLabel,
+    'actionTaken': actionTaken,
+    'reasonCode': reasonCode,
+    'decidedAt': decidedAt.toIso8601String(),
+    'ladderStageApplied': ladderStageApplied,
+  };
+
+  factory AuditLogEntry.fromJson(Map<String, dynamic> json) {
+    return AuditLogEntry(
+      reportId: json['reportId'] as String,
+      targetLabel: json['targetLabel'] as String,
+      actionTaken: json['actionTaken'] as bool,
+      reasonCode: json['reasonCode'] as String,
+      decidedAt: DateTime.parse(json['decidedAt'] as String),
+      ladderStageApplied: json['ladderStageApplied'] as String?,
+    );
+  }
 }
 
 /// DS §7-69: "SLA countdown chips." PRD names "reviewed within 24h" as

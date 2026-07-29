@@ -64,4 +64,20 @@ class ConsentRequest {
     required this.type,
     required this.description,
   });
+
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'childName': childName,
+    'type': type.name,
+    'description': description,
+  };
+
+  factory ConsentRequest.fromJson(Map<String, dynamic> json) {
+    return ConsentRequest(
+      id: json['id'] as String,
+      childName: json['childName'] as String,
+      type: ConsentType.values.byName(json['type'] as String),
+      description: json['description'] as String,
+    );
+  }
 }
