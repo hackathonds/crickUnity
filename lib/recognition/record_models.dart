@@ -52,6 +52,22 @@ class RecordTransfer {
       : "$newHolderName has surpassed $previousHolderName's record "
             'with $newValue. $previousHolderName held this record with '
             'distinction -- their achievement remains in the record book.';
+
+  Map<String, dynamic> toJson() => {
+    'previousHolderName': previousHolderName,
+    'newHolderName': newHolderName,
+    'newValue': newValue,
+    'transferredAt': transferredAt.toIso8601String(),
+  };
+
+  factory RecordTransfer.fromJson(Map<String, dynamic> json) {
+    return RecordTransfer(
+      previousHolderName: json['previousHolderName'] as String?,
+      newHolderName: json['newHolderName'] as String,
+      newValue: json['newValue'] as int,
+      transferredAt: DateTime.parse(json['transferredAt'] as String),
+    );
+  }
 }
 
 /// [holderName] null = vacant, rendered as a "be first" card.
@@ -94,6 +110,35 @@ class Record {
       provenanceLabel: provenanceLabel ?? this.provenanceLabel,
       setAt: setAt ?? this.setAt,
       transferHistory: transferHistory ?? this.transferHistory,
+    );
+  }
+
+  Map<String, dynamic> toJson() => {
+    'category': category.name,
+    'scope': scope.name,
+    'scopeLabel': scopeLabel,
+    'holderName': holderName,
+    'value': value,
+    'provenanceLabel': provenanceLabel,
+    'setAt': setAt?.toIso8601String(),
+    'transferHistory': [for (final t in transferHistory) t.toJson()],
+  };
+
+  factory Record.fromJson(Map<String, dynamic> json) {
+    return Record(
+      category: RecordCategory.values.byName(json['category'] as String),
+      scope: RecordScope.values.byName(json['scope'] as String),
+      scopeLabel: json['scopeLabel'] as String,
+      holderName: json['holderName'] as String?,
+      value: json['value'] as int? ?? 0,
+      provenanceLabel: json['provenanceLabel'] as String?,
+      setAt: json['setAt'] != null
+          ? DateTime.parse(json['setAt'] as String)
+          : null,
+      transferHistory: [
+        for (final t in json['transferHistory'] as List)
+          RecordTransfer.fromJson(t as Map<String, dynamic>),
+      ],
     );
   }
 }

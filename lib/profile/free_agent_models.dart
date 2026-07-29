@@ -38,6 +38,26 @@ class FreeAgentProfile {
       rolesOffered: rolesOffered ?? this.rolesOffered,
     );
   }
+
+  Map<String, dynamic> toJson() => {
+    'isFreeAgent': isFreeAgent,
+    'availableDays': [for (final d in availableDays) d.name],
+    'rolesOffered': [for (final r in rolesOffered) r.name],
+  };
+
+  factory FreeAgentProfile.fromJson(Map<String, dynamic> json) {
+    return FreeAgentProfile(
+      isFreeAgent: json['isFreeAgent'] as bool? ?? false,
+      availableDays: {
+        for (final d in json['availableDays'] as List)
+          Weekday.values.byName(d as String),
+      },
+      rolesOffered: {
+        for (final r in json['rolesOffered'] as List)
+          PrimaryRole.values.byName(r as String),
+      },
+    );
+  }
 }
 
 /// PRD §8.7 (Auction): "Optional player-auction mode: player pool
@@ -55,4 +75,18 @@ class AuctionPoolRegistration {
     required this.basePriceRupees,
     required this.registeredAt,
   });
+
+  Map<String, dynamic> toJson() => {
+    'tournamentName': tournamentName,
+    'basePriceRupees': basePriceRupees,
+    'registeredAt': registeredAt.toIso8601String(),
+  };
+
+  factory AuctionPoolRegistration.fromJson(Map<String, dynamic> json) {
+    return AuctionPoolRegistration(
+      tournamentName: json['tournamentName'] as String,
+      basePriceRupees: json['basePriceRupees'] as int,
+      registeredAt: DateTime.parse(json['registeredAt'] as String),
+    );
+  }
 }

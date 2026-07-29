@@ -50,4 +50,24 @@ class AwardWinner {
     required this.periodLabel,
     required this.certificateIssuedAt,
   });
+
+  Map<String, dynamic> toJson() => {
+    'category': category.name,
+    'scopeLabel': scopeLabel,
+    'winnerName': winnerName,
+    'periodLabel': periodLabel,
+    'certificateIssuedAt': certificateIssuedAt.toIso8601String(),
+  };
+
+  factory AwardWinner.fromJson(Map<String, dynamic> json) {
+    return AwardWinner(
+      category: AwardCategory.values.byName(json['category'] as String),
+      scopeLabel: json['scopeLabel'] as String,
+      winnerName: json['winnerName'] as String,
+      periodLabel: json['periodLabel'] as String,
+      certificateIssuedAt: DateTime.parse(
+        json['certificateIssuedAt'] as String,
+      ),
+    );
+  }
 }

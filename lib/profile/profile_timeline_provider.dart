@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../analytics/player_analytics_data.dart' show mockCareerMatches;
+import '../persistence/persisted_notifier.dart';
 import '../teams/members_roles_provider.dart';
 import '../tournaments/ledger_provider.dart';
 import '../tournaments/tournaments_provider.dart';
@@ -119,13 +120,33 @@ class ProfileTimelineState {
       hiddenEntryIds: hiddenEntryIds ?? this.hiddenEntryIds,
     );
   }
+
+  Map<String, dynamic> toJson() => {'hiddenEntryIds': hiddenEntryIds.toList()};
+
+  factory ProfileTimelineState.fromJson(Map<String, dynamic> json) {
+    return ProfileTimelineState(
+      hiddenEntryIds: {
+        for (final id in json['hiddenEntryIds'] as List) id as String,
+      },
+    );
+  }
 }
 
 /// PRD §5.19: "user can hide individual entries." Purely local visual
 /// preference -- no PRD wording ties it to a synced backend field.
-class ProfileTimelineNotifier extends Notifier<ProfileTimelineState> {
+class ProfileTimelineNotifier extends PersistedNotifier<ProfileTimelineState> {
   @override
-  ProfileTimelineState build() => const ProfileTimelineState();
+  String get persistenceKey => 'profile_timeline_v1';
+
+  @override
+  ProfileTimelineState seed() => const ProfileTimelineState();
+
+  @override
+  Map<String, dynamic> toJson(ProfileTimelineState value) => value.toJson();
+
+  @override
+  ProfileTimelineState fromJson(Map<String, dynamic> json) =>
+      ProfileTimelineState.fromJson(json);
 
   void hide(String entryId) {
     state = state.copyWith(hiddenEntryIds: {...state.hiddenEntryIds, entryId});

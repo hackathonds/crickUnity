@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../persistence/persisted_notifier.dart';
 import '../rewards/rewards_provider.dart';
 import '../social/composer_screen.dart';
 import 'challenge_models.dart';
@@ -22,14 +23,39 @@ class ChallengesState {
       overtakenLog: overtakenLog ?? this.overtakenLog,
     );
   }
+
+  Map<String, dynamic> toJson() => {
+    'challenges': [for (final c in challenges) c.toJson()],
+    'overtakenLog': overtakenLog,
+  };
+
+  factory ChallengesState.fromJson(Map<String, dynamic> json) {
+    return ChallengesState(
+      challenges: [
+        for (final c in json['challenges'] as List)
+          Challenge.fromJson(c as Map<String, dynamic>),
+      ],
+      overtakenLog: [for (final o in json['overtakenLog'] as List) o as String],
+    );
+  }
 }
 
 enum JoinChallengeFailureReason { insufficientStake }
 
 /// PRD §13.3/§14 -- E8-03's challenges engine.
-class ChallengesNotifier extends Notifier<ChallengesState> {
+class ChallengesNotifier extends PersistedNotifier<ChallengesState> {
   @override
-  ChallengesState build() => ChallengesState(challenges: _seedChallenges());
+  String get persistenceKey => 'challenges_v1';
+
+  @override
+  ChallengesState seed() => ChallengesState(challenges: _seedChallenges());
+
+  @override
+  Map<String, dynamic> toJson(ChallengesState value) => value.toJson();
+
+  @override
+  ChallengesState fromJson(Map<String, dynamic> json) =>
+      ChallengesState.fromJson(json);
 
   static List<Challenge> _seedChallenges() {
     final endsAt = DateTime.now().add(const Duration(days: 10));

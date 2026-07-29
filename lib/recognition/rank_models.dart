@@ -78,4 +78,26 @@ class RankProfile {
 
   bool isDecayed({DateTime Function() now = DateTime.now}) =>
       now().difference(lastActiveAt).inDays >= rankDecayInactivityDays;
+
+  Map<String, dynamic> toJson() => {
+    'discipline': discipline.name,
+    'cityLabel': cityLabel,
+    'formatLabel': formatLabel,
+    'percentile': percentile,
+    'historicalPeakBand': historicalPeakBand.name,
+    'lastActiveAt': lastActiveAt.toIso8601String(),
+  };
+
+  factory RankProfile.fromJson(Map<String, dynamic> json) {
+    return RankProfile(
+      discipline: RankDiscipline.values.byName(json['discipline'] as String),
+      cityLabel: json['cityLabel'] as String,
+      formatLabel: json['formatLabel'] as String,
+      percentile: json['percentile'] as int,
+      historicalPeakBand: RankBand.values.byName(
+        json['historicalPeakBand'] as String,
+      ),
+      lastActiveAt: DateTime.parse(json['lastActiveAt'] as String),
+    );
+  }
 }

@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../persistence/persisted_notifier.dart';
 import '../rewards/achievements_models.dart';
 import '../rewards/achievements_provider.dart';
 import '../rewards/rewards_provider.dart';
@@ -16,12 +17,34 @@ class AwardsState {
 
   AwardsState copyWith({List<AwardWinner>? pastWinners}) =>
       AwardsState(pastWinners: pastWinners ?? this.pastWinners);
+
+  Map<String, dynamic> toJson() => {
+    'pastWinners': [for (final w in pastWinners) w.toJson()],
+  };
+
+  factory AwardsState.fromJson(Map<String, dynamic> json) {
+    return AwardsState(
+      pastWinners: [
+        for (final w in json['pastWinners'] as List)
+          AwardWinner.fromJson(w as Map<String, dynamic>),
+      ],
+    );
+  }
 }
 
 /// PRD §14 -- E8-07's periodic awards engine.
-class AwardsNotifier extends Notifier<AwardsState> {
+class AwardsNotifier extends PersistedNotifier<AwardsState> {
   @override
-  AwardsState build() => const AwardsState();
+  String get persistenceKey => 'awards_v1';
+
+  @override
+  AwardsState seed() => const AwardsState();
+
+  @override
+  Map<String, dynamic> toJson(AwardsState value) => value.toJson();
+
+  @override
+  AwardsState fromJson(Map<String, dynamic> json) => AwardsState.fromJson(json);
 
   /// Real signals where this session's existing providers make it
   /// possible; the rest is clearly flagged mock. Single-account app --
