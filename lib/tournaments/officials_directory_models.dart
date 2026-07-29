@@ -102,4 +102,22 @@ class OfficialsDirectoryFilters {
     }
     return true;
   }
+
+  Map<String, dynamic> toJson() => {
+    'role': role?.name,
+    'minTier': minTier?.name,
+    'requiredCertificationId': requiredCertificationId,
+  };
+
+  factory OfficialsDirectoryFilters.fromJson(Map<String, dynamic> json) {
+    return OfficialsDirectoryFilters(
+      role: json['role'] != null
+          ? OfficialRole.values.byName(json['role'] as String)
+          : null,
+      minTier: json['minTier'] != null
+          ? CredentialTier.values.byName(json['minTier'] as String)
+          : null,
+      requiredCertificationId: json['requiredCertificationId'] as String?,
+    );
+  }
 }

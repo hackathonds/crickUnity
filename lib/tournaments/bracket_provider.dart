@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../persistence/persisted_notifier.dart';
 import 'bracket_models.dart';
 
 class BracketState {
@@ -15,14 +16,44 @@ class BracketState {
 
   List<BracketMatch> forTournament(String tournamentId) =>
       matchesByTournament[tournamentId] ?? const [];
+
+  Map<String, dynamic> toJson() => {
+    'matchesByTournament': {
+      for (final entry in matchesByTournament.entries)
+        entry.key: [for (final m in entry.value) m.toJson()],
+    },
+  };
+
+  factory BracketState.fromJson(Map<String, dynamic> json) {
+    return BracketState(
+      matchesByTournament: {
+        for (final entry
+            in (json['matchesByTournament'] as Map<String, dynamic>).entries)
+          entry.key: [
+            for (final m in entry.value as List)
+              BracketMatch.fromJson(m as Map<String, dynamic>),
+          ],
+      },
+    );
+  }
 }
 
 /// Backlog E10-05 -- Brackets + seeding engine. See bracket_models.dart's
 /// top-of-file note for the exact PRD §8.5-8.6 quote and the
 /// single-group simplification this implements.
-class BracketNotifier extends Notifier<BracketState> {
+class BracketNotifier extends PersistedNotifier<BracketState> {
   @override
-  BracketState build() => const BracketState();
+  String get persistenceKey => 'bracket_v1';
+
+  @override
+  BracketState seed() => const BracketState();
+
+  @override
+  Map<String, dynamic> toJson(BracketState value) => value.toJson();
+
+  @override
+  BracketState fromJson(Map<String, dynamic> json) =>
+      BracketState.fromJson(json);
 
   /// [seededTeams] must already be in seed-rank order (1st seed first).
   void generateBracket(

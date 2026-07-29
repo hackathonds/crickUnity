@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../persistence/persisted_notifier.dart';
 import 'fixtures_provider.dart';
 import 'standings_provider.dart';
 import 'stats_models.dart';
@@ -74,14 +75,74 @@ class StatsState {
         final cmp = b.wickets.compareTo(a.wickets);
         return cmp != 0 ? cmp : a.runsConceded.compareTo(b.runsConceded);
       });
+
+  Map<String, dynamic> toJson() => {
+    'statsByTournament': {
+      for (final entry in statsByTournament.entries)
+        entry.key: [for (final s in entry.value) s.toJson()],
+    },
+    'qualificationsByTournament': {
+      for (final entry in qualificationsByTournament.entries)
+        entry.key: entry.value.toJson(),
+    },
+    'awardsByTournament': {
+      for (final entry in awardsByTournament.entries)
+        entry.key: [for (final a in entry.value) a.toJson()],
+    },
+    'championHistoryByTournament': championHistoryByTournament,
+  };
+
+  factory StatsState.fromJson(Map<String, dynamic> json) {
+    return StatsState(
+      statsByTournament: {
+        for (final entry
+            in (json['statsByTournament'] as Map<String, dynamic>).entries)
+          entry.key: [
+            for (final s in entry.value as List)
+              PlayerTournamentStat.fromJson(s as Map<String, dynamic>),
+          ],
+      },
+      qualificationsByTournament: {
+        for (final entry
+            in (json['qualificationsByTournament'] as Map<String, dynamic>)
+                .entries)
+          entry.key: StatsQualification.fromJson(
+            entry.value as Map<String, dynamic>,
+          ),
+      },
+      awardsByTournament: {
+        for (final entry
+            in (json['awardsByTournament'] as Map<String, dynamic>).entries)
+          entry.key: [
+            for (final a in entry.value as List)
+              TournamentAward.fromJson(a as Map<String, dynamic>),
+          ],
+      },
+      championHistoryByTournament: {
+        for (final entry
+            in (json['championHistoryByTournament'] as Map<String, dynamic>)
+                .entries)
+          entry.key: [for (final c in entry.value as List) c as String],
+      },
+    );
+  }
 }
 
 /// Backlog E10-08 -- Stats hub + awards + records engine. See
 /// stats_models.dart's top-of-file note for the exact PRD §8.10-8.12
 /// quote and the flagged per-fixture entry simplification.
-class StatsNotifier extends Notifier<StatsState> {
+class StatsNotifier extends PersistedNotifier<StatsState> {
   @override
-  StatsState build() => const StatsState();
+  String get persistenceKey => 'stats_v1';
+
+  @override
+  StatsState seed() => const StatsState();
+
+  @override
+  Map<String, dynamic> toJson(StatsState value) => value.toJson();
+
+  @override
+  StatsState fromJson(Map<String, dynamic> json) => StatsState.fromJson(json);
 
   void recordPlayerStat(
     String tournamentId,

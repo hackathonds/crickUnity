@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../persistence/persisted_notifier.dart';
 import 'fixture_models.dart';
 import 'registration_models.dart';
 import 'standings_models.dart';
@@ -31,15 +32,57 @@ class StandingsState {
 
   List<WhatIfScenario> scenariosFor(String tournamentId) =>
       scenariosByTournament[tournamentId] ?? const [];
+
+  Map<String, dynamic> toJson() => {
+    'resultsByTournament': {
+      for (final entry in resultsByTournament.entries)
+        entry.key: [for (final r in entry.value) r.toJson()],
+    },
+    'scenariosByTournament': {
+      for (final entry in scenariosByTournament.entries)
+        entry.key: [for (final s in entry.value) s.toJson()],
+    },
+  };
+
+  factory StandingsState.fromJson(Map<String, dynamic> json) {
+    return StandingsState(
+      resultsByTournament: {
+        for (final entry
+            in (json['resultsByTournament'] as Map<String, dynamic>).entries)
+          entry.key: [
+            for (final r in entry.value as List)
+              MatchResult.fromJson(r as Map<String, dynamic>),
+          ],
+      },
+      scenariosByTournament: {
+        for (final entry
+            in (json['scenariosByTournament'] as Map<String, dynamic>).entries)
+          entry.key: [
+            for (final s in entry.value as List)
+              WhatIfScenario.fromJson(s as Map<String, dynamic>),
+          ],
+      },
+    );
+  }
 }
 
 /// Backlog E10-04 -- Points table + NRR + what-if calculator engine.
 /// See standings_models.dart's top-of-file note for the flagged
 /// simplification (results recorded directly, not rippled from live
 /// scoring) and the phantom "G.3" citation.
-class StandingsNotifier extends Notifier<StandingsState> {
+class StandingsNotifier extends PersistedNotifier<StandingsState> {
   @override
-  StandingsState build() => const StandingsState();
+  String get persistenceKey => 'standings_v1';
+
+  @override
+  StandingsState seed() => const StandingsState();
+
+  @override
+  Map<String, dynamic> toJson(StandingsState value) => value.toJson();
+
+  @override
+  StandingsState fromJson(Map<String, dynamic> json) =>
+      StandingsState.fromJson(json);
 
   /// PRD §2.12: "cannot change a completed match result without both
   /// captains + scorer acknowledgment (or documented committee

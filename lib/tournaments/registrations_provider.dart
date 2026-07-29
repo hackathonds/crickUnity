@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../persistence/persisted_notifier.dart';
 import 'registration_models.dart';
 import 'tournament_models.dart';
 import 'tournaments_provider.dart';
@@ -14,14 +15,37 @@ class RegistrationsState {
 
   List<TeamRegistration> forTournament(String tournamentId) =>
       registrations.where((r) => r.tournamentId == tournamentId).toList();
+
+  Map<String, dynamic> toJson() => {
+    'registrations': [for (final r in registrations) r.toJson()],
+  };
+
+  factory RegistrationsState.fromJson(Map<String, dynamic> json) {
+    return RegistrationsState(
+      registrations: [
+        for (final r in json['registrations'] as List)
+          TeamRegistration.fromJson(r as Map<String, dynamic>),
+      ],
+    );
+  }
 }
 
 /// Backlog E10-02 -- Registration + escrow + eligibility flags engine.
 /// See registration_models.dart's top-of-file note for the exact PRD
 /// §8.2 quote this implements.
-class RegistrationsNotifier extends Notifier<RegistrationsState> {
+class RegistrationsNotifier extends PersistedNotifier<RegistrationsState> {
   @override
-  RegistrationsState build() => const RegistrationsState();
+  String get persistenceKey => 'registrations_v1';
+
+  @override
+  RegistrationsState seed() => const RegistrationsState();
+
+  @override
+  Map<String, dynamic> toJson(RegistrationsState value) => value.toJson();
+
+  @override
+  RegistrationsState fromJson(Map<String, dynamic> json) =>
+      RegistrationsState.fromJson(json);
 
   /// PRD §8.2: "squad list (min/max enforced)." Squad-size bounds come
   /// from the tournament's own Format step (E10-01), a genuine

@@ -81,4 +81,30 @@ class BracketMatch {
       winnerId: winnerId ?? this.winnerId,
     );
   }
+
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'tournamentId': tournamentId,
+    'round': round,
+    'slotIndex': slotIndex,
+    'teamAId': teamAId,
+    'teamAName': teamAName,
+    'teamBId': teamBId,
+    'teamBName': teamBName,
+    'winnerId': winnerId,
+  };
+
+  factory BracketMatch.fromJson(Map<String, dynamic> json) {
+    return BracketMatch(
+      id: json['id'] as String,
+      tournamentId: json['tournamentId'] as String,
+      round: json['round'] as int,
+      slotIndex: json['slotIndex'] as int,
+      teamAId: json['teamAId'] as String?,
+      teamAName: json['teamAName'] as String?,
+      teamBId: json['teamBId'] as String?,
+      teamBName: json['teamBName'] as String?,
+      winnerId: json['winnerId'] as String?,
+    );
+  }
 }

@@ -18,6 +18,18 @@ class VenueSlot {
 
   bool sameSlot(VenueSlot other) =>
       venueName == other.venueName && date == other.date;
+
+  Map<String, dynamic> toJson() => {
+    'venueName': venueName,
+    'date': date.toIso8601String(),
+  };
+
+  factory VenueSlot.fromJson(Map<String, dynamic> json) {
+    return VenueSlot(
+      venueName: json['venueName'] as String,
+      date: DateTime.parse(json['date'] as String),
+    );
+  }
 }
 
 /// PRD names no exact rest-gap length or double-header cap -- flagged
@@ -37,6 +49,24 @@ class FixtureChangeRecord {
     this.previousVenueName,
     this.previousDate,
   });
+
+  Map<String, dynamic> toJson() => {
+    'reason': reason,
+    'changedAt': changedAt.toIso8601String(),
+    'previousVenueName': previousVenueName,
+    'previousDate': previousDate?.toIso8601String(),
+  };
+
+  factory FixtureChangeRecord.fromJson(Map<String, dynamic> json) {
+    return FixtureChangeRecord(
+      reason: json['reason'] as String,
+      changedAt: DateTime.parse(json['changedAt'] as String),
+      previousVenueName: json['previousVenueName'] as String?,
+      previousDate: json['previousDate'] != null
+          ? DateTime.parse(json['previousDate'] as String)
+          : null,
+    );
+  }
 }
 
 class Fixture {
@@ -79,6 +109,37 @@ class Fixture {
       venueName: venueName ?? this.venueName,
       date: date ?? this.date,
       changeHistory: changeHistory ?? this.changeHistory,
+    );
+  }
+
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'tournamentId': tournamentId,
+    'homeRegistrationId': homeRegistrationId,
+    'homeTeamName': homeTeamName,
+    'awayRegistrationId': awayRegistrationId,
+    'awayTeamName': awayTeamName,
+    'venueName': venueName,
+    'date': date?.toIso8601String(),
+    'changeHistory': [for (final c in changeHistory) c.toJson()],
+  };
+
+  factory Fixture.fromJson(Map<String, dynamic> json) {
+    return Fixture(
+      id: json['id'] as String,
+      tournamentId: json['tournamentId'] as String,
+      homeRegistrationId: json['homeRegistrationId'] as String,
+      homeTeamName: json['homeTeamName'] as String,
+      awayRegistrationId: json['awayRegistrationId'] as String,
+      awayTeamName: json['awayTeamName'] as String,
+      venueName: json['venueName'] as String?,
+      date: json['date'] != null
+          ? DateTime.parse(json['date'] as String)
+          : null,
+      changeHistory: [
+        for (final c in json['changeHistory'] as List)
+          FixtureChangeRecord.fromJson(c as Map<String, dynamic>),
+      ],
     );
   }
 }

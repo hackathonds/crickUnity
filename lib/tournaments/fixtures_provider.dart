@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../persistence/persisted_notifier.dart';
 import 'fixture_models.dart';
 import 'registration_models.dart';
 import 'tournaments_provider.dart';
@@ -34,6 +35,35 @@ class FixturesState {
 
   List<VenueSlot> venueSlotsFor(String tournamentId) =>
       venueSlotsByTournament[tournamentId] ?? const [];
+
+  Map<String, dynamic> toJson() => {
+    'fixtures': [for (final f in fixtures) f.toJson()],
+    'venueSlotsByTournament': {
+      for (final entry in venueSlotsByTournament.entries)
+        entry.key: [for (final v in entry.value) v.toJson()],
+    },
+    'publishedTournamentIds': publishedTournamentIds.toList(),
+  };
+
+  factory FixturesState.fromJson(Map<String, dynamic> json) {
+    return FixturesState(
+      fixtures: [
+        for (final f in json['fixtures'] as List)
+          Fixture.fromJson(f as Map<String, dynamic>),
+      ],
+      venueSlotsByTournament: {
+        for (final entry
+            in (json['venueSlotsByTournament'] as Map<String, dynamic>).entries)
+          entry.key: [
+            for (final v in entry.value as List)
+              VenueSlot.fromJson(v as Map<String, dynamic>),
+          ],
+      },
+      publishedTournamentIds: {
+        for (final id in json['publishedTournamentIds'] as List) id as String,
+      },
+    );
+  }
 }
 
 /// Backlog E10-03 -- Fixtures generator + editor engine. See
@@ -41,9 +71,19 @@ class FixturesState {
 /// and the flagged judgment calls (rest gap, double-header cap, and
 /// the self-contained venue-pool standing in for cross-module ground
 /// availability).
-class FixturesNotifier extends Notifier<FixturesState> {
+class FixturesNotifier extends PersistedNotifier<FixturesState> {
   @override
-  FixturesState build() => const FixturesState();
+  String get persistenceKey => 'fixtures_v1';
+
+  @override
+  FixturesState seed() => const FixturesState();
+
+  @override
+  Map<String, dynamic> toJson(FixturesState value) => value.toJson();
+
+  @override
+  FixturesState fromJson(Map<String, dynamic> json) =>
+      FixturesState.fromJson(json);
 
   void addVenueSlot(String tournamentId, VenueSlot slot) {
     final current = state.venueSlotsFor(tournamentId);

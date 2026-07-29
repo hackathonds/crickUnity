@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../persistence/persisted_notifier.dart';
 import 'sanctioning_models.dart';
 
 class SanctioningState {
@@ -27,15 +28,43 @@ class SanctioningState {
   List<SanctionRequest> grantedFor(String associationId) => requestsFor(
     associationId,
   ).where((r) => r.status == SanctionStatus.granted).toList();
+
+  Map<String, dynamic> toJson() => {
+    'associations': [for (final a in associations) a.toJson()],
+    'requests': [for (final r in requests) r.toJson()],
+  };
+
+  factory SanctioningState.fromJson(Map<String, dynamic> json) {
+    return SanctioningState(
+      associations: [
+        for (final a in json['associations'] as List)
+          Association.fromJson(a as Map<String, dynamic>),
+      ],
+      requests: [
+        for (final r in json['requests'] as List)
+          SanctionRequest.fromJson(r as Map<String, dynamic>),
+      ],
+    );
+  }
 }
 
 /// Backlog E10-09 -- Sanctioning + association pages engine. See
 /// sanctioning_models.dart's top-of-file note for the exact DS §11.10
 /// quote this implements.
-class SanctioningNotifier extends Notifier<SanctioningState> {
+class SanctioningNotifier extends PersistedNotifier<SanctioningState> {
   @override
-  SanctioningState build() =>
+  String get persistenceKey => 'sanctioning_v1';
+
+  @override
+  SanctioningState seed() =>
       SanctioningState(associations: _seedAssociations());
+
+  @override
+  Map<String, dynamic> toJson(SanctioningState value) => value.toJson();
+
+  @override
+  SanctioningState fromJson(Map<String, dynamic> json) =>
+      SanctioningState.fromJson(json);
 
   static List<Association> _seedAssociations() => const [
     Association(

@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../persistence/persisted_notifier.dart';
 import 'officials_directory_models.dart';
 
 class OfficialsDirectoryState {
@@ -23,12 +24,34 @@ class OfficialsDirectoryState {
       filters: filters ?? this.filters,
     );
   }
+
+  /// Only [filters] persists -- [roster] is a deterministic mock
+  /// dataset (mockOfficialsDirectory()), re-seeded fresh on every load
+  /// rather than round-tripped through storage.
+  Map<String, dynamic> toJson() => {'filters': filters.toJson()};
 }
 
-class OfficialsDirectoryNotifier extends Notifier<OfficialsDirectoryState> {
+class OfficialsDirectoryNotifier
+    extends PersistedNotifier<OfficialsDirectoryState> {
   @override
-  OfficialsDirectoryState build() =>
+  String get persistenceKey => 'officials_directory_v1';
+
+  @override
+  OfficialsDirectoryState seed() =>
       OfficialsDirectoryState(roster: mockOfficialsDirectory());
+
+  @override
+  Map<String, dynamic> toJson(OfficialsDirectoryState value) => value.toJson();
+
+  @override
+  OfficialsDirectoryState fromJson(Map<String, dynamic> json) {
+    return OfficialsDirectoryState(
+      roster: mockOfficialsDirectory(),
+      filters: OfficialsDirectoryFilters.fromJson(
+        json['filters'] as Map<String, dynamic>,
+      ),
+    );
+  }
 
   void updateFilters(
     OfficialsDirectoryFilters Function(OfficialsDirectoryFilters) f,

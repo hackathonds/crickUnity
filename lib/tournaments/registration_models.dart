@@ -76,6 +76,35 @@ class TeamRegistration {
       blackoutDates: blackoutDates ?? this.blackoutDates,
     );
   }
+
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'tournamentId': tournamentId,
+    'teamName': teamName,
+    'squad': squad,
+    'docsChecked': docsChecked.toList(),
+    'status': status.name,
+    'createdAt': createdAt.toIso8601String(),
+    'waitlistPosition': waitlistPosition,
+    'blackoutDates': [for (final d in blackoutDates) d.toIso8601String()],
+  };
+
+  factory TeamRegistration.fromJson(Map<String, dynamic> json) {
+    return TeamRegistration(
+      id: json['id'] as String,
+      tournamentId: json['tournamentId'] as String,
+      teamName: json['teamName'] as String,
+      squad: [for (final s in json['squad'] as List) s as String],
+      docsChecked: {for (final d in json['docsChecked'] as List) d as String},
+      status: RegistrationStatus.values.byName(json['status'] as String),
+      createdAt: DateTime.parse(json['createdAt'] as String),
+      waitlistPosition: json['waitlistPosition'] as int?,
+      blackoutDates: [
+        for (final d in json['blackoutDates'] as List)
+          DateTime.parse(d as String),
+      ],
+    );
+  }
 }
 
 /// PRD §8.2: "duplicate player across two registered teams is
