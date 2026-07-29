@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../persistence/persisted_notifier.dart';
 import '../rewards/rewards_provider.dart';
 import 'fan_models.dart';
 
@@ -24,12 +25,36 @@ class FanState {
       superfanStreak: superfanStreak ?? this.superfanStreak,
     );
   }
+
+  Map<String, dynamic> toJson() => {
+    'predictions': [for (final p in predictions) p.toJson()],
+    'superfanStreak': superfanStreak,
+  };
+
+  factory FanState.fromJson(Map<String, dynamic> json) {
+    return FanState(
+      predictions: [
+        for (final p in json['predictions'] as List)
+          Prediction.fromJson(p as Map<String, dynamic>),
+      ],
+      superfanStreak: json['superfanStreak'] as int? ?? 0,
+    );
+  }
 }
 
 /// PRD §2.14 -- E7-09's Fan engagement engine.
-class FanNotifier extends Notifier<FanState> {
+class FanNotifier extends PersistedNotifier<FanState> {
   @override
-  FanState build() => const FanState();
+  String get persistenceKey => 'fan_v1';
+
+  @override
+  FanState seed() => const FanState();
+
+  @override
+  Map<String, dynamic> toJson(FanState value) => value.toJson();
+
+  @override
+  FanState fromJson(Map<String, dynamic> json) => FanState.fromJson(json);
 
   void submitPrediction({
     required String matchLabel,

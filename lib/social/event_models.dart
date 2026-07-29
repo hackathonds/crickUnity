@@ -73,4 +73,38 @@ class CricketEvent {
       capacity: capacity,
     );
   }
+
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'title': title,
+    'template': template.name,
+    'dateTime': dateTime.toIso8601String(),
+    'coHostNames': coHostNames,
+    'rsvpByName': {
+      for (final entry in rsvpByName.entries) entry.key: entry.value.name,
+    },
+    'discussionMessages': discussionMessages,
+    'ticketPriceCoins': ticketPriceCoins,
+    'capacity': capacity,
+  };
+
+  factory CricketEvent.fromJson(Map<String, dynamic> json) {
+    return CricketEvent(
+      id: json['id'] as String,
+      title: json['title'] as String,
+      template: EventTemplate.values.byName(json['template'] as String),
+      dateTime: DateTime.parse(json['dateTime'] as String),
+      coHostNames: [for (final n in json['coHostNames'] as List) n as String],
+      rsvpByName: {
+        for (final entry
+            in (json['rsvpByName'] as Map<String, dynamic>).entries)
+          entry.key: RsvpStatus.values.byName(entry.value as String),
+      },
+      discussionMessages: [
+        for (final m in json['discussionMessages'] as List) m as String,
+      ],
+      ticketPriceCoins: json['ticketPriceCoins'] as int?,
+      capacity: json['capacity'] as int?,
+    );
+  }
 }

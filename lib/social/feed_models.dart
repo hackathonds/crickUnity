@@ -40,6 +40,22 @@ class AttachedObject {
     required this.subtitle,
     this.verified = false,
   });
+
+  Map<String, dynamic> toJson() => {
+    'type': type.name,
+    'title': title,
+    'subtitle': subtitle,
+    'verified': verified,
+  };
+
+  factory AttachedObject.fromJson(Map<String, dynamic> json) {
+    return AttachedObject(
+      type: AttachedObjectType.values.byName(json['type'] as String),
+      title: json['title'] as String,
+      subtitle: json['subtitle'] as String,
+      verified: json['verified'] as bool? ?? false,
+    );
+  }
 }
 
 /// PRD §12.2: "audience selector (Public / Followers / Teams (pick) /
@@ -65,6 +81,15 @@ class PollOption {
   const PollOption({required this.text, this.votes = 0});
 
   PollOption withVote() => PollOption(text: text, votes: votes + 1);
+
+  Map<String, dynamic> toJson() => {'text': text, 'votes': votes};
+
+  factory PollOption.fromJson(Map<String, dynamic> json) {
+    return PollOption(
+      text: json['text'] as String,
+      votes: json['votes'] as int? ?? 0,
+    );
+  }
 }
 
 class Poll {
@@ -89,6 +114,23 @@ class Poll {
           i == optionIndex ? options[i].withVote() : options[i],
       ],
       votedOptionIndex: optionIndex,
+    );
+  }
+
+  Map<String, dynamic> toJson() => {
+    'question': question,
+    'options': [for (final o in options) o.toJson()],
+    'votedOptionIndex': votedOptionIndex,
+  };
+
+  factory Poll.fromJson(Map<String, dynamic> json) {
+    return Poll(
+      question: json['question'] as String,
+      options: [
+        for (final o in json['options'] as List)
+          PollOption.fromJson(o as Map<String, dynamic>),
+      ],
+      votedOptionIndex: json['votedOptionIndex'] as int?,
     );
   }
 }
@@ -316,6 +358,72 @@ class FeedPost {
       editedAt: editedAt,
       deletedAt: deletedAt,
       resharedPostId: resharedPostId,
+    );
+  }
+
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'authorName': authorName,
+    'contentText': contentText,
+    'attachedObject': attachedObject?.toJson(),
+    'mediaCount': mediaCount,
+    'reactions': {
+      for (final entry in reactions.entries) entry.key.name: entry.value,
+    },
+    'myReaction': myReaction?.name,
+    'topCommentAuthor': topCommentAuthor,
+    'topCommentText': topCommentText,
+    'timestamp': timestamp.toIso8601String(),
+    'isFollowed': isFollowed,
+    'relationshipScore': relationshipScore,
+    'cricketRelevanceScore': cricketRelevanceScore,
+    'sponsoredLabel': sponsoredLabel,
+    'audience': audience.name,
+    'poll': poll?.toJson(),
+    'editHistory': editHistory,
+    'editedAt': editedAt?.toIso8601String(),
+    'deletedAt': deletedAt?.toIso8601String(),
+    'resharedPostId': resharedPostId,
+  };
+
+  factory FeedPost.fromJson(Map<String, dynamic> json) {
+    return FeedPost(
+      id: json['id'] as String,
+      authorName: json['authorName'] as String,
+      contentText: json['contentText'] as String,
+      attachedObject: json['attachedObject'] != null
+          ? AttachedObject.fromJson(
+              json['attachedObject'] as Map<String, dynamic>,
+            )
+          : null,
+      mediaCount: json['mediaCount'] as int? ?? 0,
+      reactions: {
+        for (final entry in (json['reactions'] as Map<String, dynamic>).entries)
+          AppReactionType.values.byName(entry.key): entry.value as int,
+      },
+      myReaction: json['myReaction'] != null
+          ? AppReactionType.values.byName(json['myReaction'] as String)
+          : null,
+      topCommentAuthor: json['topCommentAuthor'] as String?,
+      topCommentText: json['topCommentText'] as String?,
+      timestamp: DateTime.parse(json['timestamp'] as String),
+      isFollowed: json['isFollowed'] as bool? ?? true,
+      relationshipScore: (json['relationshipScore'] as num?)?.toDouble() ?? 0.5,
+      cricketRelevanceScore:
+          (json['cricketRelevanceScore'] as num?)?.toDouble() ?? 0.5,
+      sponsoredLabel: json['sponsoredLabel'] as String?,
+      audience: PostAudience.values.byName(json['audience'] as String),
+      poll: json['poll'] != null
+          ? Poll.fromJson(json['poll'] as Map<String, dynamic>)
+          : null,
+      editHistory: [for (final e in json['editHistory'] as List) e as String],
+      editedAt: json['editedAt'] != null
+          ? DateTime.parse(json['editedAt'] as String)
+          : null,
+      deletedAt: json['deletedAt'] != null
+          ? DateTime.parse(json['deletedAt'] as String)
+          : null,
+      resharedPostId: json['resharedPostId'] as String?,
     );
   }
 }

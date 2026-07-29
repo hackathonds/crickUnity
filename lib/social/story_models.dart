@@ -11,6 +11,12 @@ class LiveScoreSticker {
   final String matchLabel;
 
   const LiveScoreSticker({required this.matchLabel});
+
+  Map<String, dynamic> toJson() => {'matchLabel': matchLabel};
+
+  factory LiveScoreSticker.fromJson(Map<String, dynamic> json) {
+    return LiveScoreSticker(matchLabel: json['matchLabel'] as String);
+  }
 }
 
 class Story {
@@ -52,6 +58,36 @@ class Story {
       pollSticker: pollSticker ?? this.pollSticker,
       viewerNames: viewerNames ?? this.viewerNames,
       highlightSaved: highlightSaved ?? this.highlightSaved,
+    );
+  }
+
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'authorName': authorName,
+    'mediaLabel': mediaLabel,
+    'createdAt': createdAt.toIso8601String(),
+    'scoreSticker': scoreSticker?.toJson(),
+    'pollSticker': pollSticker?.toJson(),
+    'viewerNames': viewerNames,
+    'highlightSaved': highlightSaved,
+  };
+
+  factory Story.fromJson(Map<String, dynamic> json) {
+    return Story(
+      id: json['id'] as String,
+      authorName: json['authorName'] as String,
+      mediaLabel: json['mediaLabel'] as String,
+      createdAt: DateTime.parse(json['createdAt'] as String),
+      scoreSticker: json['scoreSticker'] != null
+          ? LiveScoreSticker.fromJson(
+              json['scoreSticker'] as Map<String, dynamic>,
+            )
+          : null,
+      pollSticker: json['pollSticker'] != null
+          ? Poll.fromJson(json['pollSticker'] as Map<String, dynamic>)
+          : null,
+      viewerNames: [for (final v in json['viewerNames'] as List) v as String],
+      highlightSaved: json['highlightSaved'] as bool? ?? false,
     );
   }
 }

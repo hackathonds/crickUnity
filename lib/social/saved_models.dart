@@ -5,6 +5,15 @@ class SavedCollection {
   final String name;
 
   const SavedCollection({required this.id, required this.name});
+
+  Map<String, dynamic> toJson() => {'id': id, 'name': name};
+
+  factory SavedCollection.fromJson(Map<String, dynamic> json) {
+    return SavedCollection(
+      id: json['id'] as String,
+      name: json['name'] as String,
+    );
+  }
 }
 
 class SavedPost {
@@ -19,6 +28,22 @@ class SavedPost {
     required this.savedFromContext,
     required this.savedAt,
   });
+
+  Map<String, dynamic> toJson() => {
+    'postId': postId,
+    'collectionId': collectionId,
+    'savedFromContext': savedFromContext,
+    'savedAt': savedAt.toIso8601String(),
+  };
+
+  factory SavedPost.fromJson(Map<String, dynamic> json) {
+    return SavedPost(
+      postId: json['postId'] as String,
+      collectionId: json['collectionId'] as String,
+      savedFromContext: json['savedFromContext'] as String,
+      savedAt: DateTime.parse(json['savedAt'] as String),
+    );
+  }
 }
 
 const String defaultSavedCollectionId = 'collection-all';

@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../persistence/persisted_notifier.dart';
 import 'feed_models.dart';
 import 'story_models.dart';
 
@@ -15,12 +16,37 @@ class StoriesState {
       dmLog: dmLog ?? this.dmLog,
     );
   }
+
+  Map<String, dynamic> toJson() => {
+    'stories': [for (final s in stories) s.toJson()],
+    'dmLog': dmLog,
+  };
+
+  factory StoriesState.fromJson(Map<String, dynamic> json) {
+    return StoriesState(
+      stories: [
+        for (final s in json['stories'] as List)
+          Story.fromJson(s as Map<String, dynamic>),
+      ],
+      dmLog: [for (final d in json['dmLog'] as List) d as String],
+    );
+  }
 }
 
 /// PRD §12.3 -- E7-04's stories engine.
-class StoriesNotifier extends Notifier<StoriesState> {
+class StoriesNotifier extends PersistedNotifier<StoriesState> {
   @override
-  StoriesState build() => const StoriesState();
+  String get persistenceKey => 'stories_v1';
+
+  @override
+  StoriesState seed() => const StoriesState();
+
+  @override
+  Map<String, dynamic> toJson(StoriesState value) => value.toJson();
+
+  @override
+  StoriesState fromJson(Map<String, dynamic> json) =>
+      StoriesState.fromJson(json);
 
   void postStory({
     required String authorName,

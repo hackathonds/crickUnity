@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../persistence/persisted_notifier.dart';
 import 'saved_models.dart';
 
 class SavedState {
@@ -27,12 +28,39 @@ class SavedState {
       savedPosts: savedPosts ?? this.savedPosts,
     );
   }
+
+  Map<String, dynamic> toJson() => {
+    'collections': [for (final c in collections) c.toJson()],
+    'savedPosts': [for (final s in savedPosts) s.toJson()],
+  };
+
+  factory SavedState.fromJson(Map<String, dynamic> json) {
+    return SavedState(
+      collections: [
+        for (final c in json['collections'] as List)
+          SavedCollection.fromJson(c as Map<String, dynamic>),
+      ],
+      savedPosts: [
+        for (final s in json['savedPosts'] as List)
+          SavedPost.fromJson(s as Map<String, dynamic>),
+      ],
+    );
+  }
 }
 
 /// PRD §12.7 -- E7-08's Bookmarks engine.
-class SavedNotifier extends Notifier<SavedState> {
+class SavedNotifier extends PersistedNotifier<SavedState> {
   @override
-  SavedState build() => const SavedState();
+  String get persistenceKey => 'saved_v1';
+
+  @override
+  SavedState seed() => const SavedState();
+
+  @override
+  Map<String, dynamic> toJson(SavedState value) => value.toJson();
+
+  @override
+  SavedState fromJson(Map<String, dynamic> json) => SavedState.fromJson(json);
 
   void createCollection(String name) {
     state = state.copyWith(

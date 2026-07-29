@@ -27,4 +27,26 @@ class Reel {
     this.sourceClipLabel,
     required this.createdAt,
   });
+
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'authorName': authorName,
+    'durationSeconds': durationSeconds,
+    'audioTrack': audioTrack,
+    'remixAllowed': remixAllowed,
+    'sourceClipLabel': sourceClipLabel,
+    'createdAt': createdAt.toIso8601String(),
+  };
+
+  factory Reel.fromJson(Map<String, dynamic> json) {
+    return Reel(
+      id: json['id'] as String,
+      authorName: json['authorName'] as String,
+      durationSeconds: json['durationSeconds'] as int,
+      audioTrack: json['audioTrack'] as String,
+      remixAllowed: json['remixAllowed'] as bool,
+      sourceClipLabel: json['sourceClipLabel'] as String?,
+      createdAt: DateTime.parse(json['createdAt'] as String),
+    );
+  }
 }
