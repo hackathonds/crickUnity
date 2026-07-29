@@ -4,6 +4,7 @@ import '../clubs/club_provider.dart';
 import '../grounds/ground_models.dart' show FacilityAvailability;
 import '../grounds/grounds_provider.dart';
 import '../moderation/moderation_provider.dart';
+import '../persistence/persisted_notifier.dart';
 import '../social/feed_provider.dart';
 import '../social/groups_provider.dart';
 import '../teams/selection_board_models.dart';
@@ -39,13 +40,39 @@ class SearchState {
     recentSearches: recentSearches ?? this.recentSearches,
     savedFilterSets: savedFilterSets ?? this.savedFilterSets,
   );
+
+  Map<String, dynamic> toJson() => {
+    'recentSearches': recentSearches,
+    'savedFilterSets': [for (final f in savedFilterSets) f.toJson()],
+  };
+
+  factory SearchState.fromJson(Map<String, dynamic> json) {
+    return SearchState(
+      recentSearches: [
+        for (final q in json['recentSearches'] as List) q as String,
+      ],
+      savedFilterSets: [
+        for (final f in json['savedFilterSets'] as List)
+          SavedFilterSet.fromJson(f as Map<String, dynamic>),
+      ],
+    );
+  }
 }
 
 /// Backlog E12-01 -- Global search engine. See search_models.dart's
 /// top-of-file note for the exact PRD §16 quote this implements.
-class SearchNotifier extends Notifier<SearchState> {
+class SearchNotifier extends PersistedNotifier<SearchState> {
   @override
-  SearchState build() => const SearchState();
+  String get persistenceKey => 'search_v1';
+
+  @override
+  SearchState seed() => const SearchState();
+
+  @override
+  Map<String, dynamic> toJson(SearchState value) => value.toJson();
+
+  @override
+  SearchState fromJson(Map<String, dynamic> json) => SearchState.fromJson(json);
 
   void addRecentSearch(String query) {
     final trimmed = query.trim();

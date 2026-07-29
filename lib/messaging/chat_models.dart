@@ -67,6 +67,42 @@ class ChatMessage {
       timestamp: timestamp,
     );
   }
+
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'senderName': senderName,
+    'type': type.name,
+    'text': text,
+    'voiceDurationSeconds': voiceDurationSeconds,
+    'objectCard': objectCard?.toJson(),
+    'expenseId': expenseId,
+    'replyToMessageId': replyToMessageId,
+    'forwardedFromChatName': forwardedFromChatName,
+    'isStarred': isStarred,
+    'isDelivered': isDelivered,
+    'isRead': isRead,
+    'timestamp': timestamp.toIso8601String(),
+  };
+
+  factory ChatMessage.fromJson(Map<String, dynamic> json) {
+    return ChatMessage(
+      id: json['id'] as String,
+      senderName: json['senderName'] as String,
+      type: MessageType.values.byName(json['type'] as String),
+      text: json['text'] as String?,
+      voiceDurationSeconds: json['voiceDurationSeconds'] as int?,
+      objectCard: json['objectCard'] != null
+          ? AttachedObject.fromJson(json['objectCard'] as Map<String, dynamic>)
+          : null,
+      expenseId: json['expenseId'] as String?,
+      replyToMessageId: json['replyToMessageId'] as String?,
+      forwardedFromChatName: json['forwardedFromChatName'] as String?,
+      isStarred: json['isStarred'] as bool? ?? false,
+      isDelivered: json['isDelivered'] as bool? ?? true,
+      isRead: json['isRead'] as bool? ?? false,
+      timestamp: DateTime.parse(json['timestamp'] as String),
+    );
+  }
 }
 
 /// PRD: "pinned chats (max 5) ... per-chat mute/wallpaper/nickname,
@@ -130,6 +166,46 @@ class Chat {
       isConnectionRequest: isConnectionRequest ?? this.isConnectionRequest,
       teamId: teamId,
       messages: messages ?? this.messages,
+    );
+  }
+
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'type': type.name,
+    'name': name,
+    'participantNames': participantNames,
+    'isPinned': isPinned,
+    'isMuted': isMuted,
+    'wallpaper': wallpaper,
+    'nicknames': nicknames,
+    'disappearingMessages': disappearingMessages,
+    'isConnectionRequest': isConnectionRequest,
+    'teamId': teamId,
+    'messages': [for (final m in messages) m.toJson()],
+  };
+
+  factory Chat.fromJson(Map<String, dynamic> json) {
+    return Chat(
+      id: json['id'] as String,
+      type: ChatType.values.byName(json['type'] as String),
+      name: json['name'] as String,
+      participantNames: [
+        for (final p in json['participantNames'] as List) p as String,
+      ],
+      isPinned: json['isPinned'] as bool? ?? false,
+      isMuted: json['isMuted'] as bool? ?? false,
+      wallpaper: json['wallpaper'] as String?,
+      nicknames: {
+        for (final entry in (json['nicknames'] as Map<String, dynamic>).entries)
+          entry.key: entry.value as String,
+      },
+      disappearingMessages: json['disappearingMessages'] as bool? ?? false,
+      isConnectionRequest: json['isConnectionRequest'] as bool? ?? false,
+      teamId: json['teamId'] as String?,
+      messages: [
+        for (final m in json['messages'] as List)
+          ChatMessage.fromJson(m as Map<String, dynamic>),
+      ],
     );
   }
 }

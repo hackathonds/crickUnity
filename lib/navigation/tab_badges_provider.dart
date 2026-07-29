@@ -40,6 +40,14 @@ class TabBadges {
   }
 }
 
+/// Intentionally not persisted (lib/persistence/) -- these badges stand
+/// in for values that should be freshly recomputed from live state
+/// (real live-match count, real new-post count, etc.) once the modules
+/// that drive them exist, not values a user sets once and expects
+/// remembered. Restoring a stale debug-toggled badge after a restart
+/// would be actively misleading (e.g. a "live match" badge surviving
+/// after that match has long ended) -- always starting at the
+/// no-badges default is the safer, more honest state.
 class TabBadgesNotifier extends Notifier<TabBadges> {
   @override
   TabBadges build() => const TabBadges();

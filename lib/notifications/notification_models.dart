@@ -181,6 +181,20 @@ class QuietHoursSettings {
       enabled: enabled ?? this.enabled,
     );
   }
+
+  Map<String, dynamic> toJson() => {
+    'startHour': startHour,
+    'endHour': endHour,
+    'enabled': enabled,
+  };
+
+  factory QuietHoursSettings.fromJson(Map<String, dynamic> json) {
+    return QuietHoursSettings(
+      startHour: json['startHour'] as int? ?? 23,
+      endHour: json['endHour'] as int? ?? 7,
+      enabled: json['enabled'] as bool? ?? true,
+    );
+  }
 }
 
 class NotificationCard {

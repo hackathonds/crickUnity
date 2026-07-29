@@ -6,6 +6,15 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 /// `ProviderContainer`, no widget tree required.
 const int maxPushDepth = 3;
 
+/// Intentionally not persisted (lib/persistence/) -- this tracks depth
+/// against the live Navigator stack, which itself doesn't survive an
+/// app restart in this app (no deep-link/route restoration exists). A
+/// restored non-zero depth would have no matching screens to pop back
+/// through and could permanently block further pushes on that tab
+/// (nothing auto-calls [PushDepthNotifier.reset] on cold start) --
+/// worse than the wizard-scratch-state case, since there's no natural
+/// unstick path. Always starting at 0 is the only state consistent
+/// with a screen stack that also always starts empty.
 class PushDepthNotifier extends Notifier<Map<int, int>> {
   @override
   Map<int, int> build() => const {};

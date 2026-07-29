@@ -31,6 +31,16 @@ class PlayerFilter {
   const PlayerFilter({this.role});
 
   bool get isEmpty => role == null;
+
+  Map<String, dynamic> toJson() => {'role': role?.name};
+
+  factory PlayerFilter.fromJson(Map<String, dynamic> json) {
+    return PlayerFilter(
+      role: json['role'] != null
+          ? PrimaryRole.values.byName(json['role'] as String)
+          : null,
+    );
+  }
 }
 
 class TournamentFilter {
@@ -54,6 +64,28 @@ class TournamentFilter {
       ballType == null &&
       maxEntryFee == null &&
       !registrationOpenOnly;
+
+  Map<String, dynamic> toJson() => {
+    'city': city,
+    'format': format?.name,
+    'ballType': ballType?.name,
+    'maxEntryFee': maxEntryFee,
+    'registrationOpenOnly': registrationOpenOnly,
+  };
+
+  factory TournamentFilter.fromJson(Map<String, dynamic> json) {
+    return TournamentFilter(
+      city: json['city'] as String?,
+      format: json['format'] != null
+          ? TournamentFormat.values.byName(json['format'] as String)
+          : null,
+      ballType: json['ballType'] != null
+          ? TournamentBallType.values.byName(json['ballType'] as String)
+          : null,
+      maxEntryFee: json['maxEntryFee'] as int?,
+      registrationOpenOnly: json['registrationOpenOnly'] as bool? ?? false,
+    );
+  }
 }
 
 class GroundFilter {
@@ -77,6 +109,29 @@ class GroundFilter {
       pitchType == null &&
       facilities.isEmpty &&
       minRating == null;
+
+  Map<String, dynamic> toJson() => {
+    'maxDistanceKm': maxDistanceKm,
+    'maxPrice': maxPrice,
+    'pitchType': pitchType?.name,
+    'facilities': [for (final f in facilities) f.name],
+    'minRating': minRating,
+  };
+
+  factory GroundFilter.fromJson(Map<String, dynamic> json) {
+    return GroundFilter(
+      maxDistanceKm: (json['maxDistanceKm'] as num?)?.toDouble(),
+      maxPrice: json['maxPrice'] as int?,
+      pitchType: json['pitchType'] != null
+          ? PitchType.values.byName(json['pitchType'] as String)
+          : null,
+      facilities: {
+        for (final f in json['facilities'] as List)
+          Facility.values.byName(f as String),
+      },
+      minRating: (json['minRating'] as num?)?.toDouble(),
+    );
+  }
 }
 
 class PostFilter {
@@ -97,6 +152,28 @@ class PostFilter {
       hashtag == null &&
       attachedObjectType == null &&
       afterDate == null;
+
+  Map<String, dynamic> toJson() => {
+    'author': author,
+    'hashtag': hashtag,
+    'attachedObjectType': attachedObjectType?.name,
+    'afterDate': afterDate?.toIso8601String(),
+  };
+
+  factory PostFilter.fromJson(Map<String, dynamic> json) {
+    return PostFilter(
+      author: json['author'] as String?,
+      hashtag: json['hashtag'] as String?,
+      attachedObjectType: json['attachedObjectType'] != null
+          ? AttachedObjectType.values.byName(
+              json['attachedObjectType'] as String,
+            )
+          : null,
+      afterDate: json['afterDate'] != null
+          ? DateTime.parse(json['afterDate'] as String)
+          : null,
+    );
+  }
 }
 
 class SavedFilterSet {
@@ -115,4 +192,34 @@ class SavedFilterSet {
     this.groundFilter,
     this.postFilter,
   });
+
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'name': name,
+    'playerFilter': playerFilter?.toJson(),
+    'tournamentFilter': tournamentFilter?.toJson(),
+    'groundFilter': groundFilter?.toJson(),
+    'postFilter': postFilter?.toJson(),
+  };
+
+  factory SavedFilterSet.fromJson(Map<String, dynamic> json) {
+    return SavedFilterSet(
+      id: json['id'] as String,
+      name: json['name'] as String,
+      playerFilter: json['playerFilter'] != null
+          ? PlayerFilter.fromJson(json['playerFilter'] as Map<String, dynamic>)
+          : null,
+      tournamentFilter: json['tournamentFilter'] != null
+          ? TournamentFilter.fromJson(
+              json['tournamentFilter'] as Map<String, dynamic>,
+            )
+          : null,
+      groundFilter: json['groundFilter'] != null
+          ? GroundFilter.fromJson(json['groundFilter'] as Map<String, dynamic>)
+          : null,
+      postFilter: json['postFilter'] != null
+          ? PostFilter.fromJson(json['postFilter'] as Map<String, dynamic>)
+          : null,
+    );
+  }
 }

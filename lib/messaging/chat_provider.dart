@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../persistence/persisted_notifier.dart';
 import '../social/feed_models.dart' show AttachedObject;
 import 'chat_models.dart';
 
@@ -32,13 +33,41 @@ class ChatsState {
       typingChatIds: typingChatIds ?? this.typingChatIds,
     );
   }
+
+  /// [typingChatIds] deliberately doesn't persist -- it's a simulated
+  /// presence signal (no real typing-event pipeline exists) that only
+  /// means anything within a single live session; restoring a stale
+  /// "typing" flag after a restart would be actively wrong.
+  Map<String, dynamic> toJson() => {
+    'chats': [for (final c in chats) c.toJson()],
+    'receiptsEnabled': receiptsEnabled,
+  };
+
+  factory ChatsState.fromJson(Map<String, dynamic> json) {
+    return ChatsState(
+      chats: [
+        for (final c in json['chats'] as List)
+          Chat.fromJson(c as Map<String, dynamic>),
+      ],
+      receiptsEnabled: json['receiptsEnabled'] as bool? ?? true,
+    );
+  }
 }
 
 /// PRD §12.9 -- E7-05's Messenger engine (list/thread/requests/voice/
 /// object-cards, per the backlog's own named split).
-class ChatsNotifier extends Notifier<ChatsState> {
+class ChatsNotifier extends PersistedNotifier<ChatsState> {
   @override
-  ChatsState build() => ChatsState(chats: _seedChats());
+  String get persistenceKey => 'chats_v1';
+
+  @override
+  ChatsState seed() => ChatsState(chats: _seedChats());
+
+  @override
+  Map<String, dynamic> toJson(ChatsState value) => value.toJson();
+
+  @override
+  ChatsState fromJson(Map<String, dynamic> json) => ChatsState.fromJson(json);
 
   static List<Chat> _seedChats() {
     final now = DateTime.now();
