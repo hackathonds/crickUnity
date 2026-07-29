@@ -153,4 +153,52 @@ class Booking {
       noShowReason: noShowReason ?? this.noShowReason,
     );
   }
+
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'groundId': groundId,
+    'groundName': groundName,
+    'slotStart': slotStart.toIso8601String(),
+    'slotEnd': slotEnd.toIso8601String(),
+    'partySize': partySize,
+    'purpose': purpose.name,
+    'priceQuote': priceQuote,
+    'depositAmount': depositAmount,
+    'instantBook': instantBook,
+    'status': status.name,
+    'heldUntil': heldUntil?.toIso8601String(),
+    'policyAcknowledged': policyAcknowledged,
+    'qrCode': qrCode,
+    'createdAt': createdAt.toIso8601String(),
+    'checkedIn': checkedIn,
+    'checkedInAt': checkedInAt?.toIso8601String(),
+    'noShowReason': noShowReason,
+  };
+
+  factory Booking.fromJson(Map<String, dynamic> json) {
+    return Booking(
+      id: json['id'] as String,
+      groundId: json['groundId'] as String,
+      groundName: json['groundName'] as String,
+      slotStart: DateTime.parse(json['slotStart'] as String),
+      slotEnd: DateTime.parse(json['slotEnd'] as String),
+      partySize: json['partySize'] as int,
+      purpose: BookingPurpose.values.byName(json['purpose'] as String),
+      priceQuote: json['priceQuote'] as int,
+      depositAmount: json['depositAmount'] as int,
+      instantBook: json['instantBook'] as bool? ?? true,
+      status: BookingStatus.values.byName(json['status'] as String),
+      heldUntil: json['heldUntil'] != null
+          ? DateTime.parse(json['heldUntil'] as String)
+          : null,
+      policyAcknowledged: json['policyAcknowledged'] as bool? ?? false,
+      qrCode: json['qrCode'] as String,
+      createdAt: DateTime.parse(json['createdAt'] as String),
+      checkedIn: json['checkedIn'] as bool? ?? false,
+      checkedInAt: json['checkedInAt'] != null
+          ? DateTime.parse(json['checkedInAt'] as String)
+          : null,
+      noShowReason: json['noShowReason'] as String?,
+    );
+  }
 }

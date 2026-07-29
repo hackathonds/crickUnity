@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../persistence/persisted_notifier.dart';
 import '../social/composer_screen.dart' show composerViewerName;
 import 'bookings_provider.dart';
 import 'ground_models.dart';
@@ -15,13 +16,36 @@ class ReviewsState {
 
   List<Review> forGround(String groundId) =>
       reviews.where((r) => r.groundId == groundId).toList();
+
+  Map<String, dynamic> toJson() => {
+    'reviews': [for (final r in reviews) r.toJson()],
+  };
+
+  factory ReviewsState.fromJson(Map<String, dynamic> json) {
+    return ReviewsState(
+      reviews: [
+        for (final r in json['reviews'] as List)
+          Review.fromJson(r as Map<String, dynamic>),
+      ],
+    );
+  }
 }
 
 /// Backlog E9-04: "Reviews (verified-booker gate, facets, single owner
 /// reply -- PRD §10.3, DS §11.17)."
-class ReviewsNotifier extends Notifier<ReviewsState> {
+class ReviewsNotifier extends PersistedNotifier<ReviewsState> {
   @override
-  ReviewsState build() => ReviewsState(reviews: _seedReviews());
+  String get persistenceKey => 'reviews_v1';
+
+  @override
+  ReviewsState seed() => ReviewsState(reviews: _seedReviews());
+
+  @override
+  Map<String, dynamic> toJson(ReviewsState value) => value.toJson();
+
+  @override
+  ReviewsState fromJson(Map<String, dynamic> json) =>
+      ReviewsState.fromJson(json);
 
   static List<Review> _seedReviews() => [
     Review(

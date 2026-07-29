@@ -61,6 +61,32 @@ class GearListing {
       status: status ?? this.status,
     );
   }
+
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'sellerName': sellerName,
+    'sellerTrustBand': sellerTrustBand.name,
+    'title': title,
+    'priceRupees': priceRupees,
+    'condition': condition.name,
+    'description': description,
+    'status': status.name,
+  };
+
+  factory GearListing.fromJson(Map<String, dynamic> json) {
+    return GearListing(
+      id: json['id'] as String,
+      sellerName: json['sellerName'] as String,
+      sellerTrustBand: TrustBand.values.byName(
+        json['sellerTrustBand'] as String,
+      ),
+      title: json['title'] as String,
+      priceRupees: json['priceRupees'] as int,
+      condition: GearCondition.values.byName(json['condition'] as String),
+      description: json['description'] as String,
+      status: GearListingStatus.values.byName(json['status'] as String),
+    );
+  }
 }
 
 /// DS: "Trusted-Seller badge." No PRD/DS numeric ladder is given --

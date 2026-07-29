@@ -55,6 +55,44 @@ class Review {
       ownerReplyAt: ownerReplyAt ?? this.ownerReplyAt,
     );
   }
+
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'groundId': groundId,
+    'bookingId': bookingId,
+    'reviewerName': reviewerName,
+    'overallStars': overallStars,
+    'facetStars': {
+      for (final entry in facetStars.entries) entry.key.name: entry.value,
+    },
+    'photoCount': photoCount,
+    'text': text,
+    'createdAt': createdAt.toIso8601String(),
+    'ownerReplyText': ownerReplyText,
+    'ownerReplyAt': ownerReplyAt?.toIso8601String(),
+  };
+
+  factory Review.fromJson(Map<String, dynamic> json) {
+    return Review(
+      id: json['id'] as String,
+      groundId: json['groundId'] as String,
+      bookingId: json['bookingId'] as String,
+      reviewerName: json['reviewerName'] as String,
+      overallStars: json['overallStars'] as int,
+      facetStars: {
+        for (final entry
+            in (json['facetStars'] as Map<String, dynamic>).entries)
+          ReviewFacet.values.byName(entry.key): entry.value as int,
+      },
+      photoCount: json['photoCount'] as int? ?? 0,
+      text: json['text'] as String? ?? '',
+      createdAt: DateTime.parse(json['createdAt'] as String),
+      ownerReplyText: json['ownerReplyText'] as String?,
+      ownerReplyAt: json['ownerReplyAt'] != null
+          ? DateTime.parse(json['ownerReplyAt'] as String)
+          : null,
+    );
+  }
 }
 
 /// PRD names no exact decay curve for "weighted recent-first average"

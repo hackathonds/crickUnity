@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../persistence/persisted_notifier.dart';
 import 'club_models.dart';
 
 class ClubState {
@@ -40,14 +41,64 @@ class ClubState {
   int get activeMembersCount => members.length;
   int get duesOutstandingCount =>
       members.where((m) => m.duesStatus != DuesStatus.green).length;
+
+  Map<String, dynamic> toJson() => {
+    'club': club.toJson(),
+    'members': [for (final m in members) m.toJson()],
+    'tiers': {
+      for (final entry in tiers.entries) entry.key.name: entry.value.toJson(),
+    },
+    'friendlies': [for (final f in friendlies) f.toJson()],
+    'wallOfFame': [for (final w in wallOfFame) w.toJson()],
+    'transferRequests': [for (final t in transferRequests) t.toJson()],
+  };
+
+  factory ClubState.fromJson(Map<String, dynamic> json) {
+    return ClubState(
+      club: Club.fromJson(json['club'] as Map<String, dynamic>),
+      members: [
+        for (final m in json['members'] as List)
+          ClubMember.fromJson(m as Map<String, dynamic>),
+      ],
+      tiers: {
+        for (final entry in (json['tiers'] as Map<String, dynamic>).entries)
+          MembershipTierType.values.byName(
+            entry.key,
+          ): MembershipTierDefinition.fromJson(
+            entry.value as Map<String, dynamic>,
+          ),
+      },
+      friendlies: [
+        for (final f in json['friendlies'] as List)
+          InterTeamFriendly.fromJson(f as Map<String, dynamic>),
+      ],
+      wallOfFame: [
+        for (final w in json['wallOfFame'] as List)
+          WallOfFameEntry.fromJson(w as Map<String, dynamic>),
+      ],
+      transferRequests: [
+        for (final t in json['transferRequests'] as List)
+          InterWalletTransferRequest.fromJson(t as Map<String, dynamic>),
+      ],
+    );
+  }
 }
 
 /// Backlog E11-01 -- Club home + console engine. See club_models.dart's
 /// top-of-file note for the exact PRD §9 quote and the backlog's
 /// narrower 4-part scope.
-class ClubNotifier extends Notifier<ClubState> {
+class ClubNotifier extends PersistedNotifier<ClubState> {
   @override
-  ClubState build() => ClubState(
+  String get persistenceKey => 'club_v1';
+
+  @override
+  Map<String, dynamic> toJson(ClubState value) => value.toJson();
+
+  @override
+  ClubState fromJson(Map<String, dynamic> json) => ClubState.fromJson(json);
+
+  @override
+  ClubState seed() => ClubState(
     club: const Club(
       id: 'club-city-cricket-club',
       name: 'City Cricket Club',

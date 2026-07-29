@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../persistence/persisted_notifier.dart';
 import 'ground_models.dart';
 
 class GroundsFilter {
@@ -31,6 +32,29 @@ class GroundsFilter {
       pitchType: clearPitchType ? null : (pitchType ?? this.pitchType),
       maxPricePerHour: maxPricePerHour ?? this.maxPricePerHour,
       minRating: minRating ?? this.minRating,
+    );
+  }
+
+  Map<String, dynamic> toJson() => {
+    'query': query,
+    'requiredFacilities': [for (final f in requiredFacilities) f.name],
+    'pitchType': pitchType?.name,
+    'maxPricePerHour': maxPricePerHour,
+    'minRating': minRating,
+  };
+
+  factory GroundsFilter.fromJson(Map<String, dynamic> json) {
+    return GroundsFilter(
+      query: json['query'] as String? ?? '',
+      requiredFacilities: {
+        for (final f in json['requiredFacilities'] as List)
+          Facility.values.byName(f as String),
+      },
+      pitchType: json['pitchType'] != null
+          ? PitchType.values.byName(json['pitchType'] as String)
+          : null,
+      maxPricePerHour: json['maxPricePerHour'] as int?,
+      minRating: (json['minRating'] as num?)?.toDouble() ?? 0,
     );
   }
 }
@@ -89,12 +113,41 @@ class GroundsState {
       followedGroundIds: followedGroundIds ?? this.followedGroundIds,
     );
   }
+
+  Map<String, dynamic> toJson() => {
+    'grounds': [for (final g in grounds) g.toJson()],
+    'filter': filter.toJson(),
+    'followedGroundIds': followedGroundIds.toList(),
+  };
+
+  factory GroundsState.fromJson(Map<String, dynamic> json) {
+    return GroundsState(
+      grounds: [
+        for (final g in json['grounds'] as List)
+          Ground.fromJson(g as Map<String, dynamic>),
+      ],
+      filter: GroundsFilter.fromJson(json['filter'] as Map<String, dynamic>),
+      followedGroundIds: {
+        for (final id in json['followedGroundIds'] as List) id as String,
+      },
+    );
+  }
 }
 
 /// PRD §10 -- E9-01's Grounds discovery engine.
-class GroundsNotifier extends Notifier<GroundsState> {
+class GroundsNotifier extends PersistedNotifier<GroundsState> {
   @override
-  GroundsState build() => GroundsState(grounds: _seedGrounds());
+  String get persistenceKey => 'grounds_v1';
+
+  @override
+  GroundsState seed() => GroundsState(grounds: _seedGrounds());
+
+  @override
+  Map<String, dynamic> toJson(GroundsState value) => value.toJson();
+
+  @override
+  GroundsState fromJson(Map<String, dynamic> json) =>
+      GroundsState.fromJson(json);
 
   static List<Ground> _seedGrounds() => const [
     Ground(

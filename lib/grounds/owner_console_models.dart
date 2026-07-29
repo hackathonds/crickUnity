@@ -22,6 +22,24 @@ class MaintenanceBlock {
     if (!recurringWeekly) return slotStart == slot;
     return slotStart.weekday == slot.weekday && slotStart.hour == slot.hour;
   }
+
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'groundId': groundId,
+    'slotStart': slotStart.toIso8601String(),
+    'reason': reason,
+    'recurringWeekly': recurringWeekly,
+  };
+
+  factory MaintenanceBlock.fromJson(Map<String, dynamic> json) {
+    return MaintenanceBlock(
+      id: json['id'] as String,
+      groundId: json['groundId'] as String,
+      slotStart: DateTime.parse(json['slotStart'] as String),
+      reason: json['reason'] as String,
+      recurringWeekly: json['recurringWeekly'] as bool? ?? false,
+    );
+  }
 }
 
 /// PRD §2.11: "staff sub-accounts (caretaker: check-in powers only)."
@@ -33,4 +51,13 @@ class CaretakerAccount {
   final String name;
 
   const CaretakerAccount({required this.id, required this.name});
+
+  Map<String, dynamic> toJson() => {'id': id, 'name': name};
+
+  factory CaretakerAccount.fromJson(Map<String, dynamic> json) {
+    return CaretakerAccount(
+      id: json['id'] as String,
+      name: json['name'] as String,
+    );
+  }
 }

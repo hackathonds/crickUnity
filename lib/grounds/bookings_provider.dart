@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../persistence/persisted_notifier.dart';
 import 'booking_models.dart';
 import 'ground_models.dart';
 import 'grounds_provider.dart';
@@ -11,13 +12,36 @@ class BookingsState {
 
   BookingsState copyWith({List<Booking>? bookings}) =>
       BookingsState(bookings: bookings ?? this.bookings);
+
+  Map<String, dynamic> toJson() => {
+    'bookings': [for (final b in bookings) b.toJson()],
+  };
+
+  factory BookingsState.fromJson(Map<String, dynamic> json) {
+    return BookingsState(
+      bookings: [
+        for (final b in json['bookings'] as List)
+          Booking.fromJson(b as Map<String, dynamic>),
+      ],
+    );
+  }
 }
 
 /// Backlog E9-03 -- Booking flow engine. See booking_models.dart's
 /// top-of-file note on the exact hold/grace/penalty windows this cites.
-class BookingsNotifier extends Notifier<BookingsState> {
+class BookingsNotifier extends PersistedNotifier<BookingsState> {
   @override
-  BookingsState build() => BookingsState(bookings: _seedBookings());
+  String get persistenceKey => 'bookings_v1';
+
+  @override
+  BookingsState seed() => BookingsState(bookings: _seedBookings());
+
+  @override
+  Map<String, dynamic> toJson(BookingsState value) => value.toJson();
+
+  @override
+  BookingsState fromJson(Map<String, dynamic> json) =>
+      BookingsState.fromJson(json);
 
   /// E9-04 (Reviews) needs a genuinely completed stay to exercise the
   /// verified-booker gate against, and E9-06 (Caretaker mode) needs a
