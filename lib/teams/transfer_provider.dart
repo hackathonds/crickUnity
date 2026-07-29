@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../persistence/persisted_notifier.dart';
 import 'transfer_models.dart';
 
 class TransferResult {
@@ -19,6 +20,19 @@ class TransferState {
   TransferState copyWith({List<TransferRecord>? transfers}) {
     return TransferState(transfers: transfers ?? this.transfers);
   }
+
+  Map<String, dynamic> toJson() => {
+    'transfers': transfers.map((t) => t.toJson()).toList(),
+  };
+
+  factory TransferState.fromJson(Map<String, dynamic> json) {
+    return TransferState(
+      transfers: [
+        for (final t in (json['transfers'] as List? ?? const []))
+          TransferRecord.fromJson(t as Map<String, dynamic>),
+      ],
+    );
+  }
 }
 
 /// PRD §6.26. No real player-stats or team-aggregate system exists yet
@@ -28,9 +42,19 @@ class TransferState {
 /// screen, not data this notifier mutates. What this notifier actually
 /// enforces is the one rule that *is* fully specified: a rival-team
 /// transfer is blocked once the tournament's window is locked.
-class TransferNotifier extends Notifier<TransferState> {
+class TransferNotifier extends PersistedNotifier<TransferState> {
   @override
-  TransferState build() => const TransferState();
+  String get persistenceKey => 'transfer_v1';
+
+  @override
+  TransferState seed() => const TransferState();
+
+  @override
+  Map<String, dynamic> toJson(TransferState value) => value.toJson();
+
+  @override
+  TransferState fromJson(Map<String, dynamic> json) =>
+      TransferState.fromJson(json);
 
   TransferResult initiateTransfer({
     required String playerName,

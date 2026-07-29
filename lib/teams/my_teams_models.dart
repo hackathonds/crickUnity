@@ -40,6 +40,24 @@ class MyTeamMembership {
         isMuted: isMuted ?? this.isMuted,
         nextEventCaption: nextEventCaption,
       );
+
+  Map<String, dynamic> toJson() => {
+    'team': team.toJson(),
+    'role': role.name,
+    'isDefault': isDefault,
+    'isMuted': isMuted,
+    'nextEventCaption': nextEventCaption,
+  };
+
+  factory MyTeamMembership.fromJson(Map<String, dynamic> json) {
+    return MyTeamMembership(
+      team: Team.fromJson(json['team'] as Map<String, dynamic>),
+      role: TeamMemberRole.values.byName(json['role'] as String),
+      isDefault: json['isDefault'] as bool? ?? false,
+      isMuted: json['isMuted'] as bool? ?? false,
+      nextEventCaption: json['nextEventCaption'] as String? ?? '',
+    );
+  }
 }
 
 /// [TeamMemberRole] (a roster role -- always a real member) and

@@ -22,6 +22,15 @@ class AvailabilityEvent {
   final String label;
 
   const AvailabilityEvent({required this.id, required this.label});
+
+  Map<String, dynamic> toJson() => {'id': id, 'label': label};
+
+  factory AvailabilityEvent.fromJson(Map<String, dynamic> json) {
+    return AvailabilityEvent(
+      id: json['id'] as String,
+      label: json['label'] as String,
+    );
+  }
 }
 
 /// Mock roster x events grid for the debug demo and tests -- no backend

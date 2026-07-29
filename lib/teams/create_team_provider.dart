@@ -83,6 +83,11 @@ class CreateTeamState {
   }
 }
 
+/// Intentionally not persisted (lib/persistence/) -- this is in-progress
+/// wizard scratch state, same category as registration_flow_provider.dart's
+/// phone/OTP entry: resuming mid-create-team-wizard after an app restart
+/// isn't the intended UX. The durable result ([createTeam]'s [Team]) is
+/// what a caller adds to [myTeamsProvider], which does persist.
 class CreateTeamNotifier extends Notifier<CreateTeamState> {
   @override
   CreateTeamState build() => const CreateTeamState();

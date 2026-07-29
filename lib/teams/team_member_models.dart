@@ -15,6 +15,15 @@ class TeamMember {
   final TeamMemberRole role;
 
   const TeamMember({required this.name, required this.role});
+
+  Map<String, dynamic> toJson() => {'name': name, 'role': role.name};
+
+  factory TeamMember.fromJson(Map<String, dynamic> json) {
+    return TeamMember(
+      name: json['name'] as String,
+      role: TeamMemberRole.values.byName(json['role'] as String),
+    );
+  }
 }
 
 /// PRD §2.3: "invite/remove players (removal requires reason, logged)."
@@ -32,6 +41,24 @@ class TeamLogEntry {
     required this.targetName,
     this.reason,
   });
+
+  Map<String, dynamic> toJson() => {
+    'timestamp': timestamp.toIso8601String(),
+    'action': action,
+    'actorName': actorName,
+    'targetName': targetName,
+    'reason': reason,
+  };
+
+  factory TeamLogEntry.fromJson(Map<String, dynamic> json) {
+    return TeamLogEntry(
+      timestamp: DateTime.parse(json['timestamp'] as String),
+      action: json['action'] as String,
+      actorName: json['actorName'] as String,
+      targetName: json['targetName'] as String,
+      reason: json['reason'] as String?,
+    );
+  }
 }
 
 /// PRD §6.5-6.7: "Team Settings screen exposes a Permission Matrix table

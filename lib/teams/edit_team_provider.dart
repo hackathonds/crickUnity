@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../persistence/persisted_notifier.dart';
 import 'team_models.dart';
 
 /// PRD §6.2: "'Formerly known as…' for 90 days."
@@ -33,6 +34,44 @@ class EditTeamBaseline {
     this.formerName,
     this.formerNameExpiresAt,
   });
+
+  Map<String, dynamic> toJson() => {
+    'name': name,
+    'primaryColor': primaryColor.toARGB32(),
+    'secondaryColor': secondaryColor.toARGB32(),
+    'city': city,
+    'homeGround': homeGround,
+    'formatFocus': formatFocus.map((f) => f.name).toList(),
+    'joinPolicy': joinPolicy.name,
+    'changeLog': changeLog.map((e) => e.toJson()).toList(),
+    'formerName': formerName,
+    'formerNameExpiresAt': formerNameExpiresAt?.toIso8601String(),
+  };
+
+  factory EditTeamBaseline.fromJson(Map<String, dynamic> json) {
+    return EditTeamBaseline(
+      name: json['name'] as String,
+      primaryColor: Color(json['primaryColor'] as int),
+      secondaryColor: Color(json['secondaryColor'] as int),
+      city: json['city'] as String,
+      homeGround: json['homeGround'] as String? ?? '',
+      formatFocus: {
+        for (final f in (json['formatFocus'] as List? ?? const []))
+          TeamFormat.values.byName(f as String),
+      },
+      joinPolicy: TeamJoinPolicy.values.byName(
+        json['joinPolicy'] as String? ?? TeamJoinPolicy.open.name,
+      ),
+      changeLog: [
+        for (final e in (json['changeLog'] as List? ?? const []))
+          TeamIdentityChangeLogEntry.fromJson(e as Map<String, dynamic>),
+      ],
+      formerName: json['formerName'] as String?,
+      formerNameExpiresAt: (json['formerNameExpiresAt'] as String?) == null
+          ? null
+          : DateTime.parse(json['formerNameExpiresAt'] as String),
+    );
+  }
 }
 
 class EditTeamState {
@@ -102,14 +141,62 @@ class EditTeamState {
       saved: saved ?? this.saved,
     );
   }
+
+  Map<String, dynamic> toJson() => {
+    'baseline': baseline.toJson(),
+    'name': name,
+    'primaryColor': primaryColor.toARGB32(),
+    'secondaryColor': secondaryColor.toARGB32(),
+    'city': city,
+    'homeGround': homeGround,
+    'formatFocus': formatFocus.map((f) => f.name).toList(),
+    'joinPolicy': joinPolicy.name,
+    'saved': saved,
+  };
+
+  factory EditTeamState.fromJson(Map<String, dynamic> json) {
+    return EditTeamState(
+      baseline: EditTeamBaseline.fromJson(
+        json['baseline'] as Map<String, dynamic>,
+      ),
+      name: json['name'] as String,
+      primaryColor: Color(json['primaryColor'] as int),
+      secondaryColor: Color(json['secondaryColor'] as int),
+      city: json['city'] as String,
+      homeGround: json['homeGround'] as String,
+      formatFocus: {
+        for (final f in (json['formatFocus'] as List? ?? const []))
+          TeamFormat.values.byName(f as String),
+      },
+      joinPolicy: TeamJoinPolicy.values.byName(
+        json['joinPolicy'] as String? ?? TeamJoinPolicy.open.name,
+      ),
+      saved: json['saved'] as bool? ?? false,
+    );
+  }
 }
 
 bool _setEquals(Set<TeamFormat> a, Set<TeamFormat> b) =>
     a.length == b.length && a.containsAll(b);
 
-class EditTeamNotifier extends Notifier<EditTeamState> {
+/// Unlike create_team_provider.dart's pure signup-wizard scratch state
+/// (deliberately not persisted), this provider's [EditTeamState.baseline]
+/// is the currently-saved team identity plus its append-only change log --
+/// genuinely durable data, not in-progress form entry -- so the whole
+/// state persists here via [PersistedNotifier].
+class EditTeamNotifier extends PersistedNotifier<EditTeamState> {
   @override
-  EditTeamState build() {
+  String get persistenceKey => 'edit_team_v1';
+
+  @override
+  Map<String, dynamic> toJson(EditTeamState value) => value.toJson();
+
+  @override
+  EditTeamState fromJson(Map<String, dynamic> json) =>
+      EditTeamState.fromJson(json);
+
+  @override
+  EditTeamState seed() {
     final team = mockTeam();
     final baseline = EditTeamBaseline(
       name: team.name,

@@ -56,6 +56,26 @@ class RecruitmentListing {
   /// rather than a single decision awaiting one person).
   bool isExpired({DateTime Function() now = DateTime.now}) =>
       now().difference(postedAt).inDays >= listingExpiryDays;
+
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'teamName': teamName,
+    'roleNeeded': roleNeeded.name,
+    'dayTime': dayTime,
+    'area': area,
+    'postedAt': postedAt.toIso8601String(),
+  };
+
+  factory RecruitmentListing.fromJson(Map<String, dynamic> json) {
+    return RecruitmentListing(
+      id: json['id'] as String,
+      teamName: json['teamName'] as String,
+      roleNeeded: PrimaryRole.values.byName(json['roleNeeded'] as String),
+      dayTime: json['dayTime'] as String,
+      area: json['area'] as String,
+      postedAt: DateTime.parse(json['postedAt'] as String),
+    );
+  }
 }
 
 const int listingExpiryDays = 30;
@@ -79,6 +99,22 @@ class Applicant {
       listingId: listingId,
       applicantName: applicantName,
       stage: stage ?? this.stage,
+    );
+  }
+
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'listingId': listingId,
+    'applicantName': applicantName,
+    'stage': stage.name,
+  };
+
+  factory Applicant.fromJson(Map<String, dynamic> json) {
+    return Applicant(
+      id: json['id'] as String,
+      listingId: json['listingId'] as String,
+      applicantName: json['applicantName'] as String,
+      stage: ApplicantStage.values.byName(json['stage'] as String),
     );
   }
 }

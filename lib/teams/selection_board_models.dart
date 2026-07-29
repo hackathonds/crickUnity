@@ -10,6 +10,15 @@ class PlayerCandidate {
   final PrimaryRole role;
 
   const PlayerCandidate({required this.name, required this.role});
+
+  Map<String, dynamic> toJson() => {'name': name, 'role': role.name};
+
+  factory PlayerCandidate.fromJson(Map<String, dynamic> json) {
+    return PlayerCandidate(
+      name: json['name'] as String,
+      role: PrimaryRole.values.byName(json['role'] as String),
+    );
+  }
 }
 
 /// PRD §7.5: "post-lock changes = 'replacement' flow requiring opponent
@@ -28,6 +37,24 @@ class ReplacementRequest {
     required this.reason,
     this.acknowledged = false,
   });
+
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'outgoingName': outgoingName,
+    'incomingName': incomingName,
+    'reason': reason,
+    'acknowledged': acknowledged,
+  };
+
+  factory ReplacementRequest.fromJson(Map<String, dynamic> json) {
+    return ReplacementRequest(
+      id: json['id'] as String,
+      outgoingName: json['outgoingName'] as String,
+      incomingName: json['incomingName'] as String,
+      reason: json['reason'] as String,
+      acknowledged: json['acknowledged'] as bool? ?? false,
+    );
+  }
 }
 
 /// Mock squad pool for the debug demo and tests -- no backend Match/

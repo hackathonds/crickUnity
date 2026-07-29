@@ -32,6 +32,22 @@ class TeamIdentityChangeLogEntry {
     required this.from,
     required this.to,
   });
+
+  Map<String, dynamic> toJson() => {
+    'changedAt': changedAt.toIso8601String(),
+    'field': field,
+    'from': from,
+    'to': to,
+  };
+
+  factory TeamIdentityChangeLogEntry.fromJson(Map<String, dynamic> json) {
+    return TeamIdentityChangeLogEntry(
+      changedAt: DateTime.parse(json['changedAt'] as String),
+      field: json['field'] as String,
+      from: json['from'] as String,
+      to: json['to'] as String,
+    );
+  }
 }
 
 /// A plain data holder -- no backend Team model exists yet, same
@@ -73,6 +89,50 @@ class Team {
       formerName != null &&
       formerNameExpiresAt != null &&
       now().isBefore(formerNameExpiresAt!);
+
+  Map<String, dynamic> toJson() => {
+    'name': name,
+    'city': city,
+    'homeGround': homeGround,
+    'formatFocus': formatFocus.map((f) => f.name).toList(),
+    'joinPolicy': joinPolicy.name,
+    'primaryColor': primaryColor.toARGB32(),
+    'secondaryColor': secondaryColor.toARGB32(),
+    'isArchived': isArchived,
+    'changeLog': changeLog.map((e) => e.toJson()).toList(),
+    'followerCount': followerCount,
+    'memberCount': memberCount,
+    'formerName': formerName,
+    'formerNameExpiresAt': formerNameExpiresAt?.toIso8601String(),
+  };
+
+  factory Team.fromJson(Map<String, dynamic> json) {
+    return Team(
+      name: json['name'] as String,
+      city: json['city'] as String,
+      homeGround: json['homeGround'] as String?,
+      formatFocus: [
+        for (final f in (json['formatFocus'] as List? ?? const []))
+          TeamFormat.values.byName(f as String),
+      ],
+      joinPolicy: TeamJoinPolicy.values.byName(
+        json['joinPolicy'] as String? ?? TeamJoinPolicy.open.name,
+      ),
+      primaryColor: Color(json['primaryColor'] as int? ?? 0xFF123B2A),
+      secondaryColor: Color(json['secondaryColor'] as int? ?? 0xFFE0A82E),
+      isArchived: json['isArchived'] as bool? ?? false,
+      changeLog: [
+        for (final e in (json['changeLog'] as List? ?? const []))
+          TeamIdentityChangeLogEntry.fromJson(e as Map<String, dynamic>),
+      ],
+      followerCount: json['followerCount'] as int? ?? 0,
+      memberCount: json['memberCount'] as int? ?? 0,
+      formerName: json['formerName'] as String?,
+      formerNameExpiresAt: (json['formerNameExpiresAt'] as String?) == null
+          ? null
+          : DateTime.parse(json['formerNameExpiresAt'] as String),
+    );
+  }
 }
 
 /// Mock "teams that already exist" catalog -- stands in for the

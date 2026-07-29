@@ -15,6 +15,20 @@ class ElevationRecord {
     required this.viceCaptainName,
     required this.elevatedAt,
   });
+
+  Map<String, dynamic> toJson() => {
+    'matchLabel': matchLabel,
+    'viceCaptainName': viceCaptainName,
+    'elevatedAt': elevatedAt.toIso8601String(),
+  };
+
+  factory ElevationRecord.fromJson(Map<String, dynamic> json) {
+    return ElevationRecord(
+      matchLabel: json['matchLabel'] as String,
+      viceCaptainName: json['viceCaptainName'] as String,
+      elevatedAt: DateTime.parse(json['elevatedAt'] as String),
+    );
+  }
 }
 
 /// PRD §2.9: "transfer team ownership (7-day cooling period, notified
@@ -35,6 +49,18 @@ class OwnershipTransfer {
 
   bool isCoolingComplete({DateTime Function() now = DateTime.now}) =>
       !now().isBefore(coolingEndsAt);
+
+  Map<String, dynamic> toJson() => {
+    'newOwnerName': newOwnerName,
+    'initiatedAt': initiatedAt.toIso8601String(),
+  };
+
+  factory OwnershipTransfer.fromJson(Map<String, dynamic> json) {
+    return OwnershipTransfer(
+      newOwnerName: json['newOwnerName'] as String,
+      initiatedAt: DateTime.parse(json['initiatedAt'] as String),
+    );
+  }
 }
 
 /// PRD §2.9: "If an Owner account is inactive 180 days, Captain can
@@ -57,4 +83,14 @@ class InactivityPetition {
 
   bool isResponseWindowExpired({DateTime Function() now = DateTime.now}) =>
       now().isAfter(responseDeadline);
+
+  Map<String, dynamic> toJson() => {
+    'initiatedAt': initiatedAt.toIso8601String(),
+  };
+
+  factory InactivityPetition.fromJson(Map<String, dynamic> json) {
+    return InactivityPetition(
+      initiatedAt: DateTime.parse(json['initiatedAt'] as String),
+    );
+  }
 }

@@ -45,6 +45,24 @@ class JerseySizeSubmission {
       joinedAt: joinedAt,
     );
   }
+
+  Map<String, dynamic> toJson() => {
+    'memberName': memberName,
+    'size': size,
+    'nameOnJersey': nameOnJersey,
+    'number': number,
+    'joinedAt': joinedAt.toIso8601String(),
+  };
+
+  factory JerseySizeSubmission.fromJson(Map<String, dynamic> json) {
+    return JerseySizeSubmission(
+      memberName: json['memberName'] as String,
+      size: json['size'] as String,
+      nameOnJersey: json['nameOnJersey'] as String,
+      number: json['number'] as int?,
+      joinedAt: DateTime.parse(json['joinedAt'] as String),
+    );
+  }
 }
 
 /// Mock data for the debug demo and tests -- no backend jersey-board

@@ -37,6 +37,30 @@ class Announcement {
       totalMembers: totalMembers,
     );
   }
+
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'authorName': authorName,
+    'body': body,
+    'postedAt': postedAt.toIso8601String(),
+    'isPushPriority': isPushPriority,
+    'commentsEnabled': commentsEnabled,
+    'seenBy': seenBy.toList(),
+    'totalMembers': totalMembers,
+  };
+
+  factory Announcement.fromJson(Map<String, dynamic> json) {
+    return Announcement(
+      id: json['id'] as String,
+      authorName: json['authorName'] as String,
+      body: json['body'] as String,
+      postedAt: DateTime.parse(json['postedAt'] as String),
+      isPushPriority: json['isPushPriority'] as bool? ?? false,
+      commentsEnabled: json['commentsEnabled'] as bool? ?? true,
+      seenBy: {...(json['seenBy'] as List? ?? const []).cast<String>()},
+      totalMembers: json['totalMembers'] as int,
+    );
+  }
 }
 
 /// Mock data for the debug demo and tests -- no backend announcements

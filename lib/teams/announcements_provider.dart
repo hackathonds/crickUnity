@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../persistence/persisted_notifier.dart';
 import 'announcement_models.dart';
 import 'team_member_models.dart';
 
@@ -13,6 +14,19 @@ class AnnouncementsState {
       announcements: announcements ?? this.announcements,
     );
   }
+
+  Map<String, dynamic> toJson() => {
+    'announcements': announcements.map((a) => a.toJson()).toList(),
+  };
+
+  factory AnnouncementsState.fromJson(Map<String, dynamic> json) {
+    return AnnouncementsState(
+      announcements: [
+        for (final a in (json['announcements'] as List? ?? const []))
+          Announcement.fromJson(a as Map<String, dynamic>),
+      ],
+    );
+  }
 }
 
 /// PRD §6.8: "Captain/VC/Manager post announcements" -- Owner included
@@ -24,10 +38,20 @@ const Set<TeamMemberRole> _canPostAnnouncements = {
   TeamMemberRole.owner,
 };
 
-class AnnouncementsNotifier extends Notifier<AnnouncementsState> {
+class AnnouncementsNotifier extends PersistedNotifier<AnnouncementsState> {
   @override
-  AnnouncementsState build() =>
+  String get persistenceKey => 'announcements_v1';
+
+  @override
+  AnnouncementsState seed() =>
       AnnouncementsState(announcements: mockAnnouncements());
+
+  @override
+  Map<String, dynamic> toJson(AnnouncementsState value) => value.toJson();
+
+  @override
+  AnnouncementsState fromJson(Map<String, dynamic> json) =>
+      AnnouncementsState.fromJson(json);
 
   /// Returns null on success; a human-readable denial reason otherwise
   /// (never mutates state in that case).

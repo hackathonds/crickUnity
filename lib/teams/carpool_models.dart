@@ -32,6 +32,26 @@ class CarpoolRide {
   int get fuelSplitSuggestion =>
       riders.isEmpty ? fuelCostRupees : fuelCostRupees ~/ (riders.length + 1);
 
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'driverName': driverName,
+    'destination': destination,
+    'seatCapacity': seatCapacity,
+    'riders': riders,
+    'fuelCostRupees': fuelCostRupees,
+  };
+
+  factory CarpoolRide.fromJson(Map<String, dynamic> json) {
+    return CarpoolRide(
+      id: json['id'] as String,
+      driverName: json['driverName'] as String,
+      destination: json['destination'] as String,
+      seatCapacity: json['seatCapacity'] as int,
+      riders: (json['riders'] as List? ?? const []).cast<String>(),
+      fuelCostRupees: json['fuelCostRupees'] as int,
+    );
+  }
+
   CarpoolRide copyWith({List<String>? riders}) {
     return CarpoolRide(
       id: id,

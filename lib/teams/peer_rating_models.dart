@@ -56,6 +56,22 @@ class PeerRating {
     required this.stars,
     this.tags = const [],
   });
+
+  Map<String, dynamic> toJson() => {
+    'raterName': raterName,
+    'ratedPlayerName': ratedPlayerName,
+    'stars': stars,
+    'tags': tags,
+  };
+
+  factory PeerRating.fromJson(Map<String, dynamic> json) {
+    return PeerRating(
+      raterName: json['raterName'] as String,
+      ratedPlayerName: json['ratedPlayerName'] as String,
+      stars: json['stars'] as int,
+      tags: (json['tags'] as List? ?? const []).cast<String>(),
+    );
+  }
 }
 
 /// What a rated player (or their captain) is allowed to see. Below

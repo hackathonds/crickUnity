@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../persistence/persisted_notifier.dart';
 import 'availability_matrix_models.dart';
 import 'practice_session_models.dart';
 
@@ -46,14 +47,44 @@ class PracticeSessionState {
           weeklyAttendanceCount ?? this.weeklyAttendanceCount,
     );
   }
+
+  Map<String, dynamic> toJson() => {
+    'session': session.toJson(),
+    'weeklyAttendanceCount': weeklyAttendanceCount,
+  };
+
+  factory PracticeSessionState.fromJson(Map<String, dynamic> json) {
+    return PracticeSessionState(
+      session: PracticeSession.fromJson(
+        json['session'] as Map<String, dynamic>,
+      ),
+      weeklyAttendanceCount: {
+        for (final entry
+            in (json['weeklyAttendanceCount'] as Map<String, dynamic>? ??
+                    const {})
+                .entries)
+          entry.key: entry.value as int,
+      },
+    );
+  }
 }
 
-class PracticeSessionNotifier extends Notifier<PracticeSessionState> {
+class PracticeSessionNotifier extends PersistedNotifier<PracticeSessionState> {
   @override
-  PracticeSessionState build() => PracticeSessionState(
+  String get persistenceKey => 'practice_session_v1';
+
+  @override
+  PracticeSessionState seed() => PracticeSessionState(
     session: mockPracticeSession(),
     weeklyAttendanceCount: const {'Kabir Singh': practiceAttendanceWeeklyCap},
   );
+
+  @override
+  Map<String, dynamic> toJson(PracticeSessionState value) => value.toJson();
+
+  @override
+  PracticeSessionState fromJson(Map<String, dynamic> json) =>
+      PracticeSessionState.fromJson(json);
 
   bool canCheckIn({DateTime Function() now = DateTime.now}) {
     final diff = now().difference(state.session.scheduledAt).abs();
