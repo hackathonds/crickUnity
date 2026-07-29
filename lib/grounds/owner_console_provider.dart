@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../persistence/persisted_notifier.dart';
 import 'owner_console_models.dart';
 
 class OwnerConsoleState {
@@ -23,15 +24,43 @@ class OwnerConsoleState {
 
   bool isBlocked(String groundId, DateTime slot) =>
       maintenanceBlocks.any((b) => b.coversSlot(groundId, slot));
+
+  Map<String, dynamic> toJson() => {
+    'maintenanceBlocks': [for (final b in maintenanceBlocks) b.toJson()],
+    'staff': [for (final s in staff) s.toJson()],
+  };
+
+  factory OwnerConsoleState.fromJson(Map<String, dynamic> json) {
+    return OwnerConsoleState(
+      maintenanceBlocks: [
+        for (final b in json['maintenanceBlocks'] as List)
+          MaintenanceBlock.fromJson(b as Map<String, dynamic>),
+      ],
+      staff: [
+        for (final s in json['staff'] as List)
+          CaretakerAccount.fromJson(s as Map<String, dynamic>),
+      ],
+    );
+  }
 }
 
 /// Backlog E9-05 -- Owner Console engine (PRD §10.6's Maintenance and
 /// Staff sub-sections; occupancy/revenue/review-sentiment/price-nudges
 /// are read-only derivations computed in owner_console_screen.dart from
 /// the real bookingsProvider/reviewsProvider state, not stored here).
-class OwnerConsoleNotifier extends Notifier<OwnerConsoleState> {
+class OwnerConsoleNotifier extends PersistedNotifier<OwnerConsoleState> {
   @override
-  OwnerConsoleState build() => const OwnerConsoleState();
+  String get persistenceKey => 'owner_console_v1';
+
+  @override
+  OwnerConsoleState seed() => const OwnerConsoleState();
+
+  @override
+  Map<String, dynamic> toJson(OwnerConsoleState value) => value.toJson();
+
+  @override
+  OwnerConsoleState fromJson(Map<String, dynamic> json) =>
+      OwnerConsoleState.fromJson(json);
 
   void blockSlot({
     required String groundId,

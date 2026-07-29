@@ -152,4 +152,69 @@ class Ground {
       reliabilityScore: reliabilityScore ?? this.reliabilityScore,
     );
   }
+
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'name': name,
+    'verifiedOwner': verifiedOwner,
+    'city': city,
+    'address': address,
+    'photoCount': photoCount,
+    'facilities': {
+      for (final entry in facilities.entries) entry.key.name: entry.value.name,
+    },
+    'pitchTypes': [for (final p in pitchTypes) p.name],
+    'pitchCount': pitchCount,
+    'boundaryMeters': boundaryMeters,
+    'surfaceConditionTag': surfaceConditionTag,
+    'rulesNote': rulesNote,
+    'pricePerHour': pricePerHour,
+    'cancellationPolicyNote': cancellationPolicyNote,
+    'rating': rating,
+    'distanceKm': distanceKm,
+    'facetRatings': {
+      for (final entry in facetRatings.entries) entry.key.name: entry.value,
+    },
+    'parScoreFirstInnings': parScoreFirstInnings,
+    'isFullyBookedToday': isFullyBookedToday,
+    'reliabilityScore': reliabilityScore,
+  };
+
+  factory Ground.fromJson(Map<String, dynamic> json) {
+    return Ground(
+      id: json['id'] as String,
+      name: json['name'] as String,
+      verifiedOwner: json['verifiedOwner'] as bool? ?? false,
+      city: json['city'] as String,
+      address: json['address'] as String,
+      photoCount: json['photoCount'] as int? ?? 0,
+      facilities: {
+        for (final entry
+            in (json['facilities'] as Map<String, dynamic>).entries)
+          Facility.values.byName(entry.key): FacilityAvailability.values.byName(
+            entry.value as String,
+          ),
+      },
+      pitchTypes: [
+        for (final p in json['pitchTypes'] as List)
+          PitchType.values.byName(p as String),
+      ],
+      pitchCount: json['pitchCount'] as int? ?? 1,
+      boundaryMeters: json['boundaryMeters'] as int,
+      surfaceConditionTag: json['surfaceConditionTag'] as String,
+      rulesNote: json['rulesNote'] as String,
+      pricePerHour: json['pricePerHour'] as int,
+      cancellationPolicyNote: json['cancellationPolicyNote'] as String,
+      rating: (json['rating'] as num?)?.toDouble() ?? 0,
+      distanceKm: (json['distanceKm'] as num?)?.toDouble() ?? 0,
+      facetRatings: {
+        for (final entry
+            in (json['facetRatings'] as Map<String, dynamic>).entries)
+          ReviewFacet.values.byName(entry.key): (entry.value as num).toDouble(),
+      },
+      parScoreFirstInnings: json['parScoreFirstInnings'] as int? ?? 0,
+      isFullyBookedToday: json['isFullyBookedToday'] as bool? ?? false,
+      reliabilityScore: (json['reliabilityScore'] as num?)?.toDouble() ?? 100,
+    );
+  }
 }

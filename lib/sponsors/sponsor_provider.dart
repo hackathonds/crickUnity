@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../persistence/persisted_notifier.dart';
 import 'sponsor_models.dart';
 
 class SponsorState {
@@ -34,14 +35,38 @@ class SponsorState {
       campaignStats: campaignStats ?? this.campaignStats,
     );
   }
+
+  /// Only [offers] persists -- [listings] and [campaignStats] are
+  /// static mock catalogs no method ever mutates, re-seeded fresh on
+  /// every load rather than round-tripped through storage.
+  Map<String, dynamic> toJson() => {
+    'offers': [for (final o in offers) o.toJson()],
+  };
 }
 
 /// No real sponsorship-marketplace backend exists -- flagged mock
 /// listings/offers, same convention as every other missing-backend gap
 /// this session.
-class SponsorNotifier extends Notifier<SponsorState> {
+class SponsorNotifier extends PersistedNotifier<SponsorState> {
   @override
-  SponsorState build() {
+  String get persistenceKey => 'sponsor_v1';
+
+  @override
+  Map<String, dynamic> toJson(SponsorState value) => value.toJson();
+
+  @override
+  SponsorState fromJson(Map<String, dynamic> json) {
+    final base = seed();
+    return base.copyWith(
+      offers: [
+        for (final o in json['offers'] as List)
+          SponsorOffer.fromJson(o as Map<String, dynamic>),
+      ],
+    );
+  }
+
+  @override
+  SponsorState seed() {
     return const SponsorState(
       listings: [
         MarketplaceListing(

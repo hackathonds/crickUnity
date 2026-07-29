@@ -81,6 +81,26 @@ class ClubMember {
       joinDate: joinDate,
     );
   }
+
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'name': name,
+    'tier': tier.name,
+    'duesStatus': duesStatus.name,
+    'role': role.name,
+    'joinDate': joinDate.toIso8601String(),
+  };
+
+  factory ClubMember.fromJson(Map<String, dynamic> json) {
+    return ClubMember(
+      id: json['id'] as String,
+      name: json['name'] as String,
+      tier: MembershipTierType.values.byName(json['tier'] as String),
+      duesStatus: DuesStatus.values.byName(json['duesStatus'] as String),
+      role: ClubRole.values.byName(json['role'] as String),
+      joinDate: DateTime.parse(json['joinDate'] as String),
+    );
+  }
 }
 
 enum SubscriptionCadence { monthly, yearly }
@@ -121,6 +141,24 @@ class MembershipTierDefinition {
       gracePeriodDays: gracePeriodDays ?? this.gracePeriodDays,
     );
   }
+
+  Map<String, dynamic> toJson() => {
+    'type': type.name,
+    'price': price,
+    'cadence': cadence.name,
+    'benefits': benefits,
+    'gracePeriodDays': gracePeriodDays,
+  };
+
+  factory MembershipTierDefinition.fromJson(Map<String, dynamic> json) {
+    return MembershipTierDefinition(
+      type: MembershipTierType.values.byName(json['type'] as String),
+      price: json['price'] as int,
+      cadence: SubscriptionCadence.values.byName(json['cadence'] as String),
+      benefits: [for (final b in json['benefits'] as List) b as String],
+      gracePeriodDays: json['gracePeriodDays'] as int? ?? 7,
+    );
+  }
 }
 
 class InterTeamFriendly {
@@ -137,6 +175,24 @@ class InterTeamFriendly {
     required this.date,
     this.venueNote = '',
   });
+
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'teamAName': teamAName,
+    'teamBName': teamBName,
+    'date': date.toIso8601String(),
+    'venueNote': venueNote,
+  };
+
+  factory InterTeamFriendly.fromJson(Map<String, dynamic> json) {
+    return InterTeamFriendly(
+      id: json['id'] as String,
+      teamAName: json['teamAName'] as String,
+      teamBName: json['teamBName'] as String,
+      date: DateTime.parse(json['date'] as String),
+      venueNote: json['venueNote'] as String? ?? '',
+    );
+  }
 }
 
 class WallOfFameEntry {
@@ -151,6 +207,22 @@ class WallOfFameEntry {
     required this.citation,
     required this.addedAt,
   });
+
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'memberName': memberName,
+    'citation': citation,
+    'addedAt': addedAt.toIso8601String(),
+  };
+
+  factory WallOfFameEntry.fromJson(Map<String, dynamic> json) {
+    return WallOfFameEntry(
+      id: json['id'] as String,
+      memberName: json['memberName'] as String,
+      citation: json['citation'] as String,
+      addedAt: DateTime.parse(json['addedAt'] as String),
+    );
+  }
 }
 
 class Club {
@@ -201,6 +273,34 @@ class Club {
           ownerAcceptedTeamNames ?? this.ownerAcceptedTeamNames,
     );
   }
+
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'name': name,
+    'ownerName': ownerName,
+    'linkedTeamNames': linkedTeamNames,
+    'upcomingEventsCount': upcomingEventsCount,
+    'pendingJoinRequests': pendingJoinRequests,
+    'treasuryBalance': treasuryBalance,
+    'ownerAcceptedTeamNames': ownerAcceptedTeamNames.toList(),
+  };
+
+  factory Club.fromJson(Map<String, dynamic> json) {
+    return Club(
+      id: json['id'] as String,
+      name: json['name'] as String,
+      ownerName: json['ownerName'] as String,
+      linkedTeamNames: [
+        for (final n in json['linkedTeamNames'] as List) n as String,
+      ],
+      upcomingEventsCount: json['upcomingEventsCount'] as int? ?? 0,
+      pendingJoinRequests: json['pendingJoinRequests'] as int? ?? 0,
+      treasuryBalance: json['treasuryBalance'] as int? ?? 0,
+      ownerAcceptedTeamNames: {
+        for (final n in json['ownerAcceptedTeamNames'] as List) n as String,
+      },
+    );
+  }
 }
 
 enum TransferDirection { clubToTeam, teamToClub }
@@ -247,6 +347,28 @@ class InterWalletTransferRequest {
       teamTreasurerConfirmed:
           teamTreasurerConfirmed ?? this.teamTreasurerConfirmed,
       completed: completed ?? this.completed,
+    );
+  }
+
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'direction': direction.name,
+    'teamName': teamName,
+    'amount': amount,
+    'clubTreasurerConfirmed': clubTreasurerConfirmed,
+    'teamTreasurerConfirmed': teamTreasurerConfirmed,
+    'completed': completed,
+  };
+
+  factory InterWalletTransferRequest.fromJson(Map<String, dynamic> json) {
+    return InterWalletTransferRequest(
+      id: json['id'] as String,
+      direction: TransferDirection.values.byName(json['direction'] as String),
+      teamName: json['teamName'] as String,
+      amount: json['amount'] as int,
+      clubTreasurerConfirmed: json['clubTreasurerConfirmed'] as bool? ?? false,
+      teamTreasurerConfirmed: json['teamTreasurerConfirmed'] as bool? ?? false,
+      completed: json['completed'] as bool? ?? false,
     );
   }
 }

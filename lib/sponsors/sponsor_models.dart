@@ -86,6 +86,28 @@ class SponsorOffer {
       counterAmountRupees: counterAmountRupees ?? this.counterAmountRupees,
     );
   }
+
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'entityName': entityName,
+    'asset': asset.name,
+    'amountRupees': amountRupees,
+    'durationWeeks': durationWeeks,
+    'status': status.name,
+    'counterAmountRupees': counterAmountRupees,
+  };
+
+  factory SponsorOffer.fromJson(Map<String, dynamic> json) {
+    return SponsorOffer(
+      id: json['id'] as String,
+      entityName: json['entityName'] as String,
+      asset: SponsorAsset.values.byName(json['asset'] as String),
+      amountRupees: json['amountRupees'] as int,
+      durationWeeks: json['durationWeeks'] as int,
+      status: OfferStatus.values.byName(json['status'] as String),
+      counterAmountRupees: json['counterAmountRupees'] as int?,
+    );
+  }
 }
 
 class CampaignStat {

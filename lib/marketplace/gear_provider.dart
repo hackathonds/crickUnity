@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../persistence/persisted_notifier.dart';
 import '../profile/trust_sportsmanship_models.dart' show TrustBand;
 import 'gear_models.dart';
 
@@ -46,13 +47,53 @@ class GearState {
       viewerIsMinor: viewerIsMinor ?? this.viewerIsMinor,
     );
   }
+
+  Map<String, dynamic> toJson() => {
+    'listings': [for (final l in listings) l.toJson()],
+    'completedSalesBySeller': completedSalesBySeller,
+    'buyerConfirmedSold': buyerConfirmedSold.toList(),
+    'sellerConfirmedSold': sellerConfirmedSold.toList(),
+    'safetyTipsShown': safetyTipsShown,
+    'viewerIsMinor': viewerIsMinor,
+  };
+
+  factory GearState.fromJson(Map<String, dynamic> json) {
+    return GearState(
+      listings: [
+        for (final l in json['listings'] as List)
+          GearListing.fromJson(l as Map<String, dynamic>),
+      ],
+      completedSalesBySeller: {
+        for (final entry
+            in (json['completedSalesBySeller'] as Map<String, dynamic>).entries)
+          entry.key: entry.value as int,
+      },
+      buyerConfirmedSold: {
+        for (final id in json['buyerConfirmedSold'] as List) id as String,
+      },
+      sellerConfirmedSold: {
+        for (final id in json['sellerConfirmedSold'] as List) id as String,
+      },
+      safetyTipsShown: json['safetyTipsShown'] as bool? ?? false,
+      viewerIsMinor: json['viewerIsMinor'] as bool? ?? false,
+    );
+  }
 }
 
 /// No real gear-marketplace backend exists -- flagged mock listings,
 /// same convention as every other missing-backend gap this session.
-class GearNotifier extends Notifier<GearState> {
+class GearNotifier extends PersistedNotifier<GearState> {
   @override
-  GearState build() {
+  String get persistenceKey => 'gear_v1';
+
+  @override
+  Map<String, dynamic> toJson(GearState value) => value.toJson();
+
+  @override
+  GearState fromJson(Map<String, dynamic> json) => GearState.fromJson(json);
+
+  @override
+  GearState seed() {
     return const GearState(
       listings: [
         GearListing(
