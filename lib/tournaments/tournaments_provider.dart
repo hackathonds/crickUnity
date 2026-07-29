@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../persistence/persisted_notifier.dart';
 import 'tournament_models.dart';
 
 class TournamentsState {
@@ -24,14 +25,40 @@ class TournamentsState {
     }
     return null;
   }
+
+  /// Only [tournaments] (published/organizer-owned records) persists --
+  /// [draft] is in-progress creation-wizard scratch state, same category
+  /// as create_team_provider.dart/create_match_provider.dart: resuming
+  /// mid-wizard after a restart isn't the intended UX, so a restore
+  /// always gets a fresh draft (see [TournamentsNotifier.fromJson]).
+  Map<String, dynamic> toJson() => {
+    'tournaments': [for (final t in tournaments) t.toJson()],
+  };
 }
 
 /// Backlog E10-01 -- Tournament creation wizard engine. See
 /// tournament_models.dart's top-of-file note for the exact PRD §8.1
 /// wizard steps and the two creation-time-mandatory pre-declared rules.
-class TournamentsNotifier extends Notifier<TournamentsState> {
+class TournamentsNotifier extends PersistedNotifier<TournamentsState> {
   @override
-  TournamentsState build() => TournamentsState(draft: Tournament(id: _newId()));
+  String get persistenceKey => 'tournaments_v1';
+
+  @override
+  TournamentsState seed() => TournamentsState(draft: Tournament(id: _newId()));
+
+  @override
+  Map<String, dynamic> toJson(TournamentsState value) => value.toJson();
+
+  @override
+  TournamentsState fromJson(Map<String, dynamic> json) {
+    return TournamentsState(
+      tournaments: [
+        for (final t in json['tournaments'] as List)
+          Tournament.fromJson(t as Map<String, dynamic>),
+      ],
+      draft: Tournament(id: _newId()),
+    );
+  }
 
   static String _newId({DateTime Function() now = DateTime.now}) =>
       'tournament-${now().microsecondsSinceEpoch}';

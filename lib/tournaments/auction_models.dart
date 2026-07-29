@@ -33,6 +33,22 @@ class FreeAgent {
     required this.role,
     required this.basePrice,
   });
+
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'name': name,
+    'role': role.name,
+    'basePrice': basePrice,
+  };
+
+  factory FreeAgent.fromJson(Map<String, dynamic> json) {
+    return FreeAgent(
+      id: json['id'] as String,
+      name: json['name'] as String,
+      role: PrimaryRole.values.byName(json['role'] as String),
+      basePrice: json['basePrice'] as int,
+    );
+  }
 }
 
 /// PRD names no exact increment amounts -- flagged judgment call, same
@@ -88,6 +104,29 @@ class Lot {
       round: round ?? this.round,
     );
   }
+
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'player': player.toJson(),
+    'status': status.name,
+    'currentBid': currentBid,
+    'currentBidderRegistrationId': currentBidderRegistrationId,
+    'currentBidderTeamName': currentBidderTeamName,
+    'round': round,
+  };
+
+  factory Lot.fromJson(Map<String, dynamic> json) {
+    return Lot(
+      id: json['id'] as String,
+      player: FreeAgent.fromJson(json['player'] as Map<String, dynamic>),
+      status: LotStatus.values.byName(json['status'] as String),
+      currentBid: json['currentBid'] as int? ?? 0,
+      currentBidderRegistrationId:
+          json['currentBidderRegistrationId'] as String?,
+      currentBidderTeamName: json['currentBidderTeamName'] as String?,
+      round: json['round'] as int? ?? 1,
+    );
+  }
 }
 
 /// Sub-part "purse": per-team budget and the minimum-squad-reserve
@@ -134,6 +173,26 @@ class AuctionTeamPurse {
       minSquadSize: minSquadSize,
     );
   }
+
+  Map<String, dynamic> toJson() => {
+    'registrationId': registrationId,
+    'teamName': teamName,
+    'totalPurse': totalPurse,
+    'spent': spent,
+    'squadSize': squadSize,
+    'minSquadSize': minSquadSize,
+  };
+
+  factory AuctionTeamPurse.fromJson(Map<String, dynamic> json) {
+    return AuctionTeamPurse(
+      registrationId: json['registrationId'] as String,
+      teamName: json['teamName'] as String,
+      totalPurse: json['totalPurse'] as int,
+      spent: json['spent'] as int? ?? 0,
+      squadSize: json['squadSize'] as int? ?? 0,
+      minSquadSize: json['minSquadSize'] as int,
+    );
+  }
 }
 
 /// PRD §8.7: "All bids logged."
@@ -151,4 +210,22 @@ class BidLogEntry {
     required this.amount,
     required this.timestamp,
   });
+
+  Map<String, dynamic> toJson() => {
+    'lotId': lotId,
+    'teamRegistrationId': teamRegistrationId,
+    'teamName': teamName,
+    'amount': amount,
+    'timestamp': timestamp.toIso8601String(),
+  };
+
+  factory BidLogEntry.fromJson(Map<String, dynamic> json) {
+    return BidLogEntry(
+      lotId: json['lotId'] as String,
+      teamRegistrationId: json['teamRegistrationId'] as String,
+      teamName: json['teamName'] as String,
+      amount: json['amount'] as int,
+      timestamp: DateTime.parse(json['timestamp'] as String),
+    );
+  }
 }

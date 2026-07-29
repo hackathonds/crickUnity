@@ -36,6 +36,32 @@ class PlayerTournamentStat {
 
   double get strikeRate => ballsFaced == 0 ? 0 : (runs / ballsFaced) * 100;
   double get economy => oversBowled == 0 ? 0 : runsConceded / oversBowled;
+
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'tournamentId': tournamentId,
+    'playerName': playerName,
+    'teamName': teamName,
+    'runs': runs,
+    'ballsFaced': ballsFaced,
+    'wickets': wickets,
+    'runsConceded': runsConceded,
+    'oversBowled': oversBowled,
+  };
+
+  factory PlayerTournamentStat.fromJson(Map<String, dynamic> json) {
+    return PlayerTournamentStat(
+      id: json['id'] as String,
+      tournamentId: json['tournamentId'] as String,
+      playerName: json['playerName'] as String,
+      teamName: json['teamName'] as String,
+      runs: json['runs'] as int? ?? 0,
+      ballsFaced: json['ballsFaced'] as int? ?? 0,
+      wickets: json['wickets'] as int? ?? 0,
+      runsConceded: json['runsConceded'] as int? ?? 0,
+      oversBowled: (json['oversBowled'] as num?)?.toDouble() ?? 0,
+    );
+  }
 }
 
 /// PRD: "min qualifications organizer-set" -- no default numbers are
@@ -59,6 +85,19 @@ class StatsQualification {
           minBallsFacedForStrikeRate ?? this.minBallsFacedForStrikeRate,
       minOversBowledForEconomy:
           minOversBowledForEconomy ?? this.minOversBowledForEconomy,
+    );
+  }
+
+  Map<String, dynamic> toJson() => {
+    'minBallsFacedForStrikeRate': minBallsFacedForStrikeRate,
+    'minOversBowledForEconomy': minOversBowledForEconomy,
+  };
+
+  factory StatsQualification.fromJson(Map<String, dynamic> json) {
+    return StatsQualification(
+      minBallsFacedForStrikeRate:
+          json['minBallsFacedForStrikeRate'] as int? ?? 0,
+      minOversBowledForEconomy: json['minOversBowledForEconomy'] as int? ?? 0,
     );
   }
 }
@@ -116,6 +155,28 @@ class TournamentAward {
       nomineeName: nomineeName,
       confirmed: confirmed ?? this.confirmed,
       confirmedAt: confirmedAt ?? this.confirmedAt,
+    );
+  }
+
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'tournamentId': tournamentId,
+    'category': category.name,
+    'nomineeName': nomineeName,
+    'confirmed': confirmed,
+    'confirmedAt': confirmedAt?.toIso8601String(),
+  };
+
+  factory TournamentAward.fromJson(Map<String, dynamic> json) {
+    return TournamentAward(
+      id: json['id'] as String,
+      tournamentId: json['tournamentId'] as String,
+      category: AwardCategory.values.byName(json['category'] as String),
+      nomineeName: json['nomineeName'] as String,
+      confirmed: json['confirmed'] as bool? ?? false,
+      confirmedAt: json['confirmedAt'] != null
+          ? DateTime.parse(json['confirmedAt'] as String)
+          : null,
     );
   }
 }

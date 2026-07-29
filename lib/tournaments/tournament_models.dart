@@ -123,6 +123,22 @@ class PointsScheme {
       bonusPointEnabled: bonusPointEnabled ?? this.bonusPointEnabled,
     );
   }
+
+  Map<String, dynamic> toJson() => {
+    'winPoints': winPoints,
+    'tiePoints': tiePoints,
+    'noResultPoints': noResultPoints,
+    'bonusPointEnabled': bonusPointEnabled,
+  };
+
+  factory PointsScheme.fromJson(Map<String, dynamic> json) {
+    return PointsScheme(
+      winPoints: json['winPoints'] as int? ?? 2,
+      tiePoints: json['tiePoints'] as int? ?? 1,
+      noResultPoints: json['noResultPoints'] as int? ?? 1,
+      bonusPointEnabled: json['bonusPointEnabled'] as bool? ?? false,
+    );
+  }
 }
 
 /// One class serves both the in-progress wizard draft and the
@@ -290,6 +306,92 @@ class Tournament {
       escrowedAmount: escrowedAmount ?? this.escrowedAmount,
       organizerLastActiveAt:
           organizerLastActiveAt ?? this.organizerLastActiveAt,
+    );
+  }
+
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'status': status.name,
+    'publishedVersion': publishedVersion,
+    'name': name,
+    'city': city,
+    'startDate': startDate?.toIso8601String(),
+    'endDate': endDate?.toIso8601String(),
+    'format': format.name,
+    'overs': overs,
+    'ballType': ballType.name,
+    'playersPerSide': playersPerSide,
+    'squadCapMin': squadCapMin,
+    'squadCapMax': squadCapMax,
+    'pointsScheme': pointsScheme.toJson(),
+    'tieBreakerOrder': [for (final t in tieBreakerOrder) t.name],
+    'overRatePenaltiesEnabled': overRatePenaltiesEnabled,
+    'transferWindowEnabled': transferWindowEnabled,
+    'rainFinalRule': rainFinalRule?.name,
+    'withdrawalRule': withdrawalRule?.name,
+    'entryFee': entryFee,
+    'prizeStructureNote': prizeStructureNote,
+    'officialsProvisioning': officialsProvisioning.name,
+    'registrationMode': registrationMode.name,
+    'teamCap': teamCap,
+    'docsRequiredNote': docsRequiredNote,
+    'registrationDeadline': registrationDeadline?.toIso8601String(),
+    'escrowedAmount': escrowedAmount,
+    'organizerLastActiveAt': organizerLastActiveAt?.toIso8601String(),
+  };
+
+  factory Tournament.fromJson(Map<String, dynamic> json) {
+    return Tournament(
+      id: json['id'] as String,
+      status: TournamentStatus.values.byName(json['status'] as String),
+      publishedVersion: json['publishedVersion'] as int? ?? 0,
+      name: json['name'] as String? ?? '',
+      city: json['city'] as String? ?? '',
+      startDate: json['startDate'] != null
+          ? DateTime.parse(json['startDate'] as String)
+          : null,
+      endDate: json['endDate'] != null
+          ? DateTime.parse(json['endDate'] as String)
+          : null,
+      format: TournamentFormat.values.byName(json['format'] as String),
+      overs: json['overs'] as int? ?? 20,
+      ballType: TournamentBallType.values.byName(json['ballType'] as String),
+      playersPerSide: json['playersPerSide'] as int? ?? 11,
+      squadCapMin: json['squadCapMin'] as int? ?? 11,
+      squadCapMax: json['squadCapMax'] as int? ?? 16,
+      pointsScheme: PointsScheme.fromJson(
+        json['pointsScheme'] as Map<String, dynamic>,
+      ),
+      tieBreakerOrder: [
+        for (final t in json['tieBreakerOrder'] as List)
+          TieBreaker.values.byName(t as String),
+      ],
+      overRatePenaltiesEnabled:
+          json['overRatePenaltiesEnabled'] as bool? ?? false,
+      transferWindowEnabled: json['transferWindowEnabled'] as bool? ?? false,
+      rainFinalRule: json['rainFinalRule'] != null
+          ? RainFinalRule.values.byName(json['rainFinalRule'] as String)
+          : null,
+      withdrawalRule: json['withdrawalRule'] != null
+          ? WithdrawalRule.values.byName(json['withdrawalRule'] as String)
+          : null,
+      entryFee: json['entryFee'] as int? ?? 0,
+      prizeStructureNote: json['prizeStructureNote'] as String? ?? '',
+      officialsProvisioning: OfficialsProvisioning.values.byName(
+        json['officialsProvisioning'] as String,
+      ),
+      registrationMode: RegistrationMode.values.byName(
+        json['registrationMode'] as String,
+      ),
+      teamCap: json['teamCap'] as int? ?? 8,
+      docsRequiredNote: json['docsRequiredNote'] as String? ?? '',
+      registrationDeadline: json['registrationDeadline'] != null
+          ? DateTime.parse(json['registrationDeadline'] as String)
+          : null,
+      escrowedAmount: json['escrowedAmount'] as int? ?? 0,
+      organizerLastActiveAt: json['organizerLastActiveAt'] != null
+          ? DateTime.parse(json['organizerLastActiveAt'] as String)
+          : null,
     );
   }
 }

@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../persistence/persisted_notifier.dart';
 import 'auction_models.dart';
 
 class AuctionState {
@@ -52,14 +53,75 @@ class AuctionState {
 
   List<BidLogEntry> bidLogFor(String tournamentId) =>
       bidLogByTournament[tournamentId] ?? const [];
+
+  Map<String, dynamic> toJson() => {
+    'lotsByTournament': {
+      for (final entry in lotsByTournament.entries)
+        entry.key: [for (final l in entry.value) l.toJson()],
+    },
+    'currentLotIndexByTournament': currentLotIndexByTournament,
+    'pursesByTournament': {
+      for (final entry in pursesByTournament.entries)
+        entry.key: [for (final p in entry.value) p.toJson()],
+    },
+    'bidLogByTournament': {
+      for (final entry in bidLogByTournament.entries)
+        entry.key: [for (final b in entry.value) b.toJson()],
+    },
+  };
+
+  factory AuctionState.fromJson(Map<String, dynamic> json) {
+    return AuctionState(
+      lotsByTournament: {
+        for (final entry
+            in (json['lotsByTournament'] as Map<String, dynamic>).entries)
+          entry.key: [
+            for (final l in entry.value as List)
+              Lot.fromJson(l as Map<String, dynamic>),
+          ],
+      },
+      currentLotIndexByTournament: {
+        for (final entry
+            in (json['currentLotIndexByTournament'] as Map<String, dynamic>)
+                .entries)
+          entry.key: entry.value as int,
+      },
+      pursesByTournament: {
+        for (final entry
+            in (json['pursesByTournament'] as Map<String, dynamic>).entries)
+          entry.key: [
+            for (final p in entry.value as List)
+              AuctionTeamPurse.fromJson(p as Map<String, dynamic>),
+          ],
+      },
+      bidLogByTournament: {
+        for (final entry
+            in (json['bidLogByTournament'] as Map<String, dynamic>).entries)
+          entry.key: [
+            for (final b in entry.value as List)
+              BidLogEntry.fromJson(b as Map<String, dynamic>),
+          ],
+      },
+    );
+  }
 }
 
 /// Backlog E10-06 (XL, split lot/bidding/purse/spectator/reconnect) --
 /// Auction room engine. See auction_models.dart's top-of-file note for
 /// the exact PRD §8.7 / DS §7-40 quotes each sub-part implements.
-class AuctionNotifier extends Notifier<AuctionState> {
+class AuctionNotifier extends PersistedNotifier<AuctionState> {
   @override
-  AuctionState build() => const AuctionState();
+  String get persistenceKey => 'auction_v1';
+
+  @override
+  AuctionState seed() => const AuctionState();
+
+  @override
+  Map<String, dynamic> toJson(AuctionState value) => value.toJson();
+
+  @override
+  AuctionState fromJson(Map<String, dynamic> json) =>
+      AuctionState.fromJson(json);
 
   /// Sub-part "lot": seeds the lot queue (one per free agent) and the
   /// purse table, then opens the first lot.

@@ -36,6 +36,26 @@ class Association {
     this.memberClubNames = const [],
     this.circulars = const [],
   });
+
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'name': name,
+    'verifiedBody': verifiedBody,
+    'memberClubNames': memberClubNames,
+    'circulars': circulars,
+  };
+
+  factory Association.fromJson(Map<String, dynamic> json) {
+    return Association(
+      id: json['id'] as String,
+      name: json['name'] as String,
+      verifiedBody: json['verifiedBody'] as bool? ?? true,
+      memberClubNames: [
+        for (final n in json['memberClubNames'] as List) n as String,
+      ],
+      circulars: [for (final c in json['circulars'] as List) c as String],
+    );
+  }
 }
 
 class SanctionRequest {
@@ -69,6 +89,30 @@ class SanctionRequest {
       status: status ?? this.status,
       requestedAt: requestedAt,
       revokedReason: revokedReason ?? this.revokedReason,
+    );
+  }
+
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'tournamentId': tournamentId,
+    'tournamentName': tournamentName,
+    'associationId': associationId,
+    'associationName': associationName,
+    'status': status.name,
+    'requestedAt': requestedAt.toIso8601String(),
+    'revokedReason': revokedReason,
+  };
+
+  factory SanctionRequest.fromJson(Map<String, dynamic> json) {
+    return SanctionRequest(
+      id: json['id'] as String,
+      tournamentId: json['tournamentId'] as String,
+      tournamentName: json['tournamentName'] as String,
+      associationId: json['associationId'] as String,
+      associationName: json['associationName'] as String,
+      status: SanctionStatus.values.byName(json['status'] as String),
+      requestedAt: DateTime.parse(json['requestedAt'] as String),
+      revokedReason: json['revokedReason'] as String?,
     );
   }
 }

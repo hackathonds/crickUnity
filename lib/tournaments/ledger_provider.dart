@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../persistence/persisted_notifier.dart';
 import 'ledger_models.dart';
 import 'tournaments_provider.dart';
 
@@ -27,14 +28,55 @@ class LedgerState {
 
   List<PrizePayout> payoutsFor(String tournamentId) =>
       payoutsByTournament[tournamentId] ?? const [];
+
+  Map<String, dynamic> toJson() => {
+    'entriesByTournament': {
+      for (final entry in entriesByTournament.entries)
+        entry.key: [for (final e in entry.value) e.toJson()],
+    },
+    'payoutsByTournament': {
+      for (final entry in payoutsByTournament.entries)
+        entry.key: [for (final p in entry.value) p.toJson()],
+    },
+  };
+
+  factory LedgerState.fromJson(Map<String, dynamic> json) {
+    return LedgerState(
+      entriesByTournament: {
+        for (final entry
+            in (json['entriesByTournament'] as Map<String, dynamic>).entries)
+          entry.key: [
+            for (final e in entry.value as List)
+              LedgerEntry.fromJson(e as Map<String, dynamic>),
+          ],
+      },
+      payoutsByTournament: {
+        for (final entry
+            in (json['payoutsByTournament'] as Map<String, dynamic>).entries)
+          entry.key: [
+            for (final p in entry.value as List)
+              PrizePayout.fromJson(p as Map<String, dynamic>),
+          ],
+      },
+    );
+  }
 }
 
 /// Backlog E10-07 -- Organizer console + wallet + payouts engine. See
 /// ledger_models.dart's top-of-file note for the exact PRD §8.13-8.14
 /// quote.
-class LedgerNotifier extends Notifier<LedgerState> {
+class LedgerNotifier extends PersistedNotifier<LedgerState> {
   @override
-  LedgerState build() => const LedgerState();
+  String get persistenceKey => 'ledger_v1';
+
+  @override
+  LedgerState seed() => const LedgerState();
+
+  @override
+  Map<String, dynamic> toJson(LedgerState value) => value.toJson();
+
+  @override
+  LedgerState fromJson(Map<String, dynamic> json) => LedgerState.fromJson(json);
 
   /// Manual line items for every category except entry fees, which is
   /// instead derived live from the real tournamentsProvider escrow

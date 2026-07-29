@@ -46,6 +46,32 @@ class MatchResult {
     this.adjustmentReason,
     this.committeeRulingReason,
   });
+
+  Map<String, dynamic> toJson() => {
+    'fixtureId': fixtureId,
+    'homeRuns': homeRuns,
+    'homeOvers': homeOvers,
+    'awayRuns': awayRuns,
+    'awayOvers': awayOvers,
+    'winnerRegistrationId': winnerRegistrationId,
+    'isManualAdjustment': isManualAdjustment,
+    'adjustmentReason': adjustmentReason,
+    'committeeRulingReason': committeeRulingReason,
+  };
+
+  factory MatchResult.fromJson(Map<String, dynamic> json) {
+    return MatchResult(
+      fixtureId: json['fixtureId'] as String,
+      homeRuns: json['homeRuns'] as int,
+      homeOvers: (json['homeOvers'] as num).toDouble(),
+      awayRuns: json['awayRuns'] as int,
+      awayOvers: (json['awayOvers'] as num).toDouble(),
+      winnerRegistrationId: json['winnerRegistrationId'] as String?,
+      isManualAdjustment: json['isManualAdjustment'] as bool? ?? false,
+      adjustmentReason: json['adjustmentReason'] as String?,
+      committeeRulingReason: json['committeeRulingReason'] as String?,
+    );
+  }
 }
 
 /// PRD's NRR is the standard cricket formula: (runs scored / overs
@@ -124,4 +150,25 @@ class WhatIfScenario {
     required this.hypotheticalMargin,
     required this.createdAt,
   });
+
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'name': name,
+    'fixtureId': fixtureId,
+    'hypotheticalWinnerRegistrationId': hypotheticalWinnerRegistrationId,
+    'hypotheticalMargin': hypotheticalMargin,
+    'createdAt': createdAt.toIso8601String(),
+  };
+
+  factory WhatIfScenario.fromJson(Map<String, dynamic> json) {
+    return WhatIfScenario(
+      id: json['id'] as String,
+      name: json['name'] as String,
+      fixtureId: json['fixtureId'] as String,
+      hypotheticalWinnerRegistrationId:
+          json['hypotheticalWinnerRegistrationId'] as String,
+      hypotheticalMargin: json['hypotheticalMargin'] as int,
+      createdAt: DateTime.parse(json['createdAt'] as String),
+    );
+  }
 }

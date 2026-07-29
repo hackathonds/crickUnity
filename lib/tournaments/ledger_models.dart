@@ -53,6 +53,26 @@ class LedgerEntry {
     this.note = '',
     this.isConfidential = false,
   });
+
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'tournamentId': tournamentId,
+    'category': category.name,
+    'amount': amount,
+    'note': note,
+    'isConfidential': isConfidential,
+  };
+
+  factory LedgerEntry.fromJson(Map<String, dynamic> json) {
+    return LedgerEntry(
+      id: json['id'] as String,
+      tournamentId: json['tournamentId'] as String,
+      category: LedgerCategory.values.byName(json['category'] as String),
+      amount: json['amount'] as int,
+      note: json['note'] as String? ?? '',
+      isConfidential: json['isConfidential'] as bool? ?? false,
+    );
+  }
 }
 
 /// PRD: "Prize payout tracker: winner confirms receipt; unconfirmed
@@ -98,6 +118,30 @@ class PrizePayout {
       amount: amount,
       awardedAt: awardedAt,
       confirmedAt: confirmedAt ?? this.confirmedAt,
+    );
+  }
+
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'tournamentId': tournamentId,
+    'winnerRegistrationId': winnerRegistrationId,
+    'winnerTeamName': winnerTeamName,
+    'amount': amount,
+    'awardedAt': awardedAt.toIso8601String(),
+    'confirmedAt': confirmedAt?.toIso8601String(),
+  };
+
+  factory PrizePayout.fromJson(Map<String, dynamic> json) {
+    return PrizePayout(
+      id: json['id'] as String,
+      tournamentId: json['tournamentId'] as String,
+      winnerRegistrationId: json['winnerRegistrationId'] as String,
+      winnerTeamName: json['winnerTeamName'] as String,
+      amount: json['amount'] as int,
+      awardedAt: DateTime.parse(json['awardedAt'] as String),
+      confirmedAt: json['confirmedAt'] != null
+          ? DateTime.parse(json['confirmedAt'] as String)
+          : null,
     );
   }
 }
