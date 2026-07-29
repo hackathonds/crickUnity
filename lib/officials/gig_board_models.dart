@@ -73,6 +73,22 @@ class GigFilters {
     );
   }
 
+  Map<String, dynamic> toJson() => {
+    'maxDistanceKm': maxDistanceKm,
+    'minFeeRupees': minFeeRupees,
+    'onDate': onDate?.toIso8601String(),
+  };
+
+  factory GigFilters.fromJson(Map<String, dynamic> json) {
+    return GigFilters(
+      maxDistanceKm: (json['maxDistanceKm'] as num?)?.toDouble() ?? 15,
+      minFeeRupees: json['minFeeRupees'] as int? ?? 0,
+      onDate: json['onDate'] != null
+          ? DateTime.parse(json['onDate'] as String)
+          : null,
+    );
+  }
+
   bool matches(GigListing gig) {
     if (gig.distanceKm > maxDistanceKm) return false;
     if (gig.feeRupees < minFeeRupees) return false;

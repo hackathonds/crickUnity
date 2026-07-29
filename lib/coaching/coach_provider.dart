@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../academies/academy_provider.dart';
+import '../persistence/persisted_notifier.dart';
 import 'coach_models.dart';
 
 class CoachState {
@@ -55,14 +56,47 @@ class CoachState {
           .where((p) => p.studentName == studentName && p.drillId == drillId)
           .toList()
         ..sort((a, b) => a.recordedAt.compareTo(b.recordedAt));
+
+  /// Only the mutated collections persist -- [drills]/[templates] are
+  /// a static library no method ever mutates, re-seeded fresh on load.
+  Map<String, dynamic> toJson() => {
+    'assignedSessions': [for (final s in assignedSessions) s.toJson()],
+    'personalBests': [for (final p in personalBests) p.toJson()],
+    'progressCards': [for (final c in progressCards) c.toJson()],
+  };
 }
 
 /// Backlog E11-03 -- Coach console + drill library + homework engine.
 /// See coach_models.dart's top-of-file note for the exact DS §7-46
 /// quote and the flagged phantom "Appx E" citation.
-class CoachNotifier extends Notifier<CoachState> {
+class CoachNotifier extends PersistedNotifier<CoachState> {
   @override
-  CoachState build() => CoachState(
+  String get persistenceKey => 'coach_v1';
+
+  @override
+  Map<String, dynamic> toJson(CoachState value) => value.toJson();
+
+  @override
+  CoachState fromJson(Map<String, dynamic> json) {
+    final base = seed();
+    return base.copyWith(
+      assignedSessions: [
+        for (final s in json['assignedSessions'] as List)
+          AssignedSession.fromJson(s as Map<String, dynamic>),
+      ],
+      personalBests: [
+        for (final p in json['personalBests'] as List)
+          DrillPersonalBest.fromJson(p as Map<String, dynamic>),
+      ],
+      progressCards: [
+        for (final c in json['progressCards'] as List)
+          ProgressCard.fromJson(c as Map<String, dynamic>),
+      ],
+    );
+  }
+
+  @override
+  CoachState seed() => CoachState(
     drills: const [
       Drill(
         id: 'drill-cover-drive',

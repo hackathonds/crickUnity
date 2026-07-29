@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../persistence/persisted_notifier.dart';
 import 'conduct_report_models.dart';
 
 class ConductReportState {
@@ -10,6 +11,19 @@ class ConductReportState {
   ConductReportState copyWith({List<ConductReport>? reports}) {
     return ConductReportState(reports: reports ?? this.reports);
   }
+
+  Map<String, dynamic> toJson() => {
+    'reports': [for (final r in reports) r.toJson()],
+  };
+
+  factory ConductReportState.fromJson(Map<String, dynamic> json) {
+    return ConductReportState(
+      reports: [
+        for (final r in json['reports'] as List)
+          ConductReport.fromJson(r as Map<String, dynamic>),
+      ],
+    );
+  }
 }
 
 /// No real organizer-review pipeline exists (Epic E8's tournaments never
@@ -17,9 +31,19 @@ class ConductReportState {
 /// [ConductReportStatus.underOrganizerReview] locally rather than being
 /// sent to a real backend, same convention as every other
 /// missing-backend gap this session.
-class ConductReportNotifier extends Notifier<ConductReportState> {
+class ConductReportNotifier extends PersistedNotifier<ConductReportState> {
   @override
-  ConductReportState build() {
+  String get persistenceKey => 'conduct_report_v1';
+
+  @override
+  Map<String, dynamic> toJson(ConductReportState value) => value.toJson();
+
+  @override
+  ConductReportState fromJson(Map<String, dynamic> json) =>
+      ConductReportState.fromJson(json);
+
+  @override
+  ConductReportState seed() {
     return ConductReportState(
       reports: [
         ConductReport(

@@ -105,4 +105,36 @@ class ConductReport {
       appealText: appealText ?? this.appealText,
     );
   }
+
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'matchLabel': matchLabel,
+    'reporterName': reporterName,
+    'reportedPlayerName': reportedPlayerName,
+    'incidentType': incidentType.name,
+    'description': description,
+    'severity': severity.name,
+    'status': status.name,
+    'filedAt': filedAt.toIso8601String(),
+    'relationshipDisclosed': relationshipDisclosed,
+    'appealText': appealText,
+  };
+
+  factory ConductReport.fromJson(Map<String, dynamic> json) {
+    return ConductReport(
+      id: json['id'] as String,
+      matchLabel: json['matchLabel'] as String,
+      reporterName: json['reporterName'] as String,
+      reportedPlayerName: json['reportedPlayerName'] as String,
+      incidentType: ConductIncidentType.values.byName(
+        json['incidentType'] as String,
+      ),
+      description: json['description'] as String,
+      severity: ConductSeverity.values.byName(json['severity'] as String),
+      status: ConductReportStatus.values.byName(json['status'] as String),
+      filedAt: DateTime.parse(json['filedAt'] as String),
+      relationshipDisclosed: json['relationshipDisclosed'] as bool? ?? false,
+      appealText: json['appealText'] as String?,
+    );
+  }
 }

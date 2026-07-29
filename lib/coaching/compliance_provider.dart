@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../persistence/persisted_notifier.dart';
 import 'compliance_models.dart';
 
 class ComplianceState {
@@ -9,6 +10,19 @@ class ComplianceState {
 
   ComplianceState copyWith({List<ComplianceDocument>? documents}) =>
       ComplianceState(documents: documents ?? this.documents);
+
+  Map<String, dynamic> toJson() => {
+    'documents': [for (final d in documents) d.toJson()],
+  };
+
+  factory ComplianceState.fromJson(Map<String, dynamic> json) {
+    return ComplianceState(
+      documents: [
+        for (final d in json['documents'] as List)
+          ComplianceDocument.fromJson(d as Map<String, dynamic>),
+      ],
+    );
+  }
 
   List<ComplianceDocument> forCoach(String coachName) =>
       documents.where((d) => d.coachName == coachName).toList();
@@ -37,9 +51,19 @@ class ComplianceState {
 /// Backlog E11-04 -- Compliance vault engine. See
 /// compliance_models.dart's top-of-file note for the flagged phantom
 /// "G.13" citation and this story's own-words scope.
-class ComplianceNotifier extends Notifier<ComplianceState> {
+class ComplianceNotifier extends PersistedNotifier<ComplianceState> {
   @override
-  ComplianceState build() => ComplianceState(
+  String get persistenceKey => 'compliance_v1';
+
+  @override
+  Map<String, dynamic> toJson(ComplianceState value) => value.toJson();
+
+  @override
+  ComplianceState fromJson(Map<String, dynamic> json) =>
+      ComplianceState.fromJson(json);
+
+  @override
+  ComplianceState seed() => ComplianceState(
     documents: [
       ComplianceDocument(
         id: 'compliance-seed-1',

@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../persistence/persisted_notifier.dart';
 import 'medical_models.dart';
 
 class MedicalState {
@@ -32,6 +33,25 @@ class MedicalState {
       returnToPlayChecked: returnToPlayChecked ?? this.returnToPlayChecked,
     );
   }
+
+  Map<String, dynamic> toJson() => {
+    'card': card.toJson(),
+    'injuries': [for (final i in injuries) i.toJson()],
+    'returnToPlayChecked': returnToPlayChecked.toList(),
+  };
+
+  factory MedicalState.fromJson(Map<String, dynamic> json) {
+    return MedicalState(
+      card: MedicalCard.fromJson(json['card'] as Map<String, dynamic>),
+      injuries: [
+        for (final i in json['injuries'] as List)
+          InjuryEntry.fromJson(i as Map<String, dynamic>),
+      ],
+      returnToPlayChecked: {
+        for (final i in json['returnToPlayChecked'] as List) i as int,
+      },
+    );
+  }
 }
 
 /// No real per-player medical-record persistence or cross-module
@@ -39,9 +59,19 @@ class MedicalState {
 /// teams/availability_matrix_models.dart, only ever models yes/maybe/no
 /// responses, never an "Injured" auto-override) -- flagged, same
 /// convention as every other missing-backend gap this session.
-class MedicalNotifier extends Notifier<MedicalState> {
+class MedicalNotifier extends PersistedNotifier<MedicalState> {
   @override
-  MedicalState build() => const MedicalState();
+  String get persistenceKey => 'medical_v1';
+
+  @override
+  MedicalState seed() => const MedicalState();
+
+  @override
+  Map<String, dynamic> toJson(MedicalState value) => value.toJson();
+
+  @override
+  MedicalState fromJson(Map<String, dynamic> json) =>
+      MedicalState.fromJson(json);
 
   void updateCard({
     BloodGroup? bloodGroup,

@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../persistence/persisted_notifier.dart';
 import 'officials_console_models.dart';
 
 class OfficialsConsoleState {
@@ -36,15 +37,56 @@ class OfficialsConsoleState {
       disputeFreeMatches: disputeFreeMatches ?? this.disputeFreeMatches,
     );
   }
+
+  Map<String, dynamic> toJson() => {
+    'upcomingAssignments': [for (final a in upcomingAssignments) a.toJson()],
+    'ledger': [for (final l in ledger) l.toJson()],
+    'ratingFacets': [for (final r in ratingFacets) r.toJson()],
+    'reviews': [for (final r in reviews) r.toJson()],
+    'disputeFreeMatches': disputeFreeMatches,
+  };
+
+  factory OfficialsConsoleState.fromJson(Map<String, dynamic> json) {
+    return OfficialsConsoleState(
+      upcomingAssignments: [
+        for (final a in json['upcomingAssignments'] as List)
+          Assignment.fromJson(a as Map<String, dynamic>),
+      ],
+      ledger: [
+        for (final l in json['ledger'] as List)
+          EarningsLedgerRow.fromJson(l as Map<String, dynamic>),
+      ],
+      ratingFacets: [
+        for (final r in json['ratingFacets'] as List)
+          RatingFacet.fromJson(r as Map<String, dynamic>),
+      ],
+      reviews: [
+        for (final r in json['reviews'] as List)
+          ReviewRow.fromJson(r as Map<String, dynamic>),
+      ],
+      disputeFreeMatches: json['disputeFreeMatches'] as int? ?? 0,
+    );
+  }
 }
 
 /// No real officiating-history persistence exists anywhere in the app
 /// (E4's matches never record who scored/umpired) -- flagged mock
 /// console state, same convention as every other missing-backend gap
 /// this session.
-class OfficialsConsoleNotifier extends Notifier<OfficialsConsoleState> {
+class OfficialsConsoleNotifier
+    extends PersistedNotifier<OfficialsConsoleState> {
   @override
-  OfficialsConsoleState build() {
+  String get persistenceKey => 'officials_console_v1';
+
+  @override
+  Map<String, dynamic> toJson(OfficialsConsoleState value) => value.toJson();
+
+  @override
+  OfficialsConsoleState fromJson(Map<String, dynamic> json) =>
+      OfficialsConsoleState.fromJson(json);
+
+  @override
+  OfficialsConsoleState seed() {
     final now = DateTime.now();
     return OfficialsConsoleState(
       disputeFreeMatches: 34,

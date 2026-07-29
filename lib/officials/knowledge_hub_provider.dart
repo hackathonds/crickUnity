@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../persistence/persisted_notifier.dart';
 import 'knowledge_hub_models.dart';
 import 'officials_console_models.dart' show CredentialTier, currentTier;
 import 'officials_console_provider.dart';
@@ -97,6 +98,29 @@ class ExamInProgress {
       flaggedForReview: flaggedForReview ?? this.flaggedForReview,
     );
   }
+
+  Map<String, dynamic> toJson() => {
+    'trackId': trackId,
+    'currentIndex': currentIndex,
+    'answers': {
+      for (final entry in answers.entries) entry.key.toString(): entry.value,
+    },
+    'flaggedForReview': flaggedForReview.toList(),
+  };
+
+  factory ExamInProgress.fromJson(Map<String, dynamic> json) {
+    return ExamInProgress(
+      trackId: json['trackId'] as String,
+      currentIndex: json['currentIndex'] as int? ?? 0,
+      answers: {
+        for (final entry in (json['answers'] as Map<String, dynamic>).entries)
+          int.parse(entry.key): entry.value as int,
+      },
+      flaggedForReview: {
+        for (final i in json['flaggedForReview'] as List) i as int,
+      },
+    );
+  }
 }
 
 class KnowledgeHubState {
@@ -144,14 +168,61 @@ class KnowledgeHubState {
           : (examInProgress ?? this.examInProgress),
     );
   }
+
+  Map<String, dynamic> toJson() => {
+    'triviaQuestionIndex': triviaQuestionIndex,
+    'triviaCorrectToday': triviaCorrectToday,
+    'triviaCompletedToday': triviaCompletedToday,
+    'streakDays': streakDays,
+    'attemptsUsed': attemptsUsed,
+    'attemptResults': [for (final r in attemptResults) r.toJson()],
+    'mintedCertificateIds': mintedCertificateIds.toList(),
+    'examInProgress': examInProgress?.toJson(),
+  };
+
+  factory KnowledgeHubState.fromJson(Map<String, dynamic> json) {
+    return KnowledgeHubState(
+      triviaQuestionIndex: json['triviaQuestionIndex'] as int? ?? 0,
+      triviaCorrectToday: json['triviaCorrectToday'] as int? ?? 0,
+      triviaCompletedToday: json['triviaCompletedToday'] as bool? ?? false,
+      streakDays: json['streakDays'] as int? ?? 4,
+      attemptsUsed: {
+        for (final entry
+            in (json['attemptsUsed'] as Map<String, dynamic>).entries)
+          entry.key: entry.value as int,
+      },
+      attemptResults: [
+        for (final r in json['attemptResults'] as List)
+          ExamAttemptResult.fromJson(r as Map<String, dynamic>),
+      ],
+      mintedCertificateIds: {
+        for (final id in json['mintedCertificateIds'] as List) id as String,
+      },
+      examInProgress: json['examInProgress'] != null
+          ? ExamInProgress.fromJson(
+              json['examInProgress'] as Map<String, dynamic>,
+            )
+          : null,
+    );
+  }
 }
 
 /// No real trivia-content/exam-authoring backend exists -- flagged mock
 /// question banks, same convention as every other missing-backend gap
 /// this session.
-class KnowledgeHubNotifier extends Notifier<KnowledgeHubState> {
+class KnowledgeHubNotifier extends PersistedNotifier<KnowledgeHubState> {
   @override
-  KnowledgeHubState build() => const KnowledgeHubState();
+  String get persistenceKey => 'knowledge_hub_v1';
+
+  @override
+  KnowledgeHubState seed() => const KnowledgeHubState();
+
+  @override
+  Map<String, dynamic> toJson(KnowledgeHubState value) => value.toJson();
+
+  @override
+  KnowledgeHubState fromJson(Map<String, dynamic> json) =>
+      KnowledgeHubState.fromJson(json);
 
   List<TriviaQuestion> get dailyTrivia => _dailyTrivia;
   List<QuizPack> get quizPacks => _quizPacks;

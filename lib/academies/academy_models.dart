@@ -43,6 +43,26 @@ class Batch {
       coachName: coachName ?? this.coachName,
     );
   }
+
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'name': name,
+    'ageGroup': ageGroup,
+    'scheduleNote': scheduleNote,
+    'feeAmount': feeAmount,
+    'coachName': coachName,
+  };
+
+  factory Batch.fromJson(Map<String, dynamic> json) {
+    return Batch(
+      id: json['id'] as String,
+      name: json['name'] as String,
+      ageGroup: json['ageGroup'] as String,
+      scheduleNote: json['scheduleNote'] as String,
+      feeAmount: json['feeAmount'] as int,
+      coachName: json['coachName'] as String?,
+    );
+  }
 }
 
 class Student {
@@ -86,6 +106,30 @@ class Student {
       talentShowcaseOptIn: talentShowcaseOptIn ?? this.talentShowcaseOptIn,
     );
   }
+
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'name': name,
+    'isMinor': isMinor,
+    'guardianName': guardianName,
+    'guardianConsentGiven': guardianConsentGiven,
+    'batchId': batchId,
+    'talentShowcaseOptIn': talentShowcaseOptIn,
+    'analyticsConsentEnabled': analyticsConsentEnabled,
+  };
+
+  factory Student.fromJson(Map<String, dynamic> json) {
+    return Student(
+      id: json['id'] as String,
+      name: json['name'] as String,
+      isMinor: json['isMinor'] as bool? ?? false,
+      guardianName: json['guardianName'] as String?,
+      guardianConsentGiven: json['guardianConsentGiven'] as bool? ?? false,
+      batchId: json['batchId'] as String,
+      talentShowcaseOptIn: json['talentShowcaseOptIn'] as bool? ?? false,
+      analyticsConsentEnabled: json['analyticsConsentEnabled'] as bool? ?? true,
+    );
+  }
 }
 
 /// PRD: "fee collection ledger with due-date reminders."
@@ -116,6 +160,26 @@ class FeeLedgerEntry {
       paid: paid ?? this.paid,
     );
   }
+
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'studentId': studentId,
+    'monthLabel': monthLabel,
+    'amount': amount,
+    'dueDate': dueDate.toIso8601String(),
+    'paid': paid,
+  };
+
+  factory FeeLedgerEntry.fromJson(Map<String, dynamic> json) {
+    return FeeLedgerEntry(
+      id: json['id'] as String,
+      studentId: json['studentId'] as String,
+      monthLabel: json['monthLabel'] as String,
+      amount: json['amount'] as int,
+      dueDate: DateTime.parse(json['dueDate'] as String),
+      paid: json['paid'] as bool? ?? false,
+    );
+  }
 }
 
 class Trial {
@@ -140,6 +204,24 @@ class Trial {
       ageGroup: ageGroup,
       date: date,
       registrationsCount: registrationsCount ?? this.registrationsCount,
+    );
+  }
+
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'name': name,
+    'ageGroup': ageGroup,
+    'date': date.toIso8601String(),
+    'registrationsCount': registrationsCount,
+  };
+
+  factory Trial.fromJson(Map<String, dynamic> json) {
+    return Trial(
+      id: json['id'] as String,
+      name: json['name'] as String,
+      ageGroup: json['ageGroup'] as String,
+      date: DateTime.parse(json['date'] as String),
+      registrationsCount: json['registrationsCount'] as int? ?? 0,
     );
   }
 }
