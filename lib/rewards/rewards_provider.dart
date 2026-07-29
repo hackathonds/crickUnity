@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../persistence/persisted_notifier.dart';
 import 'premium_provider.dart';
 import 'rewards_models.dart';
 import 'season_models.dart';
@@ -53,6 +54,43 @@ class RewardsState {
       seasonXp: seasonXp ?? this.seasonXp,
     );
   }
+
+  Map<String, dynamic> toJson() => {
+    'coinBatches': [for (final b in coinBatches) b.toJson()],
+    'xpTotal': xpTotal,
+    'ceremonyQueue': [for (final c in ceremonyQueue) c.toJson()],
+    'log': log,
+    'suppressCeremonies': suppressCeremonies,
+    'coinsEarnedThisMonth': coinsEarnedThisMonth,
+    'coinsEarnedMonthKey': coinsEarnedMonthKey,
+    'seasonXp': seasonXp,
+  };
+
+  /// [suppressCeremonies] is deliberately NOT restored from disk -- it's
+  /// toggled true in a screen's initState and false in its dispose
+  /// (ceremony_suppression_scope.dart), so if the app is killed while
+  /// that screen is mounted, a stored `true` would stick forever and
+  /// silently block every future ceremony. Always resuming false is
+  /// safe: the owning screen re-mounts and re-suppresses immediately if
+  /// still on-screen.
+  factory RewardsState.fromJson(Map<String, dynamic> json) {
+    return RewardsState(
+      coinBatches: [
+        for (final b in json['coinBatches'] as List)
+          CoinBatch.fromJson(b as Map<String, dynamic>),
+      ],
+      xpTotal: json['xpTotal'] as int? ?? 0,
+      ceremonyQueue: [
+        for (final c in json['ceremonyQueue'] as List)
+          CeremonyEvent.fromJson(c as Map<String, dynamic>),
+      ],
+      log: [for (final l in json['log'] as List) l as String],
+      suppressCeremonies: false,
+      coinsEarnedThisMonth: json['coinsEarnedThisMonth'] as int? ?? 0,
+      coinsEarnedMonthKey: json['coinsEarnedMonthKey'] as int?,
+      seasonXp: json['seasonXp'] as int? ?? 0,
+    );
+  }
 }
 
 int monthKeyFor(DateTime d) => d.year * 12 + d.month;
@@ -62,9 +100,19 @@ int monthKeyFor(DateTime d) => d.year * 12 + d.month;
 /// invoke [awardActions] from that gated moment (scoring_provider.dart's
 /// _maybeFireRipple), never speculatively. E6-05 adds the FIFO coin
 /// ledger (expiry) and spend side (marketplace redemption) on top.
-class RewardsNotifier extends Notifier<RewardsState> {
+class RewardsNotifier extends PersistedNotifier<RewardsState> {
   @override
-  RewardsState build() => const RewardsState();
+  String get persistenceKey => 'rewards_v1';
+
+  @override
+  RewardsState seed() => const RewardsState();
+
+  @override
+  Map<String, dynamic> toJson(RewardsState value) => value.toJson();
+
+  @override
+  RewardsState fromJson(Map<String, dynamic> json) =>
+      RewardsState.fromJson(json);
 
   void awardActions(
     List<EarningAction> actions, {

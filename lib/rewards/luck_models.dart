@@ -85,6 +85,24 @@ class LuckyDrawResult {
     required this.prize,
     required this.drawnAt,
   });
+
+  Map<String, dynamic> toJson() => {
+    'monthKey': monthKey,
+    'totalEntries': totalEntries,
+    'winnerLabel': winnerLabel,
+    'prize': prize,
+    'drawnAt': drawnAt.toIso8601String(),
+  };
+
+  factory LuckyDrawResult.fromJson(Map<String, dynamic> json) {
+    return LuckyDrawResult(
+      monthKey: json['monthKey'] as int,
+      totalEntries: json['totalEntries'] as int,
+      winnerLabel: json['winnerLabel'] as String,
+      prize: json['prize'] as String,
+      drawnAt: DateTime.parse(json['drawnAt'] as String),
+    );
+  }
 }
 
 const String luckyDrawPrize = 'Partner merchandise hamper';

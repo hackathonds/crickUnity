@@ -74,4 +74,18 @@ class TieredBadgeProgress {
     final nextIndex = currentTierIndex + 1;
     return nextIndex >= tiers.length ? null : tiers[nextIndex];
   }
+
+  Map<String, dynamic> toJson() => {
+    'counter': counter,
+    'currentTierIndex': currentTierIndex,
+    'history': history,
+  };
+
+  factory TieredBadgeProgress.fromJson(Map<String, dynamic> json) {
+    return TieredBadgeProgress(
+      counter: json['counter'] as int? ?? 0,
+      currentTierIndex: json['currentTierIndex'] as int? ?? -1,
+      history: [for (final h in json['history'] as List) h as String],
+    );
+  }
 }

@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../persistence/persisted_notifier.dart';
 import 'referral_models.dart';
 import 'rewards_models.dart';
 import 'rewards_provider.dart';
@@ -19,14 +20,39 @@ class ReferralState {
       referrals: referrals ?? this.referrals,
     );
   }
+
+  Map<String, dynamic> toJson() => {
+    'code': code,
+    'referrals': [for (final r in referrals) r.toJson()],
+  };
+
+  factory ReferralState.fromJson(Map<String, dynamic> json) {
+    return ReferralState(
+      code: json['code'] as String,
+      referrals: [
+        for (final r in json['referrals'] as List)
+          ReferralEntry.fromJson(r as Map<String, dynamic>),
+      ],
+    );
+  }
 }
 
 /// PRD §13.1 -- E6-07's referral engine. No real invite/contacts/SMS
 /// pipeline exists -- "invite" here is a mock join, same
 /// flagged-mock convention as every other missing-integration gap.
-class ReferralNotifier extends Notifier<ReferralState> {
+class ReferralNotifier extends PersistedNotifier<ReferralState> {
   @override
-  ReferralState build() => const ReferralState();
+  String get persistenceKey => 'referral_v1';
+
+  @override
+  ReferralState seed() => const ReferralState();
+
+  @override
+  Map<String, dynamic> toJson(ReferralState value) => value.toJson();
+
+  @override
+  ReferralState fromJson(Map<String, dynamic> json) =>
+      ReferralState.fromJson(json);
 
   void inviteFriend(String name, {DateTime Function() now = DateTime.now}) {
     final entry = ReferralEntry(

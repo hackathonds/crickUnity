@@ -220,6 +220,20 @@ class MissionInstance {
       claimed: claimed ?? this.claimed,
     );
   }
+
+  Map<String, dynamic> toJson() => {
+    'defId': defId,
+    'progress': progress,
+    'claimed': claimed,
+  };
+
+  factory MissionInstance.fromJson(Map<String, dynamic> json) {
+    return MissionInstance(
+      defId: json['defId'] as String,
+      progress: json['progress'] as int? ?? 0,
+      claimed: json['claimed'] as bool? ?? false,
+    );
+  }
 }
 
 /// PRD §13.2: "Season rewards: end-of-season tier ... with exclusive

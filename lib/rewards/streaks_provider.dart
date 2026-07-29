@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../persistence/persisted_notifier.dart';
 import 'achievements_provider.dart';
 import 'luck_provider.dart';
 import 'rewards_models.dart';
@@ -51,6 +52,32 @@ class StreakState {
       log: log ?? this.log,
     );
   }
+
+  Map<String, dynamic> toJson() => {
+    'lastLoginDate': lastLoginDate?.toIso8601String(),
+    'currentLoginStreakDays': currentLoginStreakDays,
+    'loginShieldUsedMonth': loginShieldUsedMonth,
+    'lastActivityWeekStart': lastActivityWeekStart?.toIso8601String(),
+    'currentPlayingStreakWeeks': currentPlayingStreakWeeks,
+    'injuryModeActive': injuryModeActive,
+    'log': log,
+  };
+
+  factory StreakState.fromJson(Map<String, dynamic> json) {
+    return StreakState(
+      lastLoginDate: json['lastLoginDate'] != null
+          ? DateTime.parse(json['lastLoginDate'] as String)
+          : null,
+      currentLoginStreakDays: json['currentLoginStreakDays'] as int? ?? 0,
+      loginShieldUsedMonth: json['loginShieldUsedMonth'] as int?,
+      lastActivityWeekStart: json['lastActivityWeekStart'] != null
+          ? DateTime.parse(json['lastActivityWeekStart'] as String)
+          : null,
+      currentPlayingStreakWeeks: json['currentPlayingStreakWeeks'] as int? ?? 0,
+      injuryModeActive: json['injuryModeActive'] as bool? ?? false,
+      log: [for (final l in json['log'] as List) l as String],
+    );
+  }
 }
 
 const List<int> _playingStreakMilestoneWeeks = [4, 12, 26, 52];
@@ -58,9 +85,18 @@ const List<int> _playingStreakMilestoneWeeks = [4, 12, 26, 52];
 /// PRD §13.2 -- E6-02's streak system. Daily missions/weekly-monthly-
 /// season chests are E6-03's separate story ("Missions board"), out of
 /// scope here.
-class StreaksNotifier extends Notifier<StreakState> {
+class StreaksNotifier extends PersistedNotifier<StreakState> {
   @override
-  StreakState build() => const StreakState();
+  String get persistenceKey => 'streaks_v1';
+
+  @override
+  StreakState seed() => const StreakState();
+
+  @override
+  Map<String, dynamic> toJson(StreakState value) => value.toJson();
+
+  @override
+  StreakState fromJson(Map<String, dynamic> json) => StreakState.fromJson(json);
 
   /// "missing a day offers 1 'streak shield' per month (auto-applies)."
   /// AC: "missed day with shield available shows shield-used note,

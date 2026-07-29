@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../persistence/persisted_notifier.dart';
 import 'marketplace_models.dart';
 import 'rewards_provider.dart';
 
@@ -31,6 +32,25 @@ class MarketplaceState {
       redemptions: redemptions ?? this.redemptions,
     );
   }
+
+  Map<String, dynamic> toJson() => {
+    'stockByListingId': stockByListingId,
+    'redemptions': [for (final r in redemptions) r.toJson()],
+  };
+
+  factory MarketplaceState.fromJson(Map<String, dynamic> json) {
+    return MarketplaceState(
+      stockByListingId: {
+        for (final entry
+            in (json['stockByListingId'] as Map<String, dynamic>).entries)
+          entry.key: entry.value as int,
+      },
+      redemptions: [
+        for (final r in json['redemptions'] as List)
+          VoucherRedemption.fromJson(r as Map<String, dynamic>),
+      ],
+    );
+  }
 }
 
 int _monthKey(DateTime d) => d.year * 12 + d.month;
@@ -38,9 +58,19 @@ int _monthKey(DateTime d) => d.year * 12 + d.month;
 /// PRD §13.5 -- E6-05's marketplace & redemption engine. Genuinely
 /// spends from the FIFO coin ledger via rewardsProvider.spendCoins,
 /// same quality bar as every other real cross-module wire this session.
-class MarketplaceNotifier extends Notifier<MarketplaceState> {
+class MarketplaceNotifier extends PersistedNotifier<MarketplaceState> {
   @override
-  MarketplaceState build() => const MarketplaceState();
+  String get persistenceKey => 'marketplace_v1';
+
+  @override
+  MarketplaceState seed() => const MarketplaceState();
+
+  @override
+  Map<String, dynamic> toJson(MarketplaceState value) => value.toJson();
+
+  @override
+  MarketplaceState fromJson(Map<String, dynamic> json) =>
+      MarketplaceState.fromJson(json);
 
   /// Returns null on success, or the reason it was blocked -- callers
   /// (Listing detail screen) show that reason inline rather than
