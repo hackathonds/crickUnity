@@ -43,6 +43,20 @@ class ChallengeParticipant {
       claimed: claimed ?? this.claimed,
     );
   }
+
+  Map<String, dynamic> toJson() => {
+    'name': name,
+    'progress': progress,
+    'claimed': claimed,
+  };
+
+  factory ChallengeParticipant.fromJson(Map<String, dynamic> json) {
+    return ChallengeParticipant(
+      name: json['name'] as String,
+      progress: json['progress'] as int? ?? 0,
+      claimed: json['claimed'] as bool? ?? false,
+    );
+  }
 }
 
 class Challenge {
@@ -94,6 +108,35 @@ class Challenge {
       stakeCoins: stakeCoins,
       endsAt: endsAt,
       lastLeaderName: lastLeaderName ?? this.lastLeaderName,
+    );
+  }
+
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'type': type.name,
+    'title': title,
+    'metricLabel': metricLabel,
+    'target': target,
+    'participants': [for (final p in participants) p.toJson()],
+    'stakeCoins': stakeCoins,
+    'endsAt': endsAt.toIso8601String(),
+    'lastLeaderName': lastLeaderName,
+  };
+
+  factory Challenge.fromJson(Map<String, dynamic> json) {
+    return Challenge(
+      id: json['id'] as String,
+      type: ChallengeType.values.byName(json['type'] as String),
+      title: json['title'] as String,
+      metricLabel: json['metricLabel'] as String,
+      target: json['target'] as int,
+      participants: [
+        for (final p in json['participants'] as List)
+          ChallengeParticipant.fromJson(p as Map<String, dynamic>),
+      ],
+      stakeCoins: json['stakeCoins'] as int?,
+      endsAt: DateTime.parse(json['endsAt'] as String),
+      lastLeaderName: json['lastLeaderName'] as String?,
     );
   }
 }

@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../matches/scoring_provider.dart';
+import '../persistence/persisted_notifier.dart';
 import 'record_models.dart';
 
 class RecordsState {
@@ -10,13 +11,36 @@ class RecordsState {
 
   RecordsState copyWith({List<Record>? records}) =>
       RecordsState(records: records ?? this.records);
+
+  Map<String, dynamic> toJson() => {
+    'records': [for (final r in records) r.toJson()],
+  };
+
+  factory RecordsState.fromJson(Map<String, dynamic> json) {
+    return RecordsState(
+      records: [
+        for (final r in json['records'] as List)
+          Record.fromJson(r as Map<String, dynamic>),
+      ],
+    );
+  }
 }
 
 /// Backlog (E8-02) -- records hub engine. See record_models.dart's
 /// top-of-file note on the missing "Appx F" category taxonomy.
-class RecordsNotifier extends Notifier<RecordsState> {
+class RecordsNotifier extends PersistedNotifier<RecordsState> {
   @override
-  RecordsState build() => RecordsState(records: _seedRecords());
+  String get persistenceKey => 'records_v1';
+
+  @override
+  RecordsState seed() => RecordsState(records: _seedRecords());
+
+  @override
+  Map<String, dynamic> toJson(RecordsState value) => value.toJson();
+
+  @override
+  RecordsState fromJson(Map<String, dynamic> json) =>
+      RecordsState.fromJson(json);
 
   static List<Record> _seedRecords() {
     final setAt = DateTime.now().subtract(const Duration(days: 40));

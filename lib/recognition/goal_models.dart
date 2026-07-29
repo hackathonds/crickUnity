@@ -74,4 +74,28 @@ class Goal {
       status: status ?? this.status,
     );
   }
+
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'metric': metric.name,
+    'target': target,
+    'period': period.name,
+    'periodStart': periodStart.toIso8601String(),
+    'progress': progress,
+    'proposedByCoachName': proposedByCoachName,
+    'status': status.name,
+  };
+
+  factory Goal.fromJson(Map<String, dynamic> json) {
+    return Goal(
+      id: json['id'] as String,
+      metric: LeaderboardMetric.values.byName(json['metric'] as String),
+      target: json['target'] as int,
+      period: GoalPeriod.values.byName(json['period'] as String),
+      periodStart: DateTime.parse(json['periodStart'] as String),
+      progress: json['progress'] as int? ?? 0,
+      proposedByCoachName: json['proposedByCoachName'] as String?,
+      status: GoalStatus.values.byName(json['status'] as String),
+    );
+  }
 }

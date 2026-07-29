@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../persistence/persisted_notifier.dart';
 import 'follower_models.dart';
 
 /// In-memory follow graph -- no backend exists for this yet, same
@@ -31,19 +32,54 @@ class FollowGraphState {
     following: following ?? this.following,
     restrictedNames: restrictedNames ?? this.restrictedNames,
   );
+
+  Map<String, dynamic> toJson() => {
+    'followers': [for (final f in followers) f.toJson()],
+    'following': [for (final f in following) f.toJson()],
+    'restrictedNames': restrictedNames.toList(),
+  };
+
+  factory FollowGraphState.fromJson(Map<String, dynamic> json) {
+    return FollowGraphState(
+      followers: [
+        for (final f in json['followers'] as List)
+          FollowerEntry.fromJson(f as Map<String, dynamic>),
+      ],
+      following: [
+        for (final f in json['following'] as List)
+          FollowerEntry.fromJson(f as Map<String, dynamic>),
+      ],
+      restrictedNames: {
+        for (final n in json['restrictedNames'] as List) n as String,
+      },
+    );
+  }
 }
 
-class FollowGraphNotifier extends Notifier<FollowGraphState> {
+class FollowGraphNotifier extends PersistedNotifier<FollowGraphState> {
   @override
-  FollowGraphState build() =>
+  String get persistenceKey => 'follow_graph_v1';
+
+  @override
+  FollowGraphState seed() =>
       FollowGraphState(followers: mockFollowers(), following: mockFollowing());
+
+  @override
+  Map<String, dynamic> toJson(FollowGraphState value) => value.toJson();
+
+  @override
+  FollowGraphState fromJson(Map<String, dynamic> json) =>
+      FollowGraphState.fromJson(json);
 
   /// A brand-new follow relationship (e.g. following a player found via
   /// Search/QR, PRD §16) -- idempotent no-op if already following.
   void follow(String name) {
     if (state.following.any((f) => f.name == name)) return;
     state = state.copyWith(
-      following: [...state.following, FollowerEntry(name: name)],
+      following: [
+        ...state.following,
+        FollowerEntry(name: name),
+      ],
     );
   }
 

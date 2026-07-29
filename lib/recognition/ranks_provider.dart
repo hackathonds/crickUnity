@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../persistence/persisted_notifier.dart';
 import 'rank_models.dart';
 
 class RanksState {
@@ -9,12 +10,34 @@ class RanksState {
 
   RanksState copyWith({List<RankProfile>? profiles}) =>
       RanksState(profiles: profiles ?? this.profiles);
+
+  Map<String, dynamic> toJson() => {
+    'profiles': [for (final p in profiles) p.toJson()],
+  };
+
+  factory RanksState.fromJson(Map<String, dynamic> json) {
+    return RanksState(
+      profiles: [
+        for (final p in json['profiles'] as List)
+          RankProfile.fromJson(p as Map<String, dynamic>),
+      ],
+    );
+  }
 }
 
 /// PRD §18 -- E6-08's Ranks engine.
-class RanksNotifier extends Notifier<RanksState> {
+class RanksNotifier extends PersistedNotifier<RanksState> {
   @override
-  RanksState build() => RanksState(profiles: _seedProfiles());
+  String get persistenceKey => 'ranks_v1';
+
+  @override
+  RanksState seed() => RanksState(profiles: _seedProfiles());
+
+  @override
+  Map<String, dynamic> toJson(RanksState value) => value.toJson();
+
+  @override
+  RanksState fromJson(Map<String, dynamic> json) => RanksState.fromJson(json);
 
   static List<RankProfile> _seedProfiles() {
     final now = DateTime.now();

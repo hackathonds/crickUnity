@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../design_system/components/app_reaction_picker.dart';
+import '../persistence/persisted_notifier.dart';
 import '../rewards/achievements_provider.dart';
 import '../rewards/streaks_provider.dart';
 import '../social/composer_screen.dart';
@@ -30,15 +31,40 @@ class YearInReviewState {
       generated: generated ?? this.generated,
     );
   }
+
+  Map<String, dynamic> toJson() => {
+    'cards': [for (final c in cards) c.toJson()],
+    'generated': generated,
+  };
+
+  factory YearInReviewState.fromJson(Map<String, dynamic> json) {
+    return YearInReviewState(
+      cards: [
+        for (final c in json['cards'] as List)
+          YearInReviewCard.fromJson(c as Map<String, dynamic>),
+      ],
+      generated: json['generated'] as bool? ?? false,
+    );
+  }
 }
 
 /// PRD §14 -- E8-06's Year in Review engine. Pulls genuinely real
 /// numbers where this session's existing providers make it possible;
 /// the rest is clearly flagged mock since no season-long stats
 /// aggregator exists anywhere in this codebase.
-class YearInReviewNotifier extends Notifier<YearInReviewState> {
+class YearInReviewNotifier extends PersistedNotifier<YearInReviewState> {
   @override
-  YearInReviewState build() => const YearInReviewState();
+  String get persistenceKey => 'year_in_review_v1';
+
+  @override
+  YearInReviewState seed() => const YearInReviewState();
+
+  @override
+  Map<String, dynamic> toJson(YearInReviewState value) => value.toJson();
+
+  @override
+  YearInReviewState fromJson(Map<String, dynamic> json) =>
+      YearInReviewState.fromJson(json);
 
   void generate() {
     final streaks = ref.read(streaksProvider);

@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../persistence/persisted_notifier.dart';
 import 'progress_ring_models.dart';
 
 DateTime _dateOnly(DateTime d) => DateTime(d.year, d.month, d.day);
@@ -39,12 +40,43 @@ class ProgressRingsState {
       justClosed: clearJustClosed ? null : (justClosed ?? this.justClosed),
     );
   }
+
+  Map<String, dynamic> toJson() => {
+    'rings': {
+      for (final entry in rings.entries) entry.key.name: entry.value.toJson(),
+    },
+    'justClosed': justClosed?.name,
+  };
+
+  factory ProgressRingsState.fromJson(Map<String, dynamic> json) {
+    return ProgressRingsState(
+      rings: {
+        for (final entry in (json['rings'] as Map<String, dynamic>).entries)
+          RingType.values.byName(entry.key): WeeklyRingProgress.fromJson(
+            entry.value as Map<String, dynamic>,
+          ),
+      },
+      justClosed: json['justClosed'] != null
+          ? RingType.values.byName(json['justClosed'] as String)
+          : null,
+    );
+  }
 }
 
 /// Backlog addendum -- E8-08's Progress Rings engine.
-class ProgressRingsNotifier extends Notifier<ProgressRingsState> {
+class ProgressRingsNotifier extends PersistedNotifier<ProgressRingsState> {
   @override
-  ProgressRingsState build() => const ProgressRingsState();
+  String get persistenceKey => 'progress_rings_v1';
+
+  @override
+  ProgressRingsState seed() => const ProgressRingsState();
+
+  @override
+  Map<String, dynamic> toJson(ProgressRingsState value) => value.toJson();
+
+  @override
+  ProgressRingsState fromJson(Map<String, dynamic> json) =>
+      ProgressRingsState.fromJson(json);
 
   void setTarget(
     RingType type,

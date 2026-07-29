@@ -47,4 +47,20 @@ class YearInReviewCard {
       excluded: excluded ?? this.excluded,
     );
   }
+
+  Map<String, dynamic> toJson() => {
+    'type': type.name,
+    'value': value,
+    'isMocked': isMocked,
+    'excluded': excluded,
+  };
+
+  factory YearInReviewCard.fromJson(Map<String, dynamic> json) {
+    return YearInReviewCard(
+      type: YearInReviewCardType.values.byName(json['type'] as String),
+      value: json['value'] as String,
+      isMocked: json['isMocked'] as bool? ?? false,
+      excluded: json['excluded'] as bool? ?? false,
+    );
+  }
 }

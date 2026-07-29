@@ -11,6 +11,15 @@ class FollowerEntry {
   final bool isMutual;
 
   const FollowerEntry({required this.name, this.isMutual = false});
+
+  Map<String, dynamic> toJson() => {'name': name, 'isMutual': isMutual};
+
+  factory FollowerEntry.fromJson(Map<String, dynamic> json) {
+    return FollowerEntry(
+      name: json['name'] as String,
+      isMutual: json['isMutual'] as bool? ?? false,
+    );
+  }
 }
 
 /// PRD's restriction is silent to the restricted person -- it never shows

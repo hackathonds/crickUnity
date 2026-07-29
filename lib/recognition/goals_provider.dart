@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../persistence/persisted_notifier.dart';
 import 'goal_models.dart';
 import 'leaderboard_models.dart';
 
@@ -10,12 +11,34 @@ class GoalsState {
 
   GoalsState copyWith({List<Goal>? goals}) =>
       GoalsState(goals: goals ?? this.goals);
+
+  Map<String, dynamic> toJson() => {
+    'goals': [for (final g in goals) g.toJson()],
+  };
+
+  factory GoalsState.fromJson(Map<String, dynamic> json) {
+    return GoalsState(
+      goals: [
+        for (final g in json['goals'] as List)
+          Goal.fromJson(g as Map<String, dynamic>),
+      ],
+    );
+  }
 }
 
 /// DS §11.15 -- E8-05's Goals engine.
-class GoalsNotifier extends Notifier<GoalsState> {
+class GoalsNotifier extends PersistedNotifier<GoalsState> {
   @override
-  GoalsState build() => GoalsState(goals: _seedGoals());
+  String get persistenceKey => 'goals_v1';
+
+  @override
+  GoalsState seed() => GoalsState(goals: _seedGoals());
+
+  @override
+  Map<String, dynamic> toJson(GoalsState value) => value.toJson();
+
+  @override
+  GoalsState fromJson(Map<String, dynamic> json) => GoalsState.fromJson(json);
 
   static List<Goal> _seedGoals() {
     final now = DateTime.now();

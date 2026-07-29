@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../onboarding/profile_wizard_provider.dart';
+import '../persistence/persisted_notifier.dart';
 import 'free_agent_models.dart';
 
 class AuctionRegistrationResult {
@@ -29,6 +30,23 @@ class FreeAgentState {
       auctionRegistrations: auctionRegistrations ?? this.auctionRegistrations,
     );
   }
+
+  Map<String, dynamic> toJson() => {
+    'profile': profile.toJson(),
+    'auctionRegistrations': [for (final r in auctionRegistrations) r.toJson()],
+  };
+
+  factory FreeAgentState.fromJson(Map<String, dynamic> json) {
+    return FreeAgentState(
+      profile: FreeAgentProfile.fromJson(
+        json['profile'] as Map<String, dynamic>,
+      ),
+      auctionRegistrations: [
+        for (final r in json['auctionRegistrations'] as List)
+          AuctionPoolRegistration.fromJson(r as Map<String, dynamic>),
+      ],
+    );
+  }
 }
 
 /// PRD §2.2/§8.7 (Free-agent mode, player side). Browsing team needs and
@@ -36,9 +54,19 @@ class FreeAgentState {
 /// free agent's application lands in the exact same pipeline a team
 /// manager sees on their Recruitment Board, rather than a separate
 /// mirrored data structure.
-class FreeAgentNotifier extends Notifier<FreeAgentState> {
+class FreeAgentNotifier extends PersistedNotifier<FreeAgentState> {
   @override
-  FreeAgentState build() => const FreeAgentState();
+  String get persistenceKey => 'free_agent_v1';
+
+  @override
+  FreeAgentState seed() => const FreeAgentState();
+
+  @override
+  Map<String, dynamic> toJson(FreeAgentState value) => value.toJson();
+
+  @override
+  FreeAgentState fromJson(Map<String, dynamic> json) =>
+      FreeAgentState.fromJson(json);
 
   void setFreeAgent(bool value) {
     state = state.copyWith(profile: state.profile.copyWith(isFreeAgent: value));

@@ -50,4 +50,22 @@ class WeeklyRingProgress {
       weekStart: weekStart ?? this.weekStart,
     );
   }
+
+  Map<String, dynamic> toJson() => {
+    'type': type.name,
+    'target': target,
+    'progress': progress,
+    'closeStreak': closeStreak,
+    'weekStart': weekStart.toIso8601String(),
+  };
+
+  factory WeeklyRingProgress.fromJson(Map<String, dynamic> json) {
+    return WeeklyRingProgress(
+      type: RingType.values.byName(json['type'] as String),
+      target: json['target'] as int,
+      progress: json['progress'] as int? ?? 0,
+      closeStreak: json['closeStreak'] as int? ?? 0,
+      weekStart: DateTime.parse(json['weekStart'] as String),
+    );
+  }
 }
