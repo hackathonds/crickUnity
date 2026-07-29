@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../persistence/persisted_notifier.dart';
 import 'expense_models.dart';
 import 'expenses_provider.dart';
 import 'recurring_series_models.dart';
@@ -12,6 +13,19 @@ class RecurringSeriesState {
   RecurringSeriesState copyWith({List<RecurringSeries>? series}) {
     return RecurringSeriesState(series: series ?? this.series);
   }
+
+  Map<String, dynamic> toJson() => {
+    'series': [for (final s in series) s.toJson()],
+  };
+
+  factory RecurringSeriesState.fromJson(Map<String, dynamic> json) {
+    return RecurringSeriesState(
+      series: [
+        for (final s in json['series'] as List)
+          RecurringSeries.fromJson(s as Map<String, dynamic>),
+      ],
+    );
+  }
 }
 
 /// DS §11.13 -- E5-09's recurring-expense series. No real background
@@ -19,11 +33,24 @@ class RecurringSeriesState {
 /// generation is manually triggered (a debug/QA action standing in for
 /// "the notice date arrived"), same convention as every other
 /// simulated-elapsed-time mechanic this session.
-class RecurringSeriesNotifier extends Notifier<RecurringSeriesState> {
-  int _nextId = 0;
+class RecurringSeriesNotifier extends PersistedNotifier<RecurringSeriesState> {
+  @override
+  String get persistenceKey => 'recurring_series_v1';
 
   @override
-  RecurringSeriesState build() => const RecurringSeriesState();
+  RecurringSeriesState seed() => const RecurringSeriesState();
+
+  @override
+  Map<String, dynamic> toJson(RecurringSeriesState value) => value.toJson();
+
+  @override
+  RecurringSeriesState fromJson(Map<String, dynamic> json) =>
+      RecurringSeriesState.fromJson(json);
+
+  /// Computed from current state rather than a separate incrementing
+  /// field -- a plain field would restart at 0 after every app restart
+  /// and collide with ids already restored from disk.
+  int get _nextId => state.series.length;
 
   String createSeries({
     required String title,
@@ -37,7 +64,7 @@ class RecurringSeriesNotifier extends Notifier<RecurringSeriesState> {
     required String createdByName,
     required bool createdByIsCaptain,
   }) {
-    final id = 'series-${_nextId++}';
+    final id = 'series-$_nextId';
     state = state.copyWith(
       series: [
         ...state.series,

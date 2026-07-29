@@ -138,6 +138,15 @@ class PaidByEntry {
   final int amount;
 
   const PaidByEntry({required this.name, required this.amount});
+
+  Map<String, dynamic> toJson() => {'name': name, 'amount': amount};
+
+  factory PaidByEntry.fromJson(Map<String, dynamic> json) {
+    return PaidByEntry(
+      name: json['name'] as String,
+      amount: json['amount'] as int,
+    );
+  }
 }
 
 class SplitShare {
@@ -145,6 +154,15 @@ class SplitShare {
   final int amount;
 
   const SplitShare({required this.name, required this.amount});
+
+  Map<String, dynamic> toJson() => {'name': name, 'amount': amount};
+
+  factory SplitShare.fromJson(Map<String, dynamic> json) {
+    return SplitShare(
+      name: json['name'] as String,
+      amount: json['amount'] as int,
+    );
+  }
 }
 
 /// PRD §11.3: "Validation: parts must total exactly; rounding remainder
@@ -244,6 +262,30 @@ class ExpenseDispute {
       escalatedToAdmin: escalatedToAdmin ?? this.escalatedToAdmin,
       creatorUpheld: creatorUpheld ?? this.creatorUpheld,
       captainUpheld: captainUpheld ?? this.captainUpheld,
+    );
+  }
+
+  Map<String, dynamic> toJson() => {
+    'disputerName': disputerName,
+    'reason': reason,
+    'createdAt': createdAt.toIso8601String(),
+    'resolved': resolved,
+    'resolution': resolution,
+    'escalatedToAdmin': escalatedToAdmin,
+    'creatorUpheld': creatorUpheld,
+    'captainUpheld': captainUpheld,
+  };
+
+  factory ExpenseDispute.fromJson(Map<String, dynamic> json) {
+    return ExpenseDispute(
+      disputerName: json['disputerName'] as String,
+      reason: json['reason'] as String,
+      createdAt: DateTime.parse(json['createdAt'] as String),
+      resolved: json['resolved'] as bool? ?? false,
+      resolution: json['resolution'] as String?,
+      escalatedToAdmin: json['escalatedToAdmin'] as bool? ?? false,
+      creatorUpheld: json['creatorUpheld'] as bool? ?? false,
+      captainUpheld: json['captainUpheld'] as bool? ?? false,
     );
   }
 }
@@ -388,6 +430,73 @@ class Expense {
           ? null
           : (deletedByName ?? this.deletedByName),
       currency: currency,
+    );
+  }
+
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'title': title,
+    'category': category.name,
+    'amount': amount,
+    'paidBy': [for (final p in paidBy) p.toJson()],
+    'splitMethod': splitMethod.name,
+    'splitAmong': [for (final s in splitAmong) s.toJson()],
+    'contextMatchId': contextMatchId,
+    'date': date.toIso8601String(),
+    'hasProof': hasProof,
+    'notes': notes,
+    'approvalState': approvalState.name,
+    'createdByName': createdByName,
+    'settlementStates': {
+      for (final entry in settlementStates.entries) entry.key: entry.value.name,
+    },
+    'isIncome': isIncome,
+    'disputes': [for (final d in disputes) d.toJson()],
+    'recurrenceSeriesId': recurrenceSeriesId,
+    'deletedAt': deletedAt?.toIso8601String(),
+    'deletedByName': deletedByName,
+    'currency': currency.name,
+  };
+
+  factory Expense.fromJson(Map<String, dynamic> json) {
+    return Expense(
+      id: json['id'] as String,
+      title: json['title'] as String,
+      category: ExpenseCategory.values.byName(json['category'] as String),
+      amount: json['amount'] as int,
+      paidBy: [
+        for (final p in json['paidBy'] as List)
+          PaidByEntry.fromJson(p as Map<String, dynamic>),
+      ],
+      splitMethod: SplitMethod.values.byName(json['splitMethod'] as String),
+      splitAmong: [
+        for (final s in json['splitAmong'] as List)
+          SplitShare.fromJson(s as Map<String, dynamic>),
+      ],
+      contextMatchId: json['contextMatchId'] as String?,
+      date: DateTime.parse(json['date'] as String),
+      hasProof: json['hasProof'] as bool? ?? false,
+      notes: json['notes'] as String?,
+      approvalState: ExpenseApprovalState.values.byName(
+        json['approvalState'] as String,
+      ),
+      createdByName: json['createdByName'] as String,
+      settlementStates: {
+        for (final entry
+            in (json['settlementStates'] as Map<String, dynamic>).entries)
+          entry.key: AppExpenseRowState.values.byName(entry.value as String),
+      },
+      isIncome: json['isIncome'] as bool? ?? false,
+      disputes: [
+        for (final d in json['disputes'] as List)
+          ExpenseDispute.fromJson(d as Map<String, dynamic>),
+      ],
+      recurrenceSeriesId: json['recurrenceSeriesId'] as String?,
+      deletedAt: json['deletedAt'] != null
+          ? DateTime.parse(json['deletedAt'] as String)
+          : null,
+      deletedByName: json['deletedByName'] as String?,
+      currency: Currency.values.byName(json['currency'] as String),
     );
   }
 }

@@ -59,6 +59,36 @@ class Settlement {
 
   bool get isOnTime =>
       confirmedAt != null && confirmedAt!.difference(createdAt).inDays <= 7;
+
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'fromName': fromName,
+    'toName': toName,
+    'amount': amount,
+    'method': method.name,
+    'status': status.name,
+    'createdAt': createdAt.toIso8601String(),
+    'confirmedAt': confirmedAt?.toIso8601String(),
+    'disputeReason': disputeReason,
+    'currency': currency.name,
+  };
+
+  factory Settlement.fromJson(Map<String, dynamic> json) {
+    return Settlement(
+      id: json['id'] as String,
+      fromName: json['fromName'] as String,
+      toName: json['toName'] as String,
+      amount: json['amount'] as int,
+      method: SettlementMethod.values.byName(json['method'] as String),
+      status: SettlementStatus.values.byName(json['status'] as String),
+      createdAt: DateTime.parse(json['createdAt'] as String),
+      confirmedAt: json['confirmedAt'] != null
+          ? DateTime.parse(json['confirmedAt'] as String)
+          : null,
+      disputeReason: json['disputeReason'] as String?,
+      currency: Currency.values.byName(json['currency'] as String),
+    );
+  }
 }
 
 /// Backlog addendum (E5-10): "one-agreed-currency-per-pair

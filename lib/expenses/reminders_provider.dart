@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../design_system/components/app_tag_chip.dart';
+import '../persistence/persisted_notifier.dart';
 
 /// PRD §11.10: "Auto-reminder cadence for a due share: T+3d gentle,
 /// T+7d firm, weekly after (payer can see the schedule)."
@@ -51,6 +52,24 @@ class ReminderState {
       log: log ?? this.log,
     );
   }
+
+  Map<String, dynamic> toJson() => {
+    'snoozedUntil': snoozedUntil?.toIso8601String(),
+    'lastManualReminderAt': lastManualReminderAt?.toIso8601String(),
+    'log': log,
+  };
+
+  factory ReminderState.fromJson(Map<String, dynamic> json) {
+    return ReminderState(
+      snoozedUntil: json['snoozedUntil'] != null
+          ? DateTime.parse(json['snoozedUntil'] as String)
+          : null,
+      lastManualReminderAt: json['lastManualReminderAt'] != null
+          ? DateTime.parse(json['lastManualReminderAt'] as String)
+          : null,
+      log: [for (final l in json['log'] as List) l as String],
+    );
+  }
 }
 
 class RemindersState {
@@ -64,6 +83,24 @@ class RemindersState {
   RemindersState copyWith({Map<String, ReminderState>? byExpenseId}) {
     return RemindersState(byExpenseId: byExpenseId ?? this.byExpenseId);
   }
+
+  Map<String, dynamic> toJson() => {
+    'byExpenseId': {
+      for (final entry in byExpenseId.entries) entry.key: entry.value.toJson(),
+    },
+  };
+
+  factory RemindersState.fromJson(Map<String, dynamic> json) {
+    return RemindersState(
+      byExpenseId: {
+        for (final entry
+            in (json['byExpenseId'] as Map<String, dynamic>).entries)
+          entry.key: ReminderState.fromJson(
+            entry.value as Map<String, dynamic>,
+          ),
+      },
+    );
+  }
 }
 
 /// PRD §11.10 -- E5-05. Keyed by expenseId only, not per payer pair:
@@ -72,9 +109,19 @@ class RemindersState {
 /// at once. A fully general per-payer reminder model would need more
 /// UI than this story's scope -- flagged simplification, same
 /// convention as every other scope boundary this session.
-class RemindersNotifier extends Notifier<RemindersState> {
+class RemindersNotifier extends PersistedNotifier<RemindersState> {
   @override
-  RemindersState build() => const RemindersState();
+  String get persistenceKey => 'reminders_v1';
+
+  @override
+  RemindersState seed() => const RemindersState();
+
+  @override
+  Map<String, dynamic> toJson(RemindersState value) => value.toJson();
+
+  @override
+  RemindersState fromJson(Map<String, dynamic> json) =>
+      RemindersState.fromJson(json);
 
   /// PRD §11.10: "Payer can Snooze once/48h."
   bool canSnooze(String expenseId, {DateTime Function() now = DateTime.now}) {

@@ -16,6 +16,28 @@ class ExpenseComment {
     required this.mentionedNames,
     required this.createdAt,
   });
+
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'expenseId': expenseId,
+    'authorName': authorName,
+    'text': text,
+    'mentionedNames': mentionedNames,
+    'createdAt': createdAt.toIso8601String(),
+  };
+
+  factory ExpenseComment.fromJson(Map<String, dynamic> json) {
+    return ExpenseComment(
+      id: json['id'] as String,
+      expenseId: json['expenseId'] as String,
+      authorName: json['authorName'] as String,
+      text: json['text'] as String,
+      mentionedNames: [
+        for (final n in json['mentionedNames'] as List) n as String,
+      ],
+      createdAt: DateTime.parse(json['createdAt'] as String),
+    );
+  }
 }
 
 /// Extracts "@Name" mentions from [text] against the known
