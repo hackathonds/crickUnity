@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../persistence/persisted_notifier.dart';
 import 'notification_catalog.dart';
 import 'notification_models.dart';
 
@@ -79,6 +80,33 @@ class NotificationState {
       return b.createdAt.compareTo(a.createdAt);
     });
   }
+
+  /// Only the genuinely durable pieces persist -- [mutedEntities],
+  /// [mutedChannels], [quietHours], and each card's own interaction
+  /// state (read/snoozedUntil/followedUpAt), keyed by id. [cards]
+  /// itself is always regenerated fresh from live provider state via
+  /// [generateCatalogCards] (see [NotificationNotifier.fromJson]) --
+  /// persisting the generated cards verbatim would freeze them stale
+  /// instead of reflecting whatever's real by the time the app reopens.
+  Map<String, dynamic> toJson() => {
+    'mutedEntities': {
+      for (final entry in mutedEntities.entries)
+        entry.key: entry.value?.toIso8601String(),
+    },
+    'mutedChannels': {
+      for (final entry in mutedChannels.entries)
+        entry.key.name: entry.value?.toIso8601String(),
+    },
+    'quietHours': quietHours.toJson(),
+    'cardOverrides': {
+      for (final c in cards)
+        c.id: {
+          'read': c.read,
+          'snoozedUntil': c.snoozedUntil?.toIso8601String(),
+          'followedUpAt': c.followedUpAt?.toIso8601String(),
+        },
+    },
+  };
 }
 
 /// Backlog E12-04/E12-05 -- Notification center engine. See
@@ -88,9 +116,65 @@ class NotificationState {
 /// data-driven catalog wiring E12-05 adds -- this notifier just owns
 /// the mutable interaction state (read/snooze/mute/quiet-hours/
 /// follow-up) layered on top of whatever it generates.
-class NotificationNotifier extends Notifier<NotificationState> {
+class NotificationNotifier extends PersistedNotifier<NotificationState> {
   @override
-  NotificationState build() {
+  String get persistenceKey => 'notifications_v1';
+
+  @override
+  Map<String, dynamic> toJson(NotificationState value) => value.toJson();
+
+  /// Regenerates the catalog fresh (same as [seed]) and layers the
+  /// saved per-card interaction overrides back on by id -- mirrors
+  /// [refresh]'s own merge logic.
+  @override
+  NotificationState fromJson(Map<String, dynamic> json) {
+    final now = DateTime.now();
+    final mutedEntities = {
+      for (final entry
+          in (json['mutedEntities'] as Map<String, dynamic>).entries)
+        entry.key: entry.value != null
+            ? DateTime.parse(entry.value as String)
+            : null,
+    };
+    final mutedChannels = {
+      for (final entry
+          in (json['mutedChannels'] as Map<String, dynamic>).entries)
+        NotificationChannel.values.byName(entry.key): entry.value != null
+            ? DateTime.parse(entry.value as String)
+            : null,
+    };
+    final quietHours = QuietHoursSettings.fromJson(
+      json['quietHours'] as Map<String, dynamic>,
+    );
+    final overrides = json['cardOverrides'] as Map<String, dynamic>;
+
+    final fresh = generateCatalogCards(ref, now);
+    final merged = [
+      for (final c in fresh)
+        if (overrides[c.id] case final Map<String, dynamic> o?)
+          c.copyWith(
+            read: o['read'] as bool? ?? false,
+            snoozedUntil: o['snoozedUntil'] != null
+                ? DateTime.parse(o['snoozedUntil'] as String)
+                : null,
+            followedUpAt: o['followedUpAt'] != null
+                ? DateTime.parse(o['followedUpAt'] as String)
+                : null,
+          )
+        else
+          c,
+    ];
+
+    return NotificationState(
+      cards: _applyFollowUps(merged, now),
+      mutedEntities: mutedEntities,
+      mutedChannels: mutedChannels,
+      quietHours: quietHours,
+    );
+  }
+
+  @override
+  NotificationState seed() {
     final now = DateTime.now();
     return NotificationState(
       cards: _applyFollowUps(generateCatalogCards(ref, now), now),

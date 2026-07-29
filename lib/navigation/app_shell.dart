@@ -58,9 +58,10 @@ class AppShell extends ConsumerWidget {
       );
       return;
     }
-    Navigator.of(context, rootNavigator: true).push(
-      MaterialPageRoute(builder: (_) => const LiveMatchViewScreen()),
-    );
+    Navigator.of(
+      context,
+      rootNavigator: true,
+    ).push(MaterialPageRoute(builder: (_) => const LiveMatchViewScreen()));
   }
 
   void _onCreatePressed(BuildContext context) {

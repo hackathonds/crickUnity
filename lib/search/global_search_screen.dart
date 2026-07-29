@@ -511,7 +511,9 @@ class _ResultGroup extends StatelessWidget {
             Padding(
               padding: const EdgeInsets.symmetric(vertical: AppSpacing.xs),
               child: InkWell(
-                key: ValueKey('searchResultRow_${result.type.name}_${result.id}'),
+                key: ValueKey(
+                  'searchResultRow_${result.type.name}_${result.id}',
+                ),
                 onTap: result.type == SearchResultType.player
                     ? () => Navigator.of(context).push(
                         MaterialPageRoute(

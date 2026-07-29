@@ -53,7 +53,8 @@ class SearchedPlayerProfileScreen extends ConsumerWidget {
           : notifier.follow(playerName),
       onOpenAchievements: () => Navigator.of(context).push(
         MaterialPageRoute(
-          builder: (_) => AchievementsWallScreen(badges: mockAchievementBadges()),
+          builder: (_) =>
+              AchievementsWallScreen(badges: mockAchievementBadges()),
         ),
       ),
       onOpenActivityCalendar: () => Navigator.of(context).push(
