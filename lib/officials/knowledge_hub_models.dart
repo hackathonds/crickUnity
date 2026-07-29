@@ -96,4 +96,28 @@ class ExamAttemptResult {
   });
 
   DateTime get nextAttemptDate => takenAt.add(const Duration(days: 7));
+
+  Map<String, dynamic> toJson() => {
+    'trackId': trackId,
+    'attemptNumber': attemptNumber,
+    'scorePercent': scorePercent,
+    'passed': passed,
+    'sectionScores': sectionScores,
+    'takenAt': takenAt.toIso8601String(),
+  };
+
+  factory ExamAttemptResult.fromJson(Map<String, dynamic> json) {
+    return ExamAttemptResult(
+      trackId: json['trackId'] as String,
+      attemptNumber: json['attemptNumber'] as int,
+      scorePercent: (json['scorePercent'] as num).toDouble(),
+      passed: json['passed'] as bool,
+      sectionScores: {
+        for (final entry
+            in (json['sectionScores'] as Map<String, dynamic>).entries)
+          entry.key: (entry.value as num).toDouble(),
+      },
+      takenAt: DateTime.parse(json['takenAt'] as String),
+    );
+  }
 }

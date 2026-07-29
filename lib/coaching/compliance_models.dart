@@ -59,4 +59,24 @@ class ComplianceDocument {
       signed: signed ?? this.signed,
     );
   }
+
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'coachName': coachName,
+    'docType': docType.name,
+    'issuedDate': issuedDate.toIso8601String(),
+    'expiryDate': expiryDate.toIso8601String(),
+    'signed': signed,
+  };
+
+  factory ComplianceDocument.fromJson(Map<String, dynamic> json) {
+    return ComplianceDocument(
+      id: json['id'] as String,
+      coachName: json['coachName'] as String,
+      docType: ComplianceDocType.values.byName(json['docType'] as String),
+      issuedDate: DateTime.parse(json['issuedDate'] as String),
+      expiryDate: DateTime.parse(json['expiryDate'] as String),
+      signed: json['signed'] as bool? ?? false,
+    );
+  }
 }

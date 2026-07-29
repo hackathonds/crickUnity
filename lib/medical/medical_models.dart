@@ -73,6 +73,32 @@ class MedicalCard {
       teamRevealToggles: teamRevealToggles ?? this.teamRevealToggles,
     );
   }
+
+  Map<String, dynamic> toJson() => {
+    'bloodGroup': bloodGroup?.name,
+    'allergies': allergies,
+    'conditions': conditions,
+    'emergencyContactName': emergencyContactName,
+    'emergencyContactPhone': emergencyContactPhone,
+    'teamRevealToggles': teamRevealToggles,
+  };
+
+  factory MedicalCard.fromJson(Map<String, dynamic> json) {
+    return MedicalCard(
+      bloodGroup: json['bloodGroup'] != null
+          ? BloodGroup.values.byName(json['bloodGroup'] as String)
+          : null,
+      allergies: [for (final a in json['allergies'] as List) a as String],
+      conditions: [for (final c in json['conditions'] as List) c as String],
+      emergencyContactName: json['emergencyContactName'] as String? ?? '',
+      emergencyContactPhone: json['emergencyContactPhone'] as String? ?? '',
+      teamRevealToggles: {
+        for (final entry
+            in (json['teamRevealToggles'] as Map<String, dynamic>).entries)
+          entry.key: entry.value as bool,
+      },
+    );
+  }
 }
 
 class InjuryEntry {
@@ -97,6 +123,24 @@ class InjuryEntry {
       date: date,
       notes: notes,
       active: active ?? this.active,
+    );
+  }
+
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'type': type,
+    'date': date.toIso8601String(),
+    'notes': notes,
+    'active': active,
+  };
+
+  factory InjuryEntry.fromJson(Map<String, dynamic> json) {
+    return InjuryEntry(
+      id: json['id'] as String,
+      type: json['type'] as String,
+      date: DateTime.parse(json['date'] as String),
+      notes: json['notes'] as String,
+      active: json['active'] as bool? ?? true,
     );
   }
 }

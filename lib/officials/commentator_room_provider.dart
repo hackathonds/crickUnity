@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../matches/scoring_provider.dart';
+import '../persistence/persisted_notifier.dart';
 import 'commentator_room_models.dart';
 
 class CommentatorRoomState {
@@ -29,11 +30,40 @@ class CommentatorRoomState {
       markers: markers ?? this.markers,
     );
   }
+
+  Map<String, dynamic> toJson() => {
+    'isAssigned': isAssigned,
+    'audioStatus': audioStatus.name,
+    'markers': [for (final m in markers) m.toJson()],
+  };
+
+  factory CommentatorRoomState.fromJson(Map<String, dynamic> json) {
+    return CommentatorRoomState(
+      isAssigned: json['isAssigned'] as bool? ?? true,
+      audioStatus: StreamAudioStatus.values.byName(
+        json['audioStatus'] as String,
+      ),
+      markers: [
+        for (final m in json['markers'] as List)
+          MomentMarker.fromJson(m as Map<String, dynamic>),
+      ],
+    );
+  }
 }
 
-class CommentatorRoomNotifier extends Notifier<CommentatorRoomState> {
+class CommentatorRoomNotifier extends PersistedNotifier<CommentatorRoomState> {
   @override
-  CommentatorRoomState build() => const CommentatorRoomState();
+  String get persistenceKey => 'commentator_room_v1';
+
+  @override
+  CommentatorRoomState seed() => const CommentatorRoomState();
+
+  @override
+  Map<String, dynamic> toJson(CommentatorRoomState value) => value.toJson();
+
+  @override
+  CommentatorRoomState fromJson(Map<String, dynamic> json) =>
+      CommentatorRoomState.fromJson(json);
 
   void setAssigned(bool assigned) {
     state = state.copyWith(isAssigned: assigned);

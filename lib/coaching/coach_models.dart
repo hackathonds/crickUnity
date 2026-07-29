@@ -95,6 +95,22 @@ class AssignedSession {
     required this.templateId,
     required this.date,
   });
+
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'studentName': studentName,
+    'templateId': templateId,
+    'date': date.toIso8601String(),
+  };
+
+  factory AssignedSession.fromJson(Map<String, dynamic> json) {
+    return AssignedSession(
+      id: json['id'] as String,
+      studentName: json['studentName'] as String,
+      templateId: json['templateId'] as String,
+      date: DateTime.parse(json['date'] as String),
+    );
+  }
 }
 
 /// Backlog: "drill PB graphs." A simple value-over-time series stands
@@ -113,6 +129,22 @@ class DrillPersonalBest {
     required this.value,
     required this.recordedAt,
   });
+
+  Map<String, dynamic> toJson() => {
+    'studentName': studentName,
+    'drillId': drillId,
+    'value': value,
+    'recordedAt': recordedAt.toIso8601String(),
+  };
+
+  factory DrillPersonalBest.fromJson(Map<String, dynamic> json) {
+    return DrillPersonalBest(
+      studentName: json['studentName'] as String,
+      drillId: json['drillId'] as String,
+      value: json['value'] as int,
+      recordedAt: DateTime.parse(json['recordedAt'] as String),
+    );
+  }
 }
 
 class ProgressCard {
@@ -146,6 +178,30 @@ class ProgressCard {
       approved: approved ?? this.approved,
       sentAt: sentAt ?? this.sentAt,
       visibleToGuardian: visibleToGuardian,
+    );
+  }
+
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'studentName': studentName,
+    'monthLabel': monthLabel,
+    'notes': notes,
+    'approved': approved,
+    'sentAt': sentAt?.toIso8601String(),
+    'visibleToGuardian': visibleToGuardian,
+  };
+
+  factory ProgressCard.fromJson(Map<String, dynamic> json) {
+    return ProgressCard(
+      id: json['id'] as String,
+      studentName: json['studentName'] as String,
+      monthLabel: json['monthLabel'] as String,
+      notes: json['notes'] as String,
+      approved: json['approved'] as bool? ?? false,
+      sentAt: json['sentAt'] != null
+          ? DateTime.parse(json['sentAt'] as String)
+          : null,
+      visibleToGuardian: json['visibleToGuardian'] as bool? ?? false,
     );
   }
 }

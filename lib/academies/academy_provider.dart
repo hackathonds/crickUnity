@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../coaching/compliance_provider.dart';
+import '../persistence/persisted_notifier.dart';
 import 'academy_models.dart';
 
 class AcademyState {
@@ -38,13 +39,51 @@ class AcademyState {
 
   List<Student> get talentShowcaseStudents =>
       students.where((s) => s.talentShowcaseOptIn).toList();
+
+  Map<String, dynamic> toJson() => {
+    'batches': [for (final b in batches) b.toJson()],
+    'students': [for (final s in students) s.toJson()],
+    'feeLedger': [for (final f in feeLedger) f.toJson()],
+    'trials': [for (final t in trials) t.toJson()],
+  };
+
+  factory AcademyState.fromJson(Map<String, dynamic> json) {
+    return AcademyState(
+      batches: [
+        for (final b in json['batches'] as List)
+          Batch.fromJson(b as Map<String, dynamic>),
+      ],
+      students: [
+        for (final s in json['students'] as List)
+          Student.fromJson(s as Map<String, dynamic>),
+      ],
+      feeLedger: [
+        for (final f in json['feeLedger'] as List)
+          FeeLedgerEntry.fromJson(f as Map<String, dynamic>),
+      ],
+      trials: [
+        for (final t in json['trials'] as List)
+          Trial.fromJson(t as Map<String, dynamic>),
+      ],
+    );
+  }
 }
 
 /// Backlog E11-02 -- Academy console engine. See academy_models.dart's
 /// top-of-file note for the exact PRD §2.10 quote this implements.
-class AcademyNotifier extends Notifier<AcademyState> {
+class AcademyNotifier extends PersistedNotifier<AcademyState> {
   @override
-  AcademyState build() => AcademyState(
+  String get persistenceKey => 'academy_v1';
+
+  @override
+  Map<String, dynamic> toJson(AcademyState value) => value.toJson();
+
+  @override
+  AcademyState fromJson(Map<String, dynamic> json) =>
+      AcademyState.fromJson(json);
+
+  @override
+  AcademyState seed() => AcademyState(
     batches: const [
       Batch(
         id: 'batch-u16',

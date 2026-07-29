@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../persistence/persisted_notifier.dart';
 import 'gig_board_models.dart';
 
 class GigBoardState {
@@ -27,15 +28,40 @@ class GigBoardState {
 
   List<GigListing> get filtered =>
       listings.where((g) => filters.matches(g)).toList();
+
+  /// Only [filters]/[acceptedGigIds] persist -- [listings] are
+  /// generated relative to "now" each time (mockGigListings), so
+  /// they're re-seeded fresh rather than frozen with stale dates.
+  Map<String, dynamic> toJson() => {
+    'filters': filters.toJson(),
+    'acceptedGigIds': acceptedGigIds.toList(),
+  };
 }
 
 /// DS §11.4: "accepting -> assignment confirmation with calendar add."
 /// No real device-calendar integration exists (flagged, same convention
 /// as every other missing-platform-API gap this session) -- acceptance
 /// is tracked in-app only.
-class GigBoardNotifier extends Notifier<GigBoardState> {
+class GigBoardNotifier extends PersistedNotifier<GigBoardState> {
   @override
-  GigBoardState build() =>
+  String get persistenceKey => 'gig_board_v1';
+
+  @override
+  Map<String, dynamic> toJson(GigBoardState value) => value.toJson();
+
+  @override
+  GigBoardState fromJson(Map<String, dynamic> json) {
+    return GigBoardState(
+      listings: mockGigListings(DateTime.now()),
+      filters: GigFilters.fromJson(json['filters'] as Map<String, dynamic>),
+      acceptedGigIds: {
+        for (final id in json['acceptedGigIds'] as List) id as String,
+      },
+    );
+  }
+
+  @override
+  GigBoardState seed() =>
       GigBoardState(listings: mockGigListings(DateTime.now()));
 
   void updateFilters(GigFilters filters) {

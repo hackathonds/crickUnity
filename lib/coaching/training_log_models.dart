@@ -57,6 +57,30 @@ class TrainingLogEntry {
       loggedAt: loggedAt,
     );
   }
+
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'userName': userName,
+    'drillId': drillId,
+    'value': value,
+    'hasProof': hasProof,
+    'partnerConfirmed': partnerConfirmed,
+    'partnerName': partnerName,
+    'loggedAt': loggedAt.toIso8601String(),
+  };
+
+  factory TrainingLogEntry.fromJson(Map<String, dynamic> json) {
+    return TrainingLogEntry(
+      id: json['id'] as String,
+      userName: json['userName'] as String,
+      drillId: json['drillId'] as String,
+      value: json['value'] as int,
+      hasProof: json['hasProof'] as bool? ?? false,
+      partnerConfirmed: json['partnerConfirmed'] as bool? ?? false,
+      partnerName: json['partnerName'] as String?,
+      loggedAt: DateTime.parse(json['loggedAt'] as String),
+    );
+  }
 }
 
 /// Backlog: "Net-Grinder/Circle-Runner badges." No definition exists

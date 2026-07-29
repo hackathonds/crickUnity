@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../persistence/persisted_notifier.dart';
 import '../rewards/missions_models.dart';
 import '../rewards/missions_provider.dart';
 import '../rewards/rewards_provider.dart';
@@ -59,14 +60,45 @@ class TrainingLogState {
         )
         .toList();
   }
+
+  Map<String, dynamic> toJson() => {
+    'entries': [for (final e in entries) e.toJson()],
+    'badgeCounters': {
+      for (final entry in badgeCounters.entries) entry.key.name: entry.value,
+    },
+  };
+
+  factory TrainingLogState.fromJson(Map<String, dynamic> json) {
+    return TrainingLogState(
+      entries: [
+        for (final e in json['entries'] as List)
+          TrainingLogEntry.fromJson(e as Map<String, dynamic>),
+      ],
+      badgeCounters: {
+        for (final entry
+            in (json['badgeCounters'] as Map<String, dynamic>).entries)
+          TrainingBadgeId.values.byName(entry.key): entry.value as int,
+      },
+    );
+  }
 }
 
 /// Backlog E11-05 -- Personal training log engine (Drill Library
 /// opened up to all users). See training_log_models.dart's top-of-file
 /// note for the exact backlog quote and flagged phantom citations.
-class TrainingLogNotifier extends Notifier<TrainingLogState> {
+class TrainingLogNotifier extends PersistedNotifier<TrainingLogState> {
   @override
-  TrainingLogState build() => const TrainingLogState();
+  String get persistenceKey => 'training_log_v1';
+
+  @override
+  TrainingLogState seed() => const TrainingLogState();
+
+  @override
+  Map<String, dynamic> toJson(TrainingLogState value) => value.toJson();
+
+  @override
+  TrainingLogState fromJson(Map<String, dynamic> json) =>
+      TrainingLogState.fromJson(json);
 
   /// Backlog: "age workload caps" -- reuses the exact
   /// coach_models.dart maxSessionsPerWeek cap E11-03 established for

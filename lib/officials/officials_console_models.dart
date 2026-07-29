@@ -67,6 +67,24 @@ class Assignment {
     required this.groundName,
     required this.feeRupees,
   });
+
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'matchLabel': matchLabel,
+    'date': date.toIso8601String(),
+    'groundName': groundName,
+    'feeRupees': feeRupees,
+  };
+
+  factory Assignment.fromJson(Map<String, dynamic> json) {
+    return Assignment(
+      id: json['id'] as String,
+      matchLabel: json['matchLabel'] as String,
+      date: DateTime.parse(json['date'] as String),
+      groundName: json['groundName'] as String,
+      feeRupees: json['feeRupees'] as int,
+    );
+  }
 }
 
 class EarningsLedgerRow {
@@ -95,6 +113,24 @@ class EarningsLedgerRow {
     status: status,
     reminderSent: reminderSent ?? this.reminderSent,
   );
+
+  Map<String, dynamic> toJson() => {
+    'matchLabel': matchLabel,
+    'date': date.toIso8601String(),
+    'feeRupees': feeRupees,
+    'status': status.name,
+    'reminderSent': reminderSent,
+  };
+
+  factory EarningsLedgerRow.fromJson(Map<String, dynamic> json) {
+    return EarningsLedgerRow(
+      matchLabel: json['matchLabel'] as String,
+      date: DateTime.parse(json['date'] as String),
+      feeRupees: json['feeRupees'] as int,
+      status: PaymentStatus.values.byName(json['status'] as String),
+      reminderSent: json['reminderSent'] as bool? ?? false,
+    );
+  }
 }
 
 class RatingFacet {
@@ -102,6 +138,15 @@ class RatingFacet {
   final double score;
 
   const RatingFacet({required this.label, required this.score});
+
+  Map<String, dynamic> toJson() => {'label': label, 'score': score};
+
+  factory RatingFacet.fromJson(Map<String, dynamic> json) {
+    return RatingFacet(
+      label: json['label'] as String,
+      score: (json['score'] as num).toDouble(),
+    );
+  }
 }
 
 class ReviewRow {
@@ -123,4 +168,20 @@ class ReviewRow {
     comment: comment,
     disputeAppealed: disputeAppealed ?? this.disputeAppealed,
   );
+
+  Map<String, dynamic> toJson() => {
+    'reviewerName': reviewerName,
+    'rating': rating,
+    'comment': comment,
+    'disputeAppealed': disputeAppealed,
+  };
+
+  factory ReviewRow.fromJson(Map<String, dynamic> json) {
+    return ReviewRow(
+      reviewerName: json['reviewerName'] as String,
+      rating: (json['rating'] as num).toDouble(),
+      comment: json['comment'] as String,
+      disputeAppealed: json['disputeAppealed'] as bool? ?? false,
+    );
+  }
 }

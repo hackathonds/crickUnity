@@ -31,4 +31,16 @@ class MomentMarker {
   final DateTime markedAt;
 
   const MomentMarker({required this.ballIndex, required this.markedAt});
+
+  Map<String, dynamic> toJson() => {
+    'ballIndex': ballIndex,
+    'markedAt': markedAt.toIso8601String(),
+  };
+
+  factory MomentMarker.fromJson(Map<String, dynamic> json) {
+    return MomentMarker(
+      ballIndex: json['ballIndex'] as int,
+      markedAt: DateTime.parse(json['markedAt'] as String),
+    );
+  }
 }
