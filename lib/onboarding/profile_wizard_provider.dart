@@ -1,5 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../persistence/persisted_notifier.dart';
+
 /// E1-03 · DS §11.3 Profile wizard: "photo (camera/library/skip) -> city
 /// (auto-suggest) -> playing info chips; completeness meter fills live;
 /// every skip allowed."
@@ -53,11 +55,41 @@ class ProfileWizardState {
           : (battingStyle ?? this.battingStyle),
     );
   }
+
+  Map<String, dynamic> toJson() => {
+    'photoSet': photoSet,
+    'city': city,
+    'primaryRole': primaryRole?.name,
+    'battingStyle': battingStyle?.name,
+  };
+
+  factory ProfileWizardState.fromJson(Map<String, dynamic> json) {
+    return ProfileWizardState(
+      photoSet: json['photoSet'] as bool? ?? false,
+      city: json['city'] as String?,
+      primaryRole: (json['primaryRole'] as String?) == null
+          ? null
+          : PrimaryRole.values.byName(json['primaryRole'] as String),
+      battingStyle: (json['battingStyle'] as String?) == null
+          ? null
+          : BattingStyle.values.byName(json['battingStyle'] as String),
+    );
+  }
 }
 
-class ProfileWizardNotifier extends Notifier<ProfileWizardState> {
+class ProfileWizardNotifier extends PersistedNotifier<ProfileWizardState> {
   @override
-  ProfileWizardState build() => const ProfileWizardState();
+  String get persistenceKey => 'profile_wizard_v1';
+
+  @override
+  ProfileWizardState seed() => const ProfileWizardState();
+
+  @override
+  Map<String, dynamic> toJson(ProfileWizardState value) => value.toJson();
+
+  @override
+  ProfileWizardState fromJson(Map<String, dynamic> json) =>
+      ProfileWizardState.fromJson(json);
 
   void setPhotoSet(bool value) => state = state.copyWith(photoSet: value);
 

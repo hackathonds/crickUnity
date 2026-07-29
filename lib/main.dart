@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import 'design_system/theme/app_theme.dart';
 import 'design_system/tokens/app_typography.dart';
@@ -8,10 +9,25 @@ import 'guest/guest_live_match_preview_screen.dart';
 import 'guest/guest_provider.dart';
 import 'navigation/app_router.dart';
 import 'onboarding/onboarding_flow.dart';
+import 'persistence/local_store.dart';
 import 'settings/appearance_settings_provider.dart';
 
-void main() {
-  runApp(const ProviderScope(child: CricUnityApp()));
+Future<void> main() async {
+  // SharedPreferences caches its values in memory after this one async
+  // load, so every provider downstream can read/write it synchronously --
+  // see local_store.dart's doc comment.
+  WidgetsFlutterBinding.ensureInitialized();
+  final prefs = await SharedPreferences.getInstance();
+  runApp(
+    ProviderScope(
+      overrides: [
+        localStoreProvider.overrideWithValue(
+          SharedPreferencesLocalStore(prefs),
+        ),
+      ],
+      child: const CricUnityApp(),
+    ),
+  );
 }
 
 /// Root widget wiring the design-tokens package and the E0-04 app shell
@@ -50,7 +66,6 @@ class CricUnityApp extends ConsumerStatefulWidget {
 }
 
 class _CricUnityAppState extends ConsumerState<CricUnityApp> {
-  late bool _onboardingComplete = widget.startWithOnboardingComplete;
   bool _guestPreview = false;
   final _messengerKey = GlobalKey<ScaffoldMessengerState>();
 
@@ -60,14 +75,22 @@ class _CricUnityAppState extends ConsumerState<CricUnityApp> {
 
   void _completeOnboarding() {
     ref.read(guestProvider.notifier).becomeRegistered();
-    setState(() {
-      _guestPreview = false;
-      _onboardingComplete = true;
-    });
+    setState(() => _guestPreview = false);
   }
 
   @override
   Widget build(BuildContext context) {
+    // Persisted (guest_provider.dart) -- a device that has ever completed
+    // registration boots straight into the tab shell instead of
+    // re-running onboarding every launch. A pure OR, not a provider
+    // mutation, so `startWithOnboardingComplete` resolves on the very
+    // first build like it always did -- mutating a provider from
+    // initState() to fake this instead deadlocks Riverpod's own
+    // "no provider writes mid-build" guard (hit and fixed earlier this
+    // session for the same reason in my_rewards_screen.dart/
+    // admin_console_screen.dart's post-frame sweeps).
+    final registered =
+        widget.startWithOnboardingComplete || !ref.watch(guestProvider).isGuest;
     final settings = ref.watch(appearanceSettingsProvider);
     final themeOverride = settings.themeOverride;
     final theme = AppTheme.themes[themeOverride ?? AppTheme.defaultLight];
@@ -91,7 +114,7 @@ class _CricUnityAppState extends ConsumerState<CricUnityApp> {
       );
     }
 
-    if (_guestPreview && !_onboardingComplete) {
+    if (_guestPreview && !registered) {
       return MaterialApp(
         title: 'CricUnity',
         theme: theme,
@@ -111,7 +134,7 @@ class _CricUnityAppState extends ConsumerState<CricUnityApp> {
       );
     }
 
-    if (!_onboardingComplete) {
+    if (!registered) {
       return MaterialApp(
         title: 'CricUnity',
         theme: theme,
@@ -120,8 +143,7 @@ class _CricUnityAppState extends ConsumerState<CricUnityApp> {
         scaffoldMessengerKey: _messengerKey,
         builder: appBuilder,
         home: OnboardingFlow(
-          onOnboardingComplete: () =>
-              setState(() => _onboardingComplete = true),
+          onOnboardingComplete: _completeOnboarding,
           onExploreAsGuest: () => setState(() => _guestPreview = true),
           onContactSupport: _showSupportStub,
         ),

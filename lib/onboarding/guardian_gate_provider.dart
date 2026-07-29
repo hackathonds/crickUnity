@@ -1,5 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../persistence/persisted_notifier.dart';
+
 /// E1-02 · DS §11.3 Guardian gate: "DOB step detects minor -> explains
 /// guardian requirement plainly -> guardian contact capture -> 'waiting'
 /// state screen with resend; app unusable past this point until consent
@@ -37,6 +39,21 @@ class MinorPrivacyDefaults {
     this.publicMessagingAllowed = false,
     this.guardianCoNotificationEnabled = true,
   });
+
+  Map<String, dynamic> toJson() => {
+    'isPrivate': isPrivate,
+    'publicMessagingAllowed': publicMessagingAllowed,
+    'guardianCoNotificationEnabled': guardianCoNotificationEnabled,
+  };
+
+  factory MinorPrivacyDefaults.fromJson(Map<String, dynamic> json) {
+    return MinorPrivacyDefaults(
+      isPrivate: json['isPrivate'] as bool? ?? true,
+      publicMessagingAllowed: json['publicMessagingAllowed'] as bool? ?? false,
+      guardianCoNotificationEnabled:
+          json['guardianCoNotificationEnabled'] as bool? ?? true,
+    );
+  }
 }
 
 class GuardianGateState {
@@ -78,13 +95,50 @@ class GuardianGateState {
       appliedDefaults: appliedDefaults ?? this.appliedDefaults,
     );
   }
+
+  Map<String, dynamic> toJson() => {
+    'dateOfBirth': dateOfBirth?.toIso8601String(),
+    'isMinor': isMinor,
+    'guardianPhone': guardianPhone,
+    'consentRequestSentAt': consentRequestSentAt?.toIso8601String(),
+    'consentGranted': consentGranted,
+    'appliedDefaults': appliedDefaults?.toJson(),
+  };
+
+  factory GuardianGateState.fromJson(Map<String, dynamic> json) {
+    final defaultsJson = json['appliedDefaults'] as Map<String, dynamic>?;
+    return GuardianGateState(
+      dateOfBirth: (json['dateOfBirth'] as String?) == null
+          ? null
+          : DateTime.parse(json['dateOfBirth'] as String),
+      isMinor: json['isMinor'] as bool?,
+      guardianPhone: json['guardianPhone'] as String? ?? '',
+      consentRequestSentAt: (json['consentRequestSentAt'] as String?) == null
+          ? null
+          : DateTime.parse(json['consentRequestSentAt'] as String),
+      consentGranted: json['consentGranted'] as bool? ?? false,
+      appliedDefaults: defaultsJson == null
+          ? null
+          : MinorPrivacyDefaults.fromJson(defaultsJson),
+    );
+  }
 }
 
 const Duration guardianResendCooldown = Duration(seconds: 30);
 
-class GuardianGateNotifier extends Notifier<GuardianGateState> {
+class GuardianGateNotifier extends PersistedNotifier<GuardianGateState> {
   @override
-  GuardianGateState build() => const GuardianGateState();
+  String get persistenceKey => 'guardian_gate_v1';
+
+  @override
+  GuardianGateState seed() => const GuardianGateState();
+
+  @override
+  Map<String, dynamic> toJson(GuardianGateState value) => value.toJson();
+
+  @override
+  GuardianGateState fromJson(Map<String, dynamic> json) =>
+      GuardianGateState.fromJson(json);
 
   bool submitDateOfBirth(DateTime dateOfBirth) {
     final minor = computeIsMinor(dateOfBirth);
