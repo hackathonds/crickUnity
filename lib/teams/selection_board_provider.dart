@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../onboarding/profile_wizard_provider.dart' show PrimaryRole;
+import '../persistence/persisted_notifier.dart';
 import 'selection_board_models.dart';
 
 class SelectionBoardState {
@@ -52,6 +53,39 @@ class SelectionBoardState {
       replacementRequests: replacementRequests ?? this.replacementRequests,
     );
   }
+
+  Map<String, dynamic> toJson() => {
+    'pool': pool.map((p) => p.toJson()).toList(),
+    'xi': xi.map((p) => p?.toJson()).toList(),
+    'locked': locked,
+    'published': published,
+    'publishedSelected': publishedSelected,
+    'publishedBenched': publishedBenched,
+    'replacementRequests': replacementRequests.map((r) => r.toJson()).toList(),
+  };
+
+  factory SelectionBoardState.fromJson(Map<String, dynamic> json) {
+    return SelectionBoardState(
+      pool: [
+        for (final p in (json['pool'] as List? ?? const []))
+          PlayerCandidate.fromJson(p as Map<String, dynamic>),
+      ],
+      xi: [
+        for (final p in (json['xi'] as List? ?? const []))
+          p == null
+              ? null
+              : PlayerCandidate.fromJson(p as Map<String, dynamic>),
+      ],
+      locked: json['locked'] as bool? ?? false,
+      published: json['published'] as bool? ?? false,
+      publishedSelected: (json['publishedSelected'] as List?)?.cast<String>(),
+      publishedBenched: (json['publishedBenched'] as List?)?.cast<String>(),
+      replacementRequests: [
+        for (final r in (json['replacementRequests'] as List? ?? const []))
+          ReplacementRequest.fromJson(r as Map<String, dynamic>),
+      ],
+    );
+  }
 }
 
 /// PRD §7.3-7.5: "Selection board: available players as draggable cards
@@ -59,12 +93,22 @@ class SelectionBoardState {
 /// distinct notifications; lineup locks at toss (post-lock changes =
 /// 'replacement' flow requiring opponent captain acknowledgment,
 /// logged)."
-class SelectionBoardNotifier extends Notifier<SelectionBoardState> {
+class SelectionBoardNotifier extends PersistedNotifier<SelectionBoardState> {
   @override
-  SelectionBoardState build() => SelectionBoardState(
+  String get persistenceKey => 'selection_board_v1';
+
+  @override
+  SelectionBoardState seed() => SelectionBoardState(
     pool: mockSelectionPool(),
     xi: List<PlayerCandidate?>.filled(xiSlotCount, null),
   );
+
+  @override
+  Map<String, dynamic> toJson(SelectionBoardState value) => value.toJson();
+
+  @override
+  SelectionBoardState fromJson(Map<String, dynamic> json) =>
+      SelectionBoardState.fromJson(json);
 
   /// Returns null on success; a human-readable denial reason otherwise.
   String? selectToSlot(PlayerCandidate player, int slotIndex) {

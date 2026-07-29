@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../persistence/persisted_notifier.dart';
 import 'team_document_models.dart';
 import 'team_member_models.dart';
 
@@ -19,15 +20,38 @@ class TeamDocumentsState {
   TeamDocumentsState copyWith({List<TeamDocument>? documents}) {
     return TeamDocumentsState(documents: documents ?? this.documents);
   }
+
+  Map<String, dynamic> toJson() => {
+    'documents': documents.map((d) => d.toJson()).toList(),
+  };
+
+  factory TeamDocumentsState.fromJson(Map<String, dynamic> json) {
+    return TeamDocumentsState(
+      documents: [
+        for (final d in (json['documents'] as List? ?? const []))
+          TeamDocument.fromJson(d as Map<String, dynamic>),
+      ],
+    );
+  }
 }
 
 /// DS §7 screen 20 (Documents): a "list + submit sheet" pattern screen,
 /// gated to the roles the backlog names as able to upload ("role-based
 /// doc uploads").
-class TeamDocumentsNotifier extends Notifier<TeamDocumentsState> {
+class TeamDocumentsNotifier extends PersistedNotifier<TeamDocumentsState> {
   @override
-  TeamDocumentsState build() =>
+  String get persistenceKey => 'team_documents_v1';
+
+  @override
+  TeamDocumentsState seed() =>
       TeamDocumentsState(documents: mockTeamDocuments());
+
+  @override
+  Map<String, dynamic> toJson(TeamDocumentsState value) => value.toJson();
+
+  @override
+  TeamDocumentsState fromJson(Map<String, dynamic> json) =>
+      TeamDocumentsState.fromJson(json);
 
   UploadResult upload({
     required String name,

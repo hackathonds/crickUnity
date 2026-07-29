@@ -15,6 +15,20 @@ class TeamInviteLink {
 
   bool isExpired({DateTime Function() now = DateTime.now}) =>
       revoked || !now().isBefore(expiresAt);
+
+  Map<String, dynamic> toJson() => {
+    'url': url,
+    'expiresAt': expiresAt.toIso8601String(),
+    'revoked': revoked,
+  };
+
+  factory TeamInviteLink.fromJson(Map<String, dynamic> json) {
+    return TeamInviteLink(
+      url: json['url'] as String,
+      expiresAt: DateTime.parse(json['expiresAt'] as String),
+      revoked: json['revoked'] as bool? ?? false,
+    );
+  }
 }
 
 /// Mock link generator -- no backend invite-link service exists yet.

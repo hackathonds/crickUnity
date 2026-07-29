@@ -12,6 +12,20 @@ class Drill {
   final int xp;
 
   const Drill({required this.name, required this.prescription, this.xp = 10});
+
+  Map<String, dynamic> toJson() => {
+    'name': name,
+    'prescription': prescription,
+    'xp': xp,
+  };
+
+  factory Drill.fromJson(Map<String, dynamic> json) {
+    return Drill(
+      name: json['name'] as String,
+      prescription: json['prescription'] as String,
+      xp: json['xp'] as int? ?? 10,
+    );
+  }
 }
 
 List<Drill> mockDrillLibrary() => const [
@@ -30,6 +44,20 @@ class NoShowRecord {
     this.excused = false,
     this.reason,
   });
+
+  Map<String, dynamic> toJson() => {
+    'memberName': memberName,
+    'excused': excused,
+    'reason': reason,
+  };
+
+  factory NoShowRecord.fromJson(Map<String, dynamic> json) {
+    return NoShowRecord(
+      memberName: json['memberName'] as String,
+      excused: json['excused'] as bool? ?? false,
+      reason: json['reason'] as String?,
+    );
+  }
 }
 
 /// PRD §6.9: "Create session: date/time, venue, focus tags (nets/
@@ -79,6 +107,48 @@ class PracticeSession {
       noShows: noShows ?? this.noShows,
       ended: ended ?? this.ended,
       rsvpDeadline: rsvpDeadline,
+    );
+  }
+
+  Map<String, dynamic> toJson() => {
+    'venueName': venueName,
+    'scheduledAt': scheduledAt.toIso8601String(),
+    'focusTags': focusTags,
+    'capacity': capacity,
+    'drills': drills.map((d) => d.toJson()).toList(),
+    'roster': roster,
+    'rsvps': rsvps.map((k, v) => MapEntry(k, v.name)),
+    'checkedIn': checkedIn.toList(),
+    'noShows': noShows.map((n) => n.toJson()).toList(),
+    'ended': ended,
+    'rsvpDeadline': rsvpDeadline?.toIso8601String(),
+  };
+
+  factory PracticeSession.fromJson(Map<String, dynamic> json) {
+    return PracticeSession(
+      venueName: json['venueName'] as String,
+      scheduledAt: DateTime.parse(json['scheduledAt'] as String),
+      focusTags: (json['focusTags'] as List? ?? const []).cast<String>(),
+      capacity: json['capacity'] as int? ?? 20,
+      drills: [
+        for (final d in (json['drills'] as List? ?? const []))
+          Drill.fromJson(d as Map<String, dynamic>),
+      ],
+      roster: (json['roster'] as List? ?? const []).cast<String>(),
+      rsvps: {
+        for (final entry
+            in (json['rsvps'] as Map<String, dynamic>? ?? const {}).entries)
+          entry.key: AvailabilityResponse.values.byName(entry.value as String),
+      },
+      checkedIn: {...(json['checkedIn'] as List? ?? const []).cast<String>()},
+      noShows: [
+        for (final n in (json['noShows'] as List? ?? const []))
+          NoShowRecord.fromJson(n as Map<String, dynamic>),
+      ],
+      ended: json['ended'] as bool? ?? false,
+      rsvpDeadline: (json['rsvpDeadline'] as String?) == null
+          ? null
+          : DateTime.parse(json['rsvpDeadline'] as String),
     );
   }
 }

@@ -18,6 +18,20 @@ class RequesterStatsSummary {
     required this.runs,
     required this.wickets,
   });
+
+  Map<String, dynamic> toJson() => {
+    'matches': matches,
+    'runs': runs,
+    'wickets': wickets,
+  };
+
+  factory RequesterStatsSummary.fromJson(Map<String, dynamic> json) {
+    return RequesterStatsSummary(
+      matches: json['matches'] as int,
+      runs: json['runs'] as int,
+      wickets: json['wickets'] as int,
+    );
+  }
 }
 
 /// PRD §6.4's business rule: "joining a *direct rival in same active
@@ -47,6 +61,31 @@ class JoinRequest {
 
   bool isExpired({DateTime Function() now = DateTime.now}) =>
       now().difference(requestedAt).inDays >= joinRequestExpiryDays;
+
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'requesterName': requesterName,
+    'stats': stats.toJson(),
+    'trustBand': trustBand.name,
+    'mutualsCount': mutualsCount,
+    'requestedAt': requestedAt.toIso8601String(),
+    'isRivalInSameTournament': isRivalInSameTournament,
+  };
+
+  factory JoinRequest.fromJson(Map<String, dynamic> json) {
+    return JoinRequest(
+      id: json['id'] as String,
+      requesterName: json['requesterName'] as String,
+      stats: RequesterStatsSummary.fromJson(
+        json['stats'] as Map<String, dynamic>,
+      ),
+      trustBand: TrustBand.values.byName(json['trustBand'] as String),
+      mutualsCount: json['mutualsCount'] as int,
+      requestedAt: DateTime.parse(json['requestedAt'] as String),
+      isRivalInSameTournament:
+          json['isRivalInSameTournament'] as bool? ?? false,
+    );
+  }
 }
 
 /// PRD: "deny optionally with canned reasons" -- a fixed convenience

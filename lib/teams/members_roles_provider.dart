@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../persistence/persisted_notifier.dart';
 import 'team_member_models.dart';
 
 class MembersRolesState {
@@ -17,6 +18,24 @@ class MembersRolesState {
       log: log ?? this.log,
     );
   }
+
+  Map<String, dynamic> toJson() => {
+    'roster': roster.map((m) => m.toJson()).toList(),
+    'log': log.map((l) => l.toJson()).toList(),
+  };
+
+  factory MembersRolesState.fromJson(Map<String, dynamic> json) {
+    return MembersRolesState(
+      roster: [
+        for (final m in (json['roster'] as List? ?? const []))
+          TeamMember.fromJson(m as Map<String, dynamic>),
+      ],
+      log: [
+        for (final l in (json['log'] as List? ?? const []))
+          TeamLogEntry.fromJson(l as Map<String, dynamic>),
+      ],
+    );
+  }
 }
 
 /// PRD §2.3-2.4: role-change/removal constraints. §2.4's VC exclusions
@@ -24,9 +43,19 @@ class MembersRolesState {
 /// the Manager") and the "last-admin guard" (can't leave a team with no
 /// Captain/Owner -- the full succession wizard is a separate future
 /// story, E3-15; this is just the structural block on removal itself).
-class MembersRolesNotifier extends Notifier<MembersRolesState> {
+class MembersRolesNotifier extends PersistedNotifier<MembersRolesState> {
   @override
-  MembersRolesState build() => MembersRolesState(roster: mockRoster());
+  String get persistenceKey => 'members_roles_v1';
+
+  @override
+  MembersRolesState seed() => MembersRolesState(roster: mockRoster());
+
+  @override
+  Map<String, dynamic> toJson(MembersRolesState value) => value.toJson();
+
+  @override
+  MembersRolesState fromJson(Map<String, dynamic> json) =>
+      MembersRolesState.fromJson(json);
 
   TeamMember _find(String name) =>
       state.roster.firstWhere((m) => m.name == name);

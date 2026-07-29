@@ -27,4 +27,24 @@ class TransferRecord {
     required this.transferredAt,
     required this.isRivalTransfer,
   });
+
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'playerName': playerName,
+    'fromTeamName': fromTeamName,
+    'toTeamName': toTeamName,
+    'transferredAt': transferredAt.toIso8601String(),
+    'isRivalTransfer': isRivalTransfer,
+  };
+
+  factory TransferRecord.fromJson(Map<String, dynamic> json) {
+    return TransferRecord(
+      id: json['id'] as String,
+      playerName: json['playerName'] as String,
+      fromTeamName: json['fromTeamName'] as String,
+      toTeamName: json['toTeamName'] as String,
+      transferredAt: DateTime.parse(json['transferredAt'] as String),
+      isRivalTransfer: json['isRivalTransfer'] as bool,
+    );
+  }
 }

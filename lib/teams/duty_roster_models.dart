@@ -17,6 +17,20 @@ class DutySlot {
       claimantName: clearClaimant ? null : (claimantName ?? this.claimantName),
     );
   }
+
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'label': label,
+    'claimantName': claimantName,
+  };
+
+  factory DutySlot.fromJson(Map<String, dynamic> json) {
+    return DutySlot(
+      id: json['id'] as String,
+      label: json['label'] as String,
+      claimantName: json['claimantName'] as String?,
+    );
+  }
 }
 
 /// Mock data for the debug demo and tests -- no backend duty-roster

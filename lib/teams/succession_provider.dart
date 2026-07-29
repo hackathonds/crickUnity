@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../persistence/persisted_notifier.dart';
 import 'succession_models.dart';
 
 class SuccessionActionResult {
@@ -72,20 +73,67 @@ class SuccessionState {
       teamArchived: teamArchived ?? this.teamArchived,
     );
   }
+
+  Map<String, dynamic> toJson() => {
+    'captainName': captainName,
+    'viceCaptainName': viceCaptainName,
+    'ownerName': ownerName,
+    'ownerLastActiveAt': ownerLastActiveAt.toIso8601String(),
+    'unavailableMatchLabel': unavailableMatchLabel,
+    'elevationLog': elevationLog.map((e) => e.toJson()).toList(),
+    'pendingOwnershipTransfer': pendingOwnershipTransfer?.toJson(),
+    'pendingInactivityPetition': pendingInactivityPetition?.toJson(),
+    'teamArchived': teamArchived,
+  };
+
+  factory SuccessionState.fromJson(Map<String, dynamic> json) {
+    final transferJson =
+        json['pendingOwnershipTransfer'] as Map<String, dynamic>?;
+    final petitionJson =
+        json['pendingInactivityPetition'] as Map<String, dynamic>?;
+    return SuccessionState(
+      captainName: json['captainName'] as String,
+      viceCaptainName: json['viceCaptainName'] as String,
+      ownerName: json['ownerName'] as String,
+      ownerLastActiveAt: DateTime.parse(json['ownerLastActiveAt'] as String),
+      unavailableMatchLabel: json['unavailableMatchLabel'] as String?,
+      elevationLog: [
+        for (final e in (json['elevationLog'] as List? ?? const []))
+          ElevationRecord.fromJson(e as Map<String, dynamic>),
+      ],
+      pendingOwnershipTransfer: transferJson == null
+          ? null
+          : OwnershipTransfer.fromJson(transferJson),
+      pendingInactivityPetition: petitionJson == null
+          ? null
+          : InactivityPetition.fromJson(petitionJson),
+      teamArchived: json['teamArchived'] as bool? ?? false,
+    );
+  }
 }
 
 /// PRD §2.3/2.4/2.9 and the team edge cases in §6: captaincy/ownership
 /// succession. See succession_models.dart's doc comment for why roles
 /// are independent booleans rather than the single-value
 /// `TeamMemberRole` enum used elsewhere.
-class SuccessionNotifier extends Notifier<SuccessionState> {
+class SuccessionNotifier extends PersistedNotifier<SuccessionState> {
   @override
-  SuccessionState build() => SuccessionState(
+  String get persistenceKey => 'succession_v1';
+
+  @override
+  SuccessionState seed() => SuccessionState(
     captainName: 'Rohan Kapoor',
     viceCaptainName: 'Kabir Singh',
     ownerName: 'Rohan Kapoor',
     ownerLastActiveAt: DateTime.now(),
   );
+
+  @override
+  Map<String, dynamic> toJson(SuccessionState value) => value.toJson();
+
+  @override
+  SuccessionState fromJson(Map<String, dynamic> json) =>
+      SuccessionState.fromJson(json);
 
   /// PRD §2.4: "If Captain marks self 'Unavailable' for a match, VC
   /// automatically gains full match-day powers for that match only

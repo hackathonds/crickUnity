@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../persistence/persisted_notifier.dart';
 import 'carpool_models.dart';
 
 class CarpoolState {
@@ -10,11 +11,34 @@ class CarpoolState {
   CarpoolState copyWith({List<CarpoolRide>? rides}) {
     return CarpoolState(rides: rides ?? this.rides);
   }
+
+  Map<String, dynamic> toJson() => {
+    'rides': rides.map((r) => r.toJson()).toList(),
+  };
+
+  factory CarpoolState.fromJson(Map<String, dynamic> json) {
+    return CarpoolState(
+      rides: [
+        for (final r in (json['rides'] as List? ?? const []))
+          CarpoolRide.fromJson(r as Map<String, dynamic>),
+      ],
+    );
+  }
 }
 
-class CarpoolNotifier extends Notifier<CarpoolState> {
+class CarpoolNotifier extends PersistedNotifier<CarpoolState> {
   @override
-  CarpoolState build() => CarpoolState(rides: mockCarpoolRides());
+  String get persistenceKey => 'carpool_v1';
+
+  @override
+  CarpoolState seed() => CarpoolState(rides: mockCarpoolRides());
+
+  @override
+  Map<String, dynamic> toJson(CarpoolState value) => value.toJson();
+
+  @override
+  CarpoolState fromJson(Map<String, dynamic> json) =>
+      CarpoolState.fromJson(json);
 
   /// Returns null on success; a human-readable denial reason otherwise.
   String? joinRide(String rideId, String riderName) {

@@ -31,6 +31,22 @@ class KitItem {
           : (pendingRecipient ?? this.pendingRecipient),
     );
   }
+
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'name': name,
+    'custodianName': custodianName,
+    'pendingRecipient': pendingRecipient,
+  };
+
+  factory KitItem.fromJson(Map<String, dynamic> json) {
+    return KitItem(
+      id: json['id'] as String,
+      name: json['name'] as String,
+      custodianName: json['custodianName'] as String,
+      pendingRecipient: json['pendingRecipient'] as String?,
+    );
+  }
 }
 
 /// Mock data for the debug demo and tests -- no backend kit-inventory

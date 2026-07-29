@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../onboarding/profile_wizard_provider.dart';
+import '../persistence/persisted_notifier.dart';
 import 'recruitment_models.dart';
 import 'team_member_models.dart';
 
@@ -50,6 +51,24 @@ class RecruitmentBoardState {
       applicants: applicants ?? this.applicants,
     );
   }
+
+  Map<String, dynamic> toJson() => {
+    'listings': listings.map((l) => l.toJson()).toList(),
+    'applicants': applicants.map((a) => a.toJson()).toList(),
+  };
+
+  factory RecruitmentBoardState.fromJson(Map<String, dynamic> json) {
+    return RecruitmentBoardState(
+      listings: [
+        for (final l in (json['listings'] as List? ?? const []))
+          RecruitmentListing.fromJson(l as Map<String, dynamic>),
+      ],
+      applicants: [
+        for (final a in (json['applicants'] as List? ?? const []))
+          Applicant.fromJson(a as Map<String, dynamic>),
+      ],
+    );
+  }
 }
 
 /// PRD §6.25 / DS §11.6: post composer -> listing cards; applicant
@@ -57,12 +76,23 @@ class RecruitmentBoardState {
 /// status-notification confirm (the confirm-before-move UI is the
 /// screen's job -- this notifier only performs the move once the
 /// caller has already confirmed it).
-class RecruitmentBoardNotifier extends Notifier<RecruitmentBoardState> {
+class RecruitmentBoardNotifier
+    extends PersistedNotifier<RecruitmentBoardState> {
   @override
-  RecruitmentBoardState build() => RecruitmentBoardState(
+  String get persistenceKey => 'recruitment_board_v1';
+
+  @override
+  RecruitmentBoardState seed() => RecruitmentBoardState(
     listings: mockRecruitmentListings(),
     applicants: mockApplicants(),
   );
+
+  @override
+  Map<String, dynamic> toJson(RecruitmentBoardState value) => value.toJson();
+
+  @override
+  RecruitmentBoardState fromJson(Map<String, dynamic> json) =>
+      RecruitmentBoardState.fromJson(json);
 
   ListingResult postListing({
     required String teamName,

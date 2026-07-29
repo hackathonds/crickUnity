@@ -72,7 +72,8 @@ class MyTeamsScreen extends ConsumerWidget {
                           notifier.setDefault(membership.team.name),
                       onToggleMute: () =>
                           notifier.toggleMute(membership.team.name),
-                      onLeave: () => _confirmLeave(context, notifier, membership),
+                      onLeave: () =>
+                          _confirmLeave(context, notifier, membership),
                     ),
                   ),
               ],

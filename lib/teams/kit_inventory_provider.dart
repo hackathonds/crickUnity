@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../persistence/persisted_notifier.dart';
 import 'kit_inventory_models.dart';
 
 class HandoverResult {
@@ -18,15 +19,38 @@ class KitInventoryState {
   KitInventoryState copyWith({List<KitItem>? items}) {
     return KitInventoryState(items: items ?? this.items);
   }
+
+  Map<String, dynamic> toJson() => {
+    'items': items.map((i) => i.toJson()).toList(),
+  };
+
+  factory KitInventoryState.fromJson(Map<String, dynamic> json) {
+    return KitInventoryState(
+      items: [
+        for (final i in (json['items'] as List? ?? const []))
+          KitItem.fromJson(i as Map<String, dynamic>),
+      ],
+    );
+  }
 }
 
 /// DS §7 screen 21 (Kit Inventory): "Kit rows show custody avatar +
 /// [Hand over] flow (both confirm)." Custody only moves once the
 /// current custodian initiates AND the proposed recipient confirms
 /// receipt -- a single-sided action never transfers custody.
-class KitInventoryNotifier extends Notifier<KitInventoryState> {
+class KitInventoryNotifier extends PersistedNotifier<KitInventoryState> {
   @override
-  KitInventoryState build() => KitInventoryState(items: mockKitItems());
+  String get persistenceKey => 'kit_inventory_v1';
+
+  @override
+  KitInventoryState seed() => KitInventoryState(items: mockKitItems());
+
+  @override
+  Map<String, dynamic> toJson(KitInventoryState value) => value.toJson();
+
+  @override
+  KitInventoryState fromJson(Map<String, dynamic> json) =>
+      KitInventoryState.fromJson(json);
 
   HandoverResult initiateHandover(
     String itemId,

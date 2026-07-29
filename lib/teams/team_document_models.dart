@@ -27,6 +27,22 @@ class TeamDocument {
     required this.uploaderName,
     required this.uploadedAt,
   });
+
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'name': name,
+    'uploaderName': uploaderName,
+    'uploadedAt': uploadedAt.toIso8601String(),
+  };
+
+  factory TeamDocument.fromJson(Map<String, dynamic> json) {
+    return TeamDocument(
+      id: json['id'] as String,
+      name: json['name'] as String,
+      uploaderName: json['uploaderName'] as String,
+      uploadedAt: DateTime.parse(json['uploadedAt'] as String),
+    );
+  }
 }
 
 /// Mock data for the debug demo and tests -- no backend document-storage

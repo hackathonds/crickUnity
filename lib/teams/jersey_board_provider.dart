@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../persistence/persisted_notifier.dart';
 import 'jersey_board_models.dart';
 
 class JerseyBoardState {
@@ -45,12 +46,42 @@ class JerseyBoardState {
       totalPriceRupees: totalPriceRupees,
     );
   }
+
+  Map<String, dynamic> toJson() => {
+    'submissions': submissions.map((s) => s.toJson()).toList(),
+    'orderStatus': orderStatus.name,
+    'totalPriceRupees': totalPriceRupees,
+  };
+
+  factory JerseyBoardState.fromJson(Map<String, dynamic> json) {
+    return JerseyBoardState(
+      submissions: [
+        for (final s in (json['submissions'] as List? ?? const []))
+          JerseySizeSubmission.fromJson(s as Map<String, dynamic>),
+      ],
+      orderStatus: JerseyOrderStatus.values.byName(
+        json['orderStatus'] as String? ??
+            JerseyOrderStatus.collectingSizes.name,
+      ),
+      totalPriceRupees: json['totalPriceRupees'] as int? ?? 9000,
+    );
+  }
 }
 
-class JerseyBoardNotifier extends Notifier<JerseyBoardState> {
+class JerseyBoardNotifier extends PersistedNotifier<JerseyBoardState> {
   @override
-  JerseyBoardState build() =>
+  String get persistenceKey => 'jersey_board_v1';
+
+  @override
+  JerseyBoardState seed() =>
       JerseyBoardState(submissions: mockJerseySubmissions());
+
+  @override
+  Map<String, dynamic> toJson(JerseyBoardState value) => value.toJson();
+
+  @override
+  JerseyBoardState fromJson(Map<String, dynamic> json) =>
+      JerseyBoardState.fromJson(json);
 
   void submitSize({
     required String memberName,
