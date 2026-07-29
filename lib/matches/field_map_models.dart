@@ -21,6 +21,16 @@ class FieldPosition {
       y: (y ?? this.y).clamp(0.0, 1.0),
     );
   }
+
+  Map<String, dynamic> toJson() => {'fielderName': fielderName, 'x': x, 'y': y};
+
+  factory FieldPosition.fromJson(Map<String, dynamic> json) {
+    return FieldPosition(
+      fielderName: json['fielderName'] as String,
+      x: (json['x'] as num).toDouble(),
+      y: (json['y'] as num).toDouble(),
+    );
+  }
 }
 
 /// PRD/DS give no fixed fielding-phase names -- these three (Powerplay/

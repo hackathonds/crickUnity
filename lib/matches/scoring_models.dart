@@ -228,6 +228,50 @@ class Delivery {
     );
   }
 
+  Map<String, dynamic> toJson() => {
+    'bowlerName': bowlerName,
+    'runs': runs,
+    'battingRuns': battingRuns,
+    'ranRuns': ranRuns,
+    'isWicket': isWicket,
+    'dismissalType': dismissalType?.name,
+    'fielderName': fielderName,
+    'dismissedBatterName': dismissedBatterName,
+    'newBatterName': newBatterName,
+    'extraType': extraType?.name,
+    'isLegal': isLegal,
+    'isManualSwap': isManualSwap,
+    'isCorrected': isCorrected,
+    'wagonSector': wagonSector?.name,
+    'commentaryOverride': commentaryOverride,
+  };
+
+  factory Delivery.fromJson(Map<String, dynamic> json) {
+    return Delivery(
+      bowlerName: json['bowlerName'] as String,
+      runs: json['runs'] as int,
+      battingRuns: json['battingRuns'] as int?,
+      ranRuns: json['ranRuns'] as int?,
+      isWicket: json['isWicket'] as bool? ?? false,
+      dismissalType: (json['dismissalType'] as String?) == null
+          ? null
+          : DismissalType.values.byName(json['dismissalType'] as String),
+      fielderName: json['fielderName'] as String?,
+      dismissedBatterName: json['dismissedBatterName'] as String?,
+      newBatterName: json['newBatterName'] as String?,
+      extraType: (json['extraType'] as String?) == null
+          ? null
+          : ExtraType.values.byName(json['extraType'] as String),
+      isLegal: json['isLegal'] as bool? ?? true,
+      isManualSwap: json['isManualSwap'] as bool? ?? false,
+      isCorrected: json['isCorrected'] as bool? ?? false,
+      wagonSector: (json['wagonSector'] as String?) == null
+          ? null
+          : WagonSector.values.byName(json['wagonSector'] as String),
+      commentaryOverride: json['commentaryOverride'] as String?,
+    );
+  }
+
   /// DS §11.7: "tap sector to log" -- logged after the fact, once the
   /// scorer taps a sector on the transient ghost overlay.
   Delivery withWagonSector(WagonSector sector) {
@@ -304,6 +348,18 @@ class CommentaryNote {
   final String text;
 
   const CommentaryNote({required this.afterDeliveryIndex, required this.text});
+
+  Map<String, dynamic> toJson() => {
+    'afterDeliveryIndex': afterDeliveryIndex,
+    'text': text,
+  };
+
+  factory CommentaryNote.fromJson(Map<String, dynamic> json) {
+    return CommentaryNote(
+      afterDeliveryIndex: json['afterDeliveryIndex'] as int,
+      text: json['text'] as String,
+    );
+  }
 }
 
 /// PRD §2.6 (Scorer): "edit balls within the correction window (last 2
@@ -338,6 +394,24 @@ class CorrectionRequest {
       reason: reason,
       composerCaptainAcked: composerCaptainAcked ?? this.composerCaptainAcked,
       opponentCaptainAcked: opponentCaptainAcked ?? this.opponentCaptainAcked,
+    );
+  }
+
+  Map<String, dynamic> toJson() => {
+    'deliveryIndex': deliveryIndex,
+    'proposedRuns': proposedRuns,
+    'reason': reason,
+    'composerCaptainAcked': composerCaptainAcked,
+    'opponentCaptainAcked': opponentCaptainAcked,
+  };
+
+  factory CorrectionRequest.fromJson(Map<String, dynamic> json) {
+    return CorrectionRequest(
+      deliveryIndex: json['deliveryIndex'] as int,
+      proposedRuns: json['proposedRuns'] as int,
+      reason: json['reason'] as String,
+      composerCaptainAcked: json['composerCaptainAcked'] as bool? ?? false,
+      opponentCaptainAcked: json['opponentCaptainAcked'] as bool? ?? false,
     );
   }
 }
@@ -1036,6 +1110,103 @@ class InningsState {
       awardsMinted: awardsMinted ?? this.awardsMinted,
       awardsLog: awardsLog ?? this.awardsLog,
       customNotes: customNotes ?? this.customNotes,
+    );
+  }
+
+  Map<String, dynamic> toJson() => {
+    'battingTeamName': battingTeamName,
+    'bowlingTeamName': bowlingTeamName,
+    'battingOrder': battingOrder,
+    'bowlingRoster': bowlingRoster,
+    'deliveries': deliveries.map((d) => d.toJson()).toList(),
+    'strikerName': strikerName,
+    'nonStrikerName': nonStrikerName,
+    'currentBowlerName': currentBowlerName,
+    'totalOversPerSide': totalOversPerSide,
+    'subRules': subRules.toJson(),
+    'pendingCorrections': pendingCorrections.map((c) => c.toJson()).toList(),
+    'isPaused': isPaused,
+    'interruptionReason': interruptionReason,
+    'revisedOversForInnings': revisedOversForInnings,
+    'targetRuns': targetRuns,
+    'consecutiveIgnoredWagonPrompts': consecutiveIgnoredWagonPrompts,
+    'wagonPromptDivisor': wagonPromptDivisor,
+    'eligibleShotCounter': eligibleShotCounter,
+    'scorerName': scorerName,
+    'pendingHandoverToName': pendingHandoverToName,
+    'composerCaptainApprovedHandover': composerCaptainApprovedHandover,
+    'opponentCaptainApprovedHandover': opponentCaptainApprovedHandover,
+    'timelineEntries': timelineEntries,
+    'composerCaptainConfirmedScorecard': composerCaptainConfirmedScorecard,
+    'opponentCaptainConfirmedScorecard': opponentCaptainConfirmedScorecard,
+    'scorerConfirmedScorecard': scorerConfirmedScorecard,
+    'isDisputed': isDisputed,
+    'disputeReason': disputeReason,
+    'rippleFired': rippleFired,
+    'rippleLog': rippleLog,
+    'scorecardPostedAt': scorecardPostedAt.toIso8601String(),
+    'mvpCaptainPick': mvpCaptainPick,
+    'awardsMinted': awardsMinted,
+    'awardsLog': awardsLog,
+    'customNotes': customNotes.map((n) => n.toJson()).toList(),
+  };
+
+  factory InningsState.fromJson(Map<String, dynamic> json) {
+    return InningsState(
+      battingTeamName: json['battingTeamName'] as String,
+      bowlingTeamName: json['bowlingTeamName'] as String,
+      battingOrder: (json['battingOrder'] as List? ?? const []).cast<String>(),
+      bowlingRoster: (json['bowlingRoster'] as List? ?? const [])
+          .cast<String>(),
+      strikerName: json['strikerName'] as String,
+      nonStrikerName: json['nonStrikerName'] as String,
+      currentBowlerName: json['currentBowlerName'] as String,
+      totalOversPerSide: json['totalOversPerSide'] as int,
+      scorerName: json['scorerName'] as String,
+      scorecardPostedAt: DateTime.parse(json['scorecardPostedAt'] as String),
+      deliveries: [
+        for (final d in (json['deliveries'] as List? ?? const []))
+          Delivery.fromJson(d as Map<String, dynamic>),
+      ],
+      subRules: json['subRules'] == null
+          ? const ExtraSubRules()
+          : ExtraSubRules.fromJson(json['subRules'] as Map<String, dynamic>),
+      pendingCorrections: [
+        for (final c in (json['pendingCorrections'] as List? ?? const []))
+          CorrectionRequest.fromJson(c as Map<String, dynamic>),
+      ],
+      isPaused: json['isPaused'] as bool? ?? false,
+      interruptionReason: json['interruptionReason'] as String?,
+      revisedOversForInnings: json['revisedOversForInnings'] as int?,
+      targetRuns: json['targetRuns'] as int?,
+      consecutiveIgnoredWagonPrompts:
+          json['consecutiveIgnoredWagonPrompts'] as int? ?? 0,
+      wagonPromptDivisor: json['wagonPromptDivisor'] as int? ?? 1,
+      eligibleShotCounter: json['eligibleShotCounter'] as int? ?? 0,
+      pendingHandoverToName: json['pendingHandoverToName'] as String?,
+      composerCaptainApprovedHandover:
+          json['composerCaptainApprovedHandover'] as bool? ?? false,
+      opponentCaptainApprovedHandover:
+          json['opponentCaptainApprovedHandover'] as bool? ?? false,
+      timelineEntries: (json['timelineEntries'] as List? ?? const [])
+          .cast<String>(),
+      composerCaptainConfirmedScorecard:
+          json['composerCaptainConfirmedScorecard'] as bool? ?? false,
+      opponentCaptainConfirmedScorecard:
+          json['opponentCaptainConfirmedScorecard'] as bool? ?? false,
+      scorerConfirmedScorecard:
+          json['scorerConfirmedScorecard'] as bool? ?? false,
+      isDisputed: json['isDisputed'] as bool? ?? false,
+      disputeReason: json['disputeReason'] as String?,
+      rippleFired: json['rippleFired'] as bool? ?? false,
+      rippleLog: (json['rippleLog'] as List? ?? const []).cast<String>(),
+      mvpCaptainPick: json['mvpCaptainPick'] as String?,
+      awardsMinted: json['awardsMinted'] as bool? ?? false,
+      awardsLog: (json['awardsLog'] as List? ?? const []).cast<String>(),
+      customNotes: [
+        for (final n in (json['customNotes'] as List? ?? const []))
+          CommentaryNote.fromJson(n as Map<String, dynamic>),
+      ],
     );
   }
 
