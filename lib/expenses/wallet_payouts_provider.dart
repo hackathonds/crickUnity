@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../persistence/persisted_notifier.dart';
 import 'expense_models.dart';
 import 'expenses_provider.dart';
 import 'wallet_payout_models.dart';
@@ -12,6 +13,19 @@ class WalletPayoutsState {
   WalletPayoutsState copyWith({List<WalletPayoutRequest>? requests}) {
     return WalletPayoutsState(requests: requests ?? this.requests);
   }
+
+  Map<String, dynamic> toJson() => {
+    'requests': [for (final r in requests) r.toJson()],
+  };
+
+  factory WalletPayoutsState.fromJson(Map<String, dynamic> json) {
+    return WalletPayoutsState(
+      requests: [
+        for (final r in json['requests'] as List)
+          WalletPayoutRequest.fromJson(r as Map<String, dynamic>),
+      ],
+    );
+  }
 }
 
 /// PRD §11.8 -- E5-07's wallet payouts. On completion this genuinely
@@ -21,11 +35,24 @@ class WalletPayoutsState {
 /// (Ground Fees' "team wallet pays," fines, prize-money-to-wallet) has
 /// been flowing through since E5-02/E5-03/E5-06 -- not a separate mock
 /// number.
-class WalletPayoutsNotifier extends Notifier<WalletPayoutsState> {
-  int _nextId = 0;
+class WalletPayoutsNotifier extends PersistedNotifier<WalletPayoutsState> {
+  @override
+  String get persistenceKey => 'wallet_payouts_v1';
 
   @override
-  WalletPayoutsState build() => const WalletPayoutsState();
+  WalletPayoutsState seed() => const WalletPayoutsState();
+
+  @override
+  Map<String, dynamic> toJson(WalletPayoutsState value) => value.toJson();
+
+  @override
+  WalletPayoutsState fromJson(Map<String, dynamic> json) =>
+      WalletPayoutsState.fromJson(json);
+
+  /// Computed from current state rather than a separate incrementing
+  /// field -- a plain field would restart at 0 after every app restart
+  /// and collide with ids already restored from disk.
+  int get _nextId => state.requests.length;
 
   /// PRD §11.8: "payouts above threshold need dual approval." At or
   /// below the threshold, a payout completes immediately.
@@ -34,7 +61,7 @@ class WalletPayoutsNotifier extends Notifier<WalletPayoutsState> {
     required int amount,
     required String createdByName,
   }) {
-    final id = 'payout-${_nextId++}';
+    final id = 'payout-$_nextId';
     final request = WalletPayoutRequest(
       id: id,
       purpose: purpose,

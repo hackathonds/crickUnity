@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../design_system/components/app_expense_card.dart';
+import '../persistence/persisted_notifier.dart';
 import 'expense_models.dart';
 
 class ExpensesState {
@@ -11,16 +12,45 @@ class ExpensesState {
   ExpensesState copyWith({List<Expense>? expenses}) {
     return ExpensesState(expenses: expenses ?? this.expenses);
   }
+
+  Map<String, dynamic> toJson() => {
+    'expenses': [for (final e in expenses) e.toJson()],
+  };
+
+  factory ExpensesState.fromJson(Map<String, dynamic> json) {
+    return ExpensesState(
+      expenses: [
+        for (final e in json['expenses'] as List)
+          Expense.fromJson(e as Map<String, dynamic>),
+      ],
+    );
+  }
 }
 
-/// PRD §11.1-11.3/11.7 -- E5-01's expense object + Add/Edit. No
-/// backend/persistence exists yet; this is the in-memory ledger every
-/// screen in this module reads from.
-class ExpensesNotifier extends Notifier<ExpensesState> {
-  int _nextId = 0;
+/// PRD §11.1-11.3/11.7 -- E5-01's expense object + Add/Edit. This is
+/// the ledger every screen in this module reads from.
+class ExpensesNotifier extends PersistedNotifier<ExpensesState> {
+  @override
+  String get persistenceKey => 'expenses_v1';
 
   @override
-  ExpensesState build() => const ExpensesState();
+  ExpensesState seed() => const ExpensesState();
+
+  @override
+  Map<String, dynamic> toJson(ExpensesState value) => value.toJson();
+
+  @override
+  ExpensesState fromJson(Map<String, dynamic> json) =>
+      ExpensesState.fromJson(json);
+
+  /// Computed from current state rather than a separate incrementing
+  /// field -- a plain field would restart at 0 after every app restart
+  /// and collide with ids already restored from disk. The
+  /// millisecondsSinceEpoch prefix already makes exact collisions
+  /// vanishingly unlikely, but deriving from state removes the risk
+  /// entirely and keeps this consistent with every other id-generating
+  /// provider in this migration.
+  int get _nextId => state.expenses.isEmpty ? 0 : state.expenses.length;
 
   /// PRD §11.7: "Approval: team threshold (default ₹1,000) -> Captain
   /// approve before shares go live; self-created captain expenses above
@@ -42,7 +72,7 @@ class ExpensesNotifier extends Notifier<ExpensesState> {
     Currency currency = homeCurrency,
     DateTime Function() now = DateTime.now,
   }) {
-    final id = 'expense-${now().millisecondsSinceEpoch}-${_nextId++}';
+    final id = 'expense-${now().millisecondsSinceEpoch}-$_nextId';
     // Approval threshold is judged in home-currency terms -- amount is
     // always stored in the expense's own currency, so this converts
     // first rather than comparing e.g. raw USD against an INR figure.

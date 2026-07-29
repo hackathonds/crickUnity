@@ -36,4 +36,26 @@ class WalletPayoutRequest {
       expenseId: expenseId ?? this.expenseId,
     );
   }
+
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'purpose': purpose,
+    'amount': amount,
+    'captainApproved': captainApproved,
+    'managerOrOwnerApproved': managerOrOwnerApproved,
+    'completed': completed,
+    'expenseId': expenseId,
+  };
+
+  factory WalletPayoutRequest.fromJson(Map<String, dynamic> json) {
+    return WalletPayoutRequest(
+      id: json['id'] as String,
+      purpose: json['purpose'] as String,
+      amount: json['amount'] as int,
+      captainApproved: json['captainApproved'] as bool? ?? false,
+      managerOrOwnerApproved: json['managerOrOwnerApproved'] as bool? ?? false,
+      completed: json['completed'] as bool? ?? false,
+      expenseId: json['expenseId'] as String?,
+    );
+  }
 }

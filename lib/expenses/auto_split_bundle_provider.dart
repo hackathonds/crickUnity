@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../persistence/persisted_notifier.dart';
 import 'auto_split_bundle_models.dart';
 import 'expense_models.dart';
 import 'expenses_provider.dart';
@@ -16,12 +17,41 @@ class AutoSplitBundleState {
       bundlesByMatchId: bundlesByMatchId ?? this.bundlesByMatchId,
     );
   }
+
+  Map<String, dynamic> toJson() => {
+    'bundlesByMatchId': {
+      for (final entry in bundlesByMatchId.entries)
+        entry.key: entry.value.toJson(),
+    },
+  };
+
+  factory AutoSplitBundleState.fromJson(Map<String, dynamic> json) {
+    return AutoSplitBundleState(
+      bundlesByMatchId: {
+        for (final entry
+            in (json['bundlesByMatchId'] as Map<String, dynamic>).entries)
+          entry.key: AutoSplitBundle.fromJson(
+            entry.value as Map<String, dynamic>,
+          ),
+      },
+    );
+  }
 }
 
 /// PRD §11.4 + Appendix A's Auto-Split ACs (E5-03).
-class AutoSplitBundleNotifier extends Notifier<AutoSplitBundleState> {
+class AutoSplitBundleNotifier extends PersistedNotifier<AutoSplitBundleState> {
   @override
-  AutoSplitBundleState build() => const AutoSplitBundleState();
+  String get persistenceKey => 'auto_split_bundle_v1';
+
+  @override
+  AutoSplitBundleState seed() => const AutoSplitBundleState();
+
+  @override
+  Map<String, dynamic> toJson(AutoSplitBundleState value) => value.toJson();
+
+  @override
+  AutoSplitBundleState fromJson(Map<String, dynamic> json) =>
+      AutoSplitBundleState.fromJson(json);
 
   /// "Match creation spawns a draft expense bundle from the team's
   /// preset (ground+ball+officials)." No real team-preset configuration

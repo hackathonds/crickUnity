@@ -64,4 +64,40 @@ class AutoSplitBundle {
       expenseId: expenseId ?? this.expenseId,
     );
   }
+
+  Map<String, dynamic> toJson() => {
+    'matchId': matchId,
+    'groundFee': groundFee,
+    'ballFee': ballFee,
+    'officialsFee': officialsFee,
+    'status': status.name,
+    'splitMethod': splitMethod.name,
+    'mvpExemptEnabled': mvpExemptEnabled,
+    'mvpName': mvpName,
+    'replacementNames': replacementNames,
+    'notificationLog': notificationLog,
+    'voidReason': voidReason,
+    'expenseId': expenseId,
+  };
+
+  factory AutoSplitBundle.fromJson(Map<String, dynamic> json) {
+    return AutoSplitBundle(
+      matchId: json['matchId'] as String,
+      groundFee: json['groundFee'] as int,
+      ballFee: json['ballFee'] as int,
+      officialsFee: json['officialsFee'] as int,
+      status: AutoSplitBundleStatus.values.byName(json['status'] as String),
+      splitMethod: SplitMethod.values.byName(json['splitMethod'] as String),
+      mvpExemptEnabled: json['mvpExemptEnabled'] as bool? ?? false,
+      mvpName: json['mvpName'] as String?,
+      replacementNames: [
+        for (final n in json['replacementNames'] as List) n as String,
+      ],
+      notificationLog: [
+        for (final n in json['notificationLog'] as List) n as String,
+      ],
+      voidReason: json['voidReason'] as String?,
+      expenseId: json['expenseId'] as String?,
+    );
+  }
 }

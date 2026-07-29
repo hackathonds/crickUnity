@@ -60,6 +60,43 @@ class RecurringSeries {
     );
   }
 
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'title': title,
+    'category': category.name,
+    'amount': amount,
+    'splitMethod': splitMethod.name,
+    'splitAmong': [for (final s in splitAmong) s.toJson()],
+    'cadence': cadence.name,
+    'startDate': startDate.toIso8601String(),
+    'endDate': endDate?.toIso8601String(),
+    'noticeDays': noticeDays,
+    'createdByName': createdByName,
+    'createdByIsCaptain': createdByIsCaptain,
+  };
+
+  factory RecurringSeries.fromJson(Map<String, dynamic> json) {
+    return RecurringSeries(
+      id: json['id'] as String,
+      title: json['title'] as String,
+      category: ExpenseCategory.values.byName(json['category'] as String),
+      amount: json['amount'] as int,
+      splitMethod: SplitMethod.values.byName(json['splitMethod'] as String),
+      splitAmong: [
+        for (final s in json['splitAmong'] as List)
+          SplitShare.fromJson(s as Map<String, dynamic>),
+      ],
+      cadence: RecurrenceCadence.values.byName(json['cadence'] as String),
+      startDate: DateTime.parse(json['startDate'] as String),
+      endDate: json['endDate'] != null
+          ? DateTime.parse(json['endDate'] as String)
+          : null,
+      noticeDays: json['noticeDays'] as int? ?? 3,
+      createdByName: json['createdByName'] as String,
+      createdByIsCaptain: json['createdByIsCaptain'] as bool,
+    );
+  }
+
   Duration get _step => switch (cadence) {
     RecurrenceCadence.off => Duration.zero,
     RecurrenceCadence.weekly => const Duration(days: 7),

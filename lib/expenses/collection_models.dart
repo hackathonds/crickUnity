@@ -38,6 +38,32 @@ class Collection {
       contributions: contributions ?? this.contributions,
     );
   }
+
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'title': title,
+    'amountPerMember': amountPerMember,
+    'memberNames': memberNames,
+    'deadline': deadline.toIso8601String(),
+    'allowPartial': allowPartial,
+    'contributions': contributions,
+  };
+
+  factory Collection.fromJson(Map<String, dynamic> json) {
+    return Collection(
+      id: json['id'] as String,
+      title: json['title'] as String,
+      amountPerMember: json['amountPerMember'] as int,
+      memberNames: [for (final n in json['memberNames'] as List) n as String],
+      deadline: DateTime.parse(json['deadline'] as String),
+      allowPartial: json['allowPartial'] as bool? ?? false,
+      contributions: {
+        for (final entry
+            in (json['contributions'] as Map<String, dynamic>).entries)
+          entry.key: entry.value as int,
+      },
+    );
+  }
 }
 
 /// PRD §11.5: "auto-reminders at deadline-7/1/0." Mirrors E5-05's
