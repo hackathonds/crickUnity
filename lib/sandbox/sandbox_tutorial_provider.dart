@@ -11,6 +11,12 @@ class SandboxTutorialState {
 /// the console opens. The practice ball-log itself is local widget
 /// state (SandboxScoringScreen), not persisted here, since it's
 /// throwaway practice data.
+///
+/// Intentionally not persisted (lib/persistence/) -- explicitly scoped
+/// to "this app session" by design (same convention as
+/// guest_provider.dart's hasAutoPrompted): the offer should resurface
+/// on the next fresh app launch, not stay silently suppressed forever
+/// once shown.
 class SandboxTutorialNotifier extends Notifier<SandboxTutorialState> {
   @override
   SandboxTutorialState build() => const SandboxTutorialState();

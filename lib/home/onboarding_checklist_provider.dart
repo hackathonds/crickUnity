@@ -1,5 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../persistence/persisted_notifier.dart';
+
 /// E1-05 · PRD §4 Home Dashboard edge cases: "Brand-new user sees an
 /// onboarding checklist widget (Complete profile -> Join/create team ->
 /// Play first match -> Settle first expense; each grants coins) replacing
@@ -60,11 +62,37 @@ class OnboardingChecklistState {
       coinsEarned: coinsEarned ?? this.coinsEarned,
     );
   }
+
+  Map<String, dynamic> toJson() => {
+    'completed': [for (final item in completed) item.name],
+    'coinsEarned': coinsEarned,
+  };
+
+  factory OnboardingChecklistState.fromJson(Map<String, dynamic> json) {
+    return OnboardingChecklistState(
+      completed: {
+        for (final item in json['completed'] as List)
+          ChecklistItem.values.byName(item as String),
+      },
+      coinsEarned: json['coinsEarned'] as int? ?? 0,
+    );
+  }
 }
 
-class OnboardingChecklistNotifier extends Notifier<OnboardingChecklistState> {
+class OnboardingChecklistNotifier
+    extends PersistedNotifier<OnboardingChecklistState> {
   @override
-  OnboardingChecklistState build() => const OnboardingChecklistState();
+  String get persistenceKey => 'onboarding_checklist_v1';
+
+  @override
+  OnboardingChecklistState seed() => const OnboardingChecklistState();
+
+  @override
+  Map<String, dynamic> toJson(OnboardingChecklistState value) => value.toJson();
+
+  @override
+  OnboardingChecklistState fromJson(Map<String, dynamic> json) =>
+      OnboardingChecklistState.fromJson(json);
 
   /// Idempotent: completing an already-completed item doesn't grant coins
   /// twice.

@@ -35,6 +35,22 @@ class EarningRule {
       note: note,
     );
   }
+
+  Map<String, dynamic> toJson() => {
+    'action': action,
+    'coins': coins,
+    'xp': xp,
+    'note': note,
+  };
+
+  factory EarningRule.fromJson(Map<String, dynamic> json) {
+    return EarningRule(
+      action: json['action'] as String,
+      coins: json['coins'] as int,
+      xp: json['xp'] as int,
+      note: json['note'] as String? ?? '',
+    );
+  }
 }
 
 const List<EarningRule> canonicalEarningRules = [
@@ -98,6 +114,30 @@ class PendingRateChange {
     required this.proposedBy,
     required this.proposedAt,
   });
+
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'ruleAction': ruleAction,
+    'currentCoins': currentCoins,
+    'currentXp': currentXp,
+    'proposedCoins': proposedCoins,
+    'proposedXp': proposedXp,
+    'proposedBy': proposedBy,
+    'proposedAt': proposedAt.toIso8601String(),
+  };
+
+  factory PendingRateChange.fromJson(Map<String, dynamic> json) {
+    return PendingRateChange(
+      id: json['id'] as String,
+      ruleAction: json['ruleAction'] as String,
+      currentCoins: json['currentCoins'] as int,
+      currentXp: json['currentXp'] as int,
+      proposedCoins: json['proposedCoins'] as int,
+      proposedXp: json['proposedXp'] as int,
+      proposedBy: json['proposedBy'] as String,
+      proposedAt: DateTime.parse(json['proposedAt'] as String),
+    );
+  }
 }
 
 /// No PRD/DS fee schedule exists -- flagged judgment call naming the
@@ -112,6 +152,15 @@ class FeePolicy {
 
   FeePolicy copyWith({double? percent}) {
     return FeePolicy(name: name, percent: percent ?? this.percent);
+  }
+
+  Map<String, dynamic> toJson() => {'name': name, 'percent': percent};
+
+  factory FeePolicy.fromJson(Map<String, dynamic> json) {
+    return FeePolicy(
+      name: json['name'] as String,
+      percent: (json['percent'] as num).toDouble(),
+    );
   }
 }
 
@@ -138,6 +187,26 @@ class PendingFeeChange {
     required this.proposedBy,
     required this.proposedAt,
   });
+
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'feeName': feeName,
+    'currentPercent': currentPercent,
+    'proposedPercent': proposedPercent,
+    'proposedBy': proposedBy,
+    'proposedAt': proposedAt.toIso8601String(),
+  };
+
+  factory PendingFeeChange.fromJson(Map<String, dynamic> json) {
+    return PendingFeeChange(
+      id: json['id'] as String,
+      feeName: json['feeName'] as String,
+      currentPercent: (json['currentPercent'] as num).toDouble(),
+      proposedPercent: (json['proposedPercent'] as num).toDouble(),
+      proposedBy: json['proposedBy'] as String,
+      proposedAt: DateTime.parse(json['proposedAt'] as String),
+    );
+  }
 }
 
 /// Reuses the only two real ground cities in this app's data
@@ -160,6 +229,22 @@ class FeatureFlag {
       key: key,
       label: label,
       enabledRegions: enabledRegions ?? this.enabledRegions,
+    );
+  }
+
+  Map<String, dynamic> toJson() => {
+    'key': key,
+    'label': label,
+    'enabledRegions': enabledRegions.toList(),
+  };
+
+  factory FeatureFlag.fromJson(Map<String, dynamic> json) {
+    return FeatureFlag(
+      key: json['key'] as String,
+      label: json['label'] as String,
+      enabledRegions: {
+        for (final r in json['enabledRegions'] as List) r as String,
+      },
     );
   }
 }
@@ -186,6 +271,22 @@ class ChangelogEntry {
     required this.description,
     required this.publishedAt,
   });
+
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'title': title,
+    'description': description,
+    'publishedAt': publishedAt.toIso8601String(),
+  };
+
+  factory ChangelogEntry.fromJson(Map<String, dynamic> json) {
+    return ChangelogEntry(
+      id: json['id'] as String,
+      title: json['title'] as String,
+      description: json['description'] as String,
+      publishedAt: DateTime.parse(json['publishedAt'] as String),
+    );
+  }
 }
 
 /// "Platform status banner" is named in the backlog line but not

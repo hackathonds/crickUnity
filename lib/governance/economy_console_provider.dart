@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../persistence/persisted_notifier.dart';
 import 'economy_console_models.dart';
 
 /// Reuses the app's recurring mock identities (club_provider.dart,
@@ -53,13 +54,71 @@ class EconomyConsoleState {
       statusMessage: statusMessage ?? this.statusMessage,
     );
   }
+
+  Map<String, dynamic> toJson() => {
+    'earningRules': [for (final r in earningRules) r.toJson()],
+    'feePolicies': [for (final f in feePolicies) f.toJson()],
+    'pendingRateChanges': [for (final c in pendingRateChanges) c.toJson()],
+    'pendingFeeChanges': [for (final c in pendingFeeChanges) c.toJson()],
+    'featureFlags': [for (final f in featureFlags) f.toJson()],
+    'changelog': [for (final c in changelog) c.toJson()],
+    'adminAccounts': adminAccounts,
+    'statusLevel': statusLevel.name,
+    'statusMessage': statusMessage,
+  };
+
+  factory EconomyConsoleState.fromJson(Map<String, dynamic> json) {
+    return EconomyConsoleState(
+      earningRules: [
+        for (final r in json['earningRules'] as List)
+          EarningRule.fromJson(r as Map<String, dynamic>),
+      ],
+      feePolicies: [
+        for (final f in json['feePolicies'] as List)
+          FeePolicy.fromJson(f as Map<String, dynamic>),
+      ],
+      pendingRateChanges: [
+        for (final c in json['pendingRateChanges'] as List)
+          PendingRateChange.fromJson(c as Map<String, dynamic>),
+      ],
+      pendingFeeChanges: [
+        for (final c in json['pendingFeeChanges'] as List)
+          PendingFeeChange.fromJson(c as Map<String, dynamic>),
+      ],
+      featureFlags: [
+        for (final f in json['featureFlags'] as List)
+          FeatureFlag.fromJson(f as Map<String, dynamic>),
+      ],
+      changelog: [
+        for (final c in json['changelog'] as List)
+          ChangelogEntry.fromJson(c as Map<String, dynamic>),
+      ],
+      adminAccounts: [
+        for (final a in json['adminAccounts'] as List) a as String,
+      ],
+      statusLevel: PlatformStatusLevel.values.byName(
+        json['statusLevel'] as String,
+      ),
+      statusMessage: json['statusMessage'] as String? ?? '',
+    );
+  }
 }
 
 /// PRD §2.17 -- Super Admin's economy/governance console (E16-12,
 /// unblocked by E16-11's Admin console).
-class EconomyConsoleNotifier extends Notifier<EconomyConsoleState> {
+class EconomyConsoleNotifier extends PersistedNotifier<EconomyConsoleState> {
   @override
-  EconomyConsoleState build() => const EconomyConsoleState();
+  String get persistenceKey => 'economy_console_v1';
+
+  @override
+  EconomyConsoleState seed() => const EconomyConsoleState();
+
+  @override
+  Map<String, dynamic> toJson(EconomyConsoleState value) => value.toJson();
+
+  @override
+  EconomyConsoleState fromJson(Map<String, dynamic> json) =>
+      EconomyConsoleState.fromJson(json);
 
   void proposeRateChange({
     required String ruleAction,

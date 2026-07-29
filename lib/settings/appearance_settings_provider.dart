@@ -2,12 +2,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../design_system/theme/app_theme.dart';
 import '../design_system/tokens/app_typography.dart';
+import '../persistence/persisted_notifier.dart';
 
-/// E0-09 · DS §7 screen 67 Appearance. Session-scoped only: no persistence
-/// package (shared_preferences or similar) exists anywhere in this repo yet,
-/// and neither PRD nor DS says whether these choices must survive an app
-/// restart -- surfaced as a PR open question rather than guessed at by
-/// adding a new dependency here.
+/// E0-09 · DS §7 screen 67 Appearance.
 class AppearanceSettings {
   /// Null = follow the OS light/dark setting (DS §4: "system light/dark
   /// maps to Themes 1<->4 unless overridden").
@@ -42,11 +39,37 @@ class AppearanceSettings {
           reducedMotionOverride ?? this.reducedMotionOverride,
     );
   }
+
+  Map<String, dynamic> toJson() => {
+    'themeOverride': themeOverride?.name,
+    'textScaleOverride': textScaleOverride,
+    'reducedMotionOverride': reducedMotionOverride,
+  };
+
+  factory AppearanceSettings.fromJson(Map<String, dynamic> json) {
+    return AppearanceSettings(
+      themeOverride: json['themeOverride'] != null
+          ? AppThemeId.values.byName(json['themeOverride'] as String)
+          : null,
+      textScaleOverride: (json['textScaleOverride'] as num?)?.toDouble(),
+      reducedMotionOverride: json['reducedMotionOverride'] as bool? ?? false,
+    );
+  }
 }
 
-class AppearanceSettingsNotifier extends Notifier<AppearanceSettings> {
+class AppearanceSettingsNotifier extends PersistedNotifier<AppearanceSettings> {
   @override
-  AppearanceSettings build() => const AppearanceSettings();
+  String get persistenceKey => 'appearance_settings_v1';
+
+  @override
+  AppearanceSettings seed() => const AppearanceSettings();
+
+  @override
+  Map<String, dynamic> toJson(AppearanceSettings value) => value.toJson();
+
+  @override
+  AppearanceSettings fromJson(Map<String, dynamic> json) =>
+      AppearanceSettings.fromJson(json);
 
   /// Pass null to select "System" (follow the OS light/dark setting).
   void setThemeOverride(AppThemeId? id) {

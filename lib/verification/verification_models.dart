@@ -61,4 +61,28 @@ class VerificationRequest {
       adminNote: adminNote ?? this.adminNote,
     );
   }
+
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'requesterName': requesterName,
+    'markType': markType.name,
+    'entityName': entityName,
+    'justification': justification,
+    'documentAttached': documentAttached,
+    'status': status.name,
+    'adminNote': adminNote,
+  };
+
+  factory VerificationRequest.fromJson(Map<String, dynamic> json) {
+    return VerificationRequest(
+      id: json['id'] as String,
+      requesterName: json['requesterName'] as String,
+      markType: VerificationMarkType.values.byName(json['markType'] as String),
+      entityName: json['entityName'] as String,
+      justification: json['justification'] as String,
+      documentAttached: json['documentAttached'] as bool? ?? false,
+      status: VerificationRequestStatus.values.byName(json['status'] as String),
+      adminNote: json['adminNote'] as String?,
+    );
+  }
 }

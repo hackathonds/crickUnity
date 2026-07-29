@@ -65,6 +65,28 @@ class StatsQueryFilters {
     if (bowlerType != null) bowlerTypeLabels[bowlerType]!,
     if (battingStyle != null) _battingStyleFilterLabels[battingStyle]!,
   ];
+
+  Map<String, dynamic> toJson() => {
+    'phase': phase?.name,
+    'bowlerType': bowlerType?.name,
+    'battingStyle': battingStyle?.name,
+    'minSample': minSample,
+  };
+
+  factory StatsQueryFilters.fromJson(Map<String, dynamic> json) {
+    return StatsQueryFilters(
+      phase: json['phase'] != null
+          ? MatchPhase.values.byName(json['phase'] as String)
+          : null,
+      bowlerType: json['bowlerType'] != null
+          ? BowlerType.values.byName(json['bowlerType'] as String)
+          : null,
+      battingStyle: json['battingStyle'] != null
+          ? BattingStyle.values.byName(json['battingStyle'] as String)
+          : null,
+      minSample: json['minSample'] as int? ?? 0,
+    );
+  }
 }
 
 enum StatsSortColumn { match, primary, secondary, sample }
@@ -97,4 +119,22 @@ class SavedQuery {
     required this.discipline,
     required this.filters,
   });
+
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'name': name,
+    'discipline': discipline.name,
+    'filters': filters.toJson(),
+  };
+
+  factory SavedQuery.fromJson(Map<String, dynamic> json) {
+    return SavedQuery(
+      id: json['id'] as String,
+      name: json['name'] as String,
+      discipline: StatsDiscipline.values.byName(json['discipline'] as String),
+      filters: StatsQueryFilters.fromJson(
+        json['filters'] as Map<String, dynamic>,
+      ),
+    );
+  }
 }

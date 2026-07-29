@@ -64,6 +64,14 @@ class GoLiveState {
   }
 }
 
+/// Intentionally not persisted (lib/persistence/) -- this models a
+/// live-streaming session (preflight checklist -> countdown -> live ->
+/// ended), including a simulated viewer-count ticker and in-stream
+/// chat. None of it has a meaningful restored state after an app
+/// restart: there is no real stream connection to resume, so a
+/// restart should always land back at [GoLivePhase.preflight], the
+/// same way a real streaming platform would require redoing go-live
+/// setup after a genuine disconnect.
 class GoLiveNotifier extends Notifier<GoLiveState> {
   final _random = Random();
 
