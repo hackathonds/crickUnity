@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../persistence/persisted_notifier.dart';
 import 'guardian_view_models.dart';
 
 class GuardianViewState {
@@ -23,15 +24,40 @@ class GuardianViewState {
       pendingConsents: pendingConsents ?? this.pendingConsents,
     );
   }
+
+  /// Only [pendingConsents] persists -- [children]/[coachNotes]/
+  /// [sessionCompletions] are static mock rosters no method ever
+  /// mutates, re-seeded fresh on every load rather than round-tripped
+  /// through storage.
+  Map<String, dynamic> toJson() => {
+    'pendingConsents': [for (final c in pendingConsents) c.toJson()],
+  };
 }
 
 /// No real guardian-child linking backend exists (the onboarding
 /// guardian gate, E1-02, only ever models the child's own side of
 /// consent) -- flagged mock linked-children roster, same convention as
 /// every other missing-backend gap this session.
-class GuardianViewNotifier extends Notifier<GuardianViewState> {
+class GuardianViewNotifier extends PersistedNotifier<GuardianViewState> {
   @override
-  GuardianViewState build() {
+  String get persistenceKey => 'guardian_view_v1';
+
+  @override
+  Map<String, dynamic> toJson(GuardianViewState value) => value.toJson();
+
+  @override
+  GuardianViewState fromJson(Map<String, dynamic> json) {
+    final base = seed();
+    return base.copyWith(
+      pendingConsents: [
+        for (final c in json['pendingConsents'] as List)
+          ConsentRequest.fromJson(c as Map<String, dynamic>),
+      ],
+    );
+  }
+
+  @override
+  GuardianViewState seed() {
     final now = DateTime.now();
     return GuardianViewState(
       children: const [

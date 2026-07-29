@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../matches/match_models.dart';
+import '../persistence/persisted_notifier.dart';
 import 'report_models.dart';
 
 class ModerationState {
@@ -34,12 +35,50 @@ class ModerationState {
       auditLog: auditLog ?? this.auditLog,
     );
   }
+
+  Map<String, dynamic> toJson() => {
+    'reports': [for (final r in reports) r.toJson()],
+    'offenderStrikes': offenderStrikes,
+    'blockedNames': blockedNames.toList(),
+    'hideOffensiveComments': hideOffensiveComments,
+    'auditLog': [for (final a in auditLog) a.toJson()],
+  };
+
+  factory ModerationState.fromJson(Map<String, dynamic> json) {
+    return ModerationState(
+      reports: [
+        for (final r in json['reports'] as List)
+          Report.fromJson(r as Map<String, dynamic>),
+      ],
+      offenderStrikes: {
+        for (final entry
+            in (json['offenderStrikes'] as Map<String, dynamic>).entries)
+          entry.key: entry.value as int,
+      },
+      blockedNames: {for (final n in json['blockedNames'] as List) n as String},
+      hideOffensiveComments: json['hideOffensiveComments'] as bool? ?? true,
+      auditLog: [
+        for (final a in json['auditLog'] as List)
+          AuditLogEntry.fromJson(a as Map<String, dynamic>),
+      ],
+    );
+  }
 }
 
 /// PRD §12.10 -- E7-07's moderation engine.
-class ModerationNotifier extends Notifier<ModerationState> {
+class ModerationNotifier extends PersistedNotifier<ModerationState> {
   @override
-  ModerationState build() => const ModerationState();
+  String get persistenceKey => 'moderation_v1';
+
+  @override
+  ModerationState seed() => const ModerationState();
+
+  @override
+  Map<String, dynamic> toJson(ModerationState value) => value.toJson();
+
+  @override
+  ModerationState fromJson(Map<String, dynamic> json) =>
+      ModerationState.fromJson(json);
 
   /// DS §11.16: "duplicate-report merge notice inline." Returns true if
   /// this merged into an existing pending report rather than creating a
