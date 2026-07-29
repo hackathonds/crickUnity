@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../persistence/persisted_notifier.dart';
 import 'reel_models.dart';
 
 class ReelsState {
@@ -9,12 +10,34 @@ class ReelsState {
 
   ReelsState copyWith({List<Reel>? reels}) =>
       ReelsState(reels: reels ?? this.reels);
+
+  Map<String, dynamic> toJson() => {
+    'reels': [for (final r in reels) r.toJson()],
+  };
+
+  factory ReelsState.fromJson(Map<String, dynamic> json) {
+    return ReelsState(
+      reels: [
+        for (final r in json['reels'] as List)
+          Reel.fromJson(r as Map<String, dynamic>),
+      ],
+    );
+  }
 }
 
 /// PRD §12.3 -- E7-04's reels engine.
-class ReelsNotifier extends Notifier<ReelsState> {
+class ReelsNotifier extends PersistedNotifier<ReelsState> {
   @override
-  ReelsState build() => const ReelsState();
+  String get persistenceKey => 'reels_v1';
+
+  @override
+  ReelsState seed() => const ReelsState();
+
+  @override
+  Map<String, dynamic> toJson(ReelsState value) => value.toJson();
+
+  @override
+  ReelsState fromJson(Map<String, dynamic> json) => ReelsState.fromJson(json);
 
   void publishReel({
     required String authorName,

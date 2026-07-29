@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../persistence/persisted_notifier.dart';
 import 'composer_screen.dart';
 import 'group_models.dart';
 
@@ -17,12 +18,34 @@ class GroupsState {
 
   GroupsState copyWith({List<Group>? groups}) =>
       GroupsState(groups: groups ?? this.groups);
+
+  Map<String, dynamic> toJson() => {
+    'groups': [for (final g in groups) g.toJson()],
+  };
+
+  factory GroupsState.fromJson(Map<String, dynamic> json) {
+    return GroupsState(
+      groups: [
+        for (final g in json['groups'] as List)
+          Group.fromJson(g as Map<String, dynamic>),
+      ],
+    );
+  }
 }
 
 /// PRD §12.5 -- E7-06's Groups engine.
-class GroupsNotifier extends Notifier<GroupsState> {
+class GroupsNotifier extends PersistedNotifier<GroupsState> {
   @override
-  GroupsState build() => GroupsState(groups: _seedGroups());
+  String get persistenceKey => 'groups_v1';
+
+  @override
+  GroupsState seed() => GroupsState(groups: _seedGroups());
+
+  @override
+  Map<String, dynamic> toJson(GroupsState value) => value.toJson();
+
+  @override
+  GroupsState fromJson(Map<String, dynamic> json) => GroupsState.fromJson(json);
 
   static List<Group> _seedGroups() => [
     const Group(

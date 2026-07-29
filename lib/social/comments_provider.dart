@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../persistence/persisted_notifier.dart';
 import 'comment_models.dart';
 
 class CommentsState {
@@ -32,14 +33,51 @@ class CommentsState {
           pinnedCommentIdByPostId ?? this.pinnedCommentIdByPostId,
     );
   }
+
+  Map<String, dynamic> toJson() => {
+    'commentsByPostId': {
+      for (final entry in commentsByPostId.entries)
+        entry.key: [for (final c in entry.value) c.toJson()],
+    },
+    'pinnedCommentIdByPostId': pinnedCommentIdByPostId,
+  };
+
+  factory CommentsState.fromJson(Map<String, dynamic> json) {
+    return CommentsState(
+      commentsByPostId: {
+        for (final entry
+            in (json['commentsByPostId'] as Map<String, dynamic>).entries)
+          entry.key: [
+            for (final c in entry.value as List)
+              FeedComment.fromJson(c as Map<String, dynamic>),
+          ],
+      },
+      pinnedCommentIdByPostId: {
+        for (final entry
+            in (json['pinnedCommentIdByPostId'] as Map<String, dynamic>)
+                .entries)
+          entry.key: entry.value as String,
+      },
+    );
+  }
 }
 
 /// PRD §12.6 -- E7-03's comments engine. "Threaded 2 levels" -- a
 /// top-level comment's replies are themselves flat (no reply-to-a-reply),
 /// matching AppCommentThread/AppCommentData's own 2-level shape (E0-08).
-class CommentsNotifier extends Notifier<CommentsState> {
+class CommentsNotifier extends PersistedNotifier<CommentsState> {
   @override
-  CommentsState build() => const CommentsState();
+  String get persistenceKey => 'comments_v1';
+
+  @override
+  CommentsState seed() => const CommentsState();
+
+  @override
+  Map<String, dynamic> toJson(CommentsState value) => value.toJson();
+
+  @override
+  CommentsState fromJson(Map<String, dynamic> json) =>
+      CommentsState.fromJson(json);
 
   void addComment(
     String postId,

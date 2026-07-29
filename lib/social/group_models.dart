@@ -16,6 +16,18 @@ class GroupJoinRequest {
   final List<String> answers;
 
   const GroupJoinRequest({required this.requesterName, required this.answers});
+
+  Map<String, dynamic> toJson() => {
+    'requesterName': requesterName,
+    'answers': answers,
+  };
+
+  factory GroupJoinRequest.fromJson(Map<String, dynamic> json) {
+    return GroupJoinRequest(
+      requesterName: json['requesterName'] as String,
+      answers: [for (final a in json['answers'] as List) a as String],
+    );
+  }
 }
 
 class GroupPost {
@@ -40,6 +52,24 @@ class GroupPost {
     timestamp: timestamp,
     approved: approved ?? this.approved,
   );
+
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'authorName': authorName,
+    'body': body,
+    'timestamp': timestamp.toIso8601String(),
+    'approved': approved,
+  };
+
+  factory GroupPost.fromJson(Map<String, dynamic> json) {
+    return GroupPost(
+      id: json['id'] as String,
+      authorName: json['authorName'] as String,
+      body: json['body'] as String,
+      timestamp: DateTime.parse(json['timestamp'] as String),
+      approved: json['approved'] as bool? ?? false,
+    );
+  }
 }
 
 class Group {
@@ -102,6 +132,49 @@ class Group {
       modNames: modNames ?? this.modNames,
       pendingJoinRequests: pendingJoinRequests ?? this.pendingJoinRequests,
       posts: posts ?? this.posts,
+    );
+  }
+
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'name': name,
+    'description': description,
+    'privacy': privacy.name,
+    'joinQuestions': joinQuestions,
+    'rules': rules,
+    'postApprovalRequired': postApprovalRequired,
+    'memberListVisibleToPublic': memberListVisibleToPublic,
+    'memberNames': memberNames,
+    'adminNames': adminNames,
+    'modNames': modNames,
+    'pendingJoinRequests': [for (final r in pendingJoinRequests) r.toJson()],
+    'posts': [for (final p in posts) p.toJson()],
+  };
+
+  factory Group.fromJson(Map<String, dynamic> json) {
+    return Group(
+      id: json['id'] as String,
+      name: json['name'] as String,
+      description: json['description'] as String,
+      privacy: GroupPrivacy.values.byName(json['privacy'] as String),
+      joinQuestions: [
+        for (final q in json['joinQuestions'] as List) q as String,
+      ],
+      rules: [for (final r in json['rules'] as List) r as String],
+      postApprovalRequired: json['postApprovalRequired'] as bool? ?? false,
+      memberListVisibleToPublic:
+          json['memberListVisibleToPublic'] as bool? ?? true,
+      memberNames: [for (final n in json['memberNames'] as List) n as String],
+      adminNames: [for (final n in json['adminNames'] as List) n as String],
+      modNames: [for (final n in json['modNames'] as List) n as String],
+      pendingJoinRequests: [
+        for (final r in json['pendingJoinRequests'] as List)
+          GroupJoinRequest.fromJson(r as Map<String, dynamic>),
+      ],
+      posts: [
+        for (final p in json['posts'] as List)
+          GroupPost.fromJson(p as Map<String, dynamic>),
+      ],
     );
   }
 }

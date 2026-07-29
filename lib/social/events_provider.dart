@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../persistence/persisted_notifier.dart';
 import '../rewards/rewards_provider.dart';
 import 'composer_screen.dart';
 import 'event_models.dart';
@@ -20,12 +21,34 @@ class EventsState {
 
   EventsState copyWith({List<CricketEvent>? events}) =>
       EventsState(events: events ?? this.events);
+
+  Map<String, dynamic> toJson() => {
+    'events': [for (final e in events) e.toJson()],
+  };
+
+  factory EventsState.fromJson(Map<String, dynamic> json) {
+    return EventsState(
+      events: [
+        for (final e in json['events'] as List)
+          CricketEvent.fromJson(e as Map<String, dynamic>),
+      ],
+    );
+  }
 }
 
 /// PRD §12.5 -- E7-06's Events engine.
-class EventsNotifier extends Notifier<EventsState> {
+class EventsNotifier extends PersistedNotifier<EventsState> {
   @override
-  EventsState build() => EventsState(events: _seedEvents());
+  String get persistenceKey => 'events_v1';
+
+  @override
+  EventsState seed() => EventsState(events: _seedEvents());
+
+  @override
+  Map<String, dynamic> toJson(EventsState value) => value.toJson();
+
+  @override
+  EventsState fromJson(Map<String, dynamic> json) => EventsState.fromJson(json);
 
   static List<CricketEvent> _seedEvents() {
     final now = DateTime.now();

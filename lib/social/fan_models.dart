@@ -37,4 +37,28 @@ class Prediction {
       submittedAt: submittedAt,
     );
   }
+
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'matchLabel': matchLabel,
+    'predictedWinnerTeamName': predictedWinnerTeamName,
+    'predictedMvpName': predictedMvpName,
+    'resultStatus': resultStatus.name,
+    'mvpStatus': mvpStatus.name,
+    'submittedAt': submittedAt.toIso8601String(),
+  };
+
+  factory Prediction.fromJson(Map<String, dynamic> json) {
+    return Prediction(
+      id: json['id'] as String,
+      matchLabel: json['matchLabel'] as String,
+      predictedWinnerTeamName: json['predictedWinnerTeamName'] as String,
+      predictedMvpName: json['predictedMvpName'] as String,
+      resultStatus: PredictionOutcome.values.byName(
+        json['resultStatus'] as String,
+      ),
+      mvpStatus: PredictionOutcome.values.byName(json['mvpStatus'] as String),
+      submittedAt: DateTime.parse(json['submittedAt'] as String),
+    );
+  }
 }

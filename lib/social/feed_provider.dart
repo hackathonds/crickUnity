@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../design_system/components/app_reaction_picker.dart';
+import '../persistence/persisted_notifier.dart';
 import 'feed_models.dart';
 
 const Duration recentlyDeletedPostRetention = Duration(days: 30);
@@ -27,13 +28,39 @@ class FeedState {
       lastUsedAudience: lastUsedAudience ?? this.lastUsedAudience,
     );
   }
+
+  Map<String, dynamic> toJson() => {
+    'posts': [for (final p in posts) p.toJson()],
+    'lastUsedAudience': lastUsedAudience.name,
+  };
+
+  factory FeedState.fromJson(Map<String, dynamic> json) {
+    return FeedState(
+      posts: [
+        for (final p in json['posts'] as List)
+          FeedPost.fromJson(p as Map<String, dynamic>),
+      ],
+      lastUsedAudience: PostAudience.values.byName(
+        json['lastUsedAudience'] as String,
+      ),
+    );
+  }
 }
 
 /// PRD §12.1/§12.2/§12.6 -- E7-01/E7-02/E7-03's feed engine. Reactions/
 /// edits/deletes/poll votes/reshares are genuine local interactions.
-class FeedNotifier extends Notifier<FeedState> {
+class FeedNotifier extends PersistedNotifier<FeedState> {
   @override
-  FeedState build() => FeedState(posts: mockFeedPosts(now: DateTime.now()));
+  String get persistenceKey => 'feed_v1';
+
+  @override
+  FeedState seed() => FeedState(posts: mockFeedPosts(now: DateTime.now()));
+
+  @override
+  Map<String, dynamic> toJson(FeedState value) => value.toJson();
+
+  @override
+  FeedState fromJson(Map<String, dynamic> json) => FeedState.fromJson(json);
 
   /// DS §3.14: tapping the same reaction again clears it (pass null).
   void setReaction(String postId, AppReactionType? reaction) {

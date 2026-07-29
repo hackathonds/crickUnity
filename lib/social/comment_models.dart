@@ -37,4 +37,29 @@ class FeedComment {
       replies: replies ?? this.replies,
     );
   }
+
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'authorName': authorName,
+    'body': body,
+    'timestamp': timestamp.toIso8601String(),
+    'propsCount': propsCount,
+    'hasMyProps': hasMyProps,
+    'replies': [for (final r in replies) r.toJson()],
+  };
+
+  factory FeedComment.fromJson(Map<String, dynamic> json) {
+    return FeedComment(
+      id: json['id'] as String,
+      authorName: json['authorName'] as String,
+      body: json['body'] as String,
+      timestamp: DateTime.parse(json['timestamp'] as String),
+      propsCount: json['propsCount'] as int? ?? 0,
+      hasMyProps: json['hasMyProps'] as bool? ?? false,
+      replies: [
+        for (final r in json['replies'] as List)
+          FeedComment.fromJson(r as Map<String, dynamic>),
+      ],
+    );
+  }
 }
