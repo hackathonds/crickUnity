@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../expenses/auto_split_bundle_provider.dart';
+import '../persistence/persisted_notifier.dart';
 import '../offline/queued_action.dart';
 import '../recognition/personal_bests_provider.dart';
 import '../recognition/record_models.dart';
@@ -21,11 +22,19 @@ import 'scoring_models.dart';
 /// queueing layered on top. `deliveries` and `pendingCorrections` are
 /// the only mutable state; every score/stat is a derived getter on
 /// [InningsState].
-class InningsNotifier extends Notifier<InningsState> {
-  int _ballCount = 0;
+class InningsNotifier extends PersistedNotifier<InningsState> {
+  @override
+  String get persistenceKey => 'innings_v1';
 
   @override
-  InningsState build() {
+  Map<String, dynamic> toJson(InningsState value) => value.toJson();
+
+  @override
+  InningsState fromJson(Map<String, dynamic> json) =>
+      InningsState.fromJson(json);
+
+  @override
+  InningsState seed() {
     final order = mockBattingOrder();
     final bowlingRoster = mockBowlingRoster();
     return InningsState(
@@ -222,11 +231,10 @@ class InningsNotifier extends Notifier<InningsState> {
   /// backend exists to actually sync to, so the "sync" is a short
   /// simulated delay that always succeeds.
   void _queueSync(String label) {
-    _ballCount++;
     ref
         .read(queuedActionsProvider.notifier)
         .submit(
-          label: 'Ball $_ballCount: $label',
+          label: 'Ball ${state.deliveries.length}: $label',
           isMoneyAction: false,
           perform: () async {
             await Future.delayed(const Duration(milliseconds: 300));

@@ -44,6 +44,28 @@ class MediaItem {
           : (pinnedBallIndex ?? this.pinnedBallIndex),
     );
   }
+
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'uploaderName': uploaderName,
+    'type': type.name,
+    'isProcessing': isProcessing,
+    'isFeatured': isFeatured,
+    'isHidden': isHidden,
+    'pinnedBallIndex': pinnedBallIndex,
+  };
+
+  factory MediaItem.fromJson(Map<String, dynamic> json) {
+    return MediaItem(
+      id: json['id'] as int,
+      uploaderName: json['uploaderName'] as String,
+      type: MediaType.values.byName(json['type'] as String),
+      isProcessing: json['isProcessing'] as bool? ?? false,
+      isFeatured: json['isFeatured'] as bool? ?? false,
+      isHidden: json['isHidden'] as bool? ?? false,
+      pinnedBallIndex: json['pinnedBallIndex'] as int?,
+    );
+  }
 }
 
 /// PRD §7.15: "auto-compile into a Highlights reel (wickets/boundaries
@@ -73,6 +95,23 @@ class GalleryState {
       items: items ?? this.items,
       reelClipIds: reelClipIds ?? this.reelClipIds,
       reelPublished: reelPublished ?? this.reelPublished,
+    );
+  }
+
+  Map<String, dynamic> toJson() => {
+    'items': items.map((i) => i.toJson()).toList(),
+    'reelClipIds': reelClipIds,
+    'reelPublished': reelPublished,
+  };
+
+  factory GalleryState.fromJson(Map<String, dynamic> json) {
+    return GalleryState(
+      items: [
+        for (final i in (json['items'] as List? ?? const []))
+          MediaItem.fromJson(i as Map<String, dynamic>),
+      ],
+      reelClipIds: (json['reelClipIds'] as List? ?? const []).cast<int>(),
+      reelPublished: json['reelPublished'] as bool? ?? false,
     );
   }
 }

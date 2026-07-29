@@ -1,15 +1,31 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../persistence/persisted_notifier.dart';
 import 'gallery_models.dart';
 
 /// PRD §7.15 -- E4-14's Gallery/highlights state. No real media/storage
 /// backend exists yet, so "upload" appends a placeholder [MediaItem]
 /// rather than handling any actual file.
-class GalleryNotifier extends Notifier<GalleryState> {
-  int _nextId = 0;
+class GalleryNotifier extends PersistedNotifier<GalleryState> {
+  @override
+  String get persistenceKey => 'gallery_v1';
 
   @override
-  GalleryState build() => const GalleryState();
+  GalleryState seed() => const GalleryState();
+
+  @override
+  Map<String, dynamic> toJson(GalleryState value) => value.toJson();
+
+  @override
+  GalleryState fromJson(Map<String, dynamic> json) =>
+      GalleryState.fromJson(json);
+
+  /// Computed from current state rather than a separate incrementing
+  /// field -- a plain field would restart at 0 after every app restart
+  /// and collide with ids already restored from disk.
+  int get _nextId => state.items.isEmpty
+      ? 0
+      : state.items.map((i) => i.id).reduce((a, b) => a > b ? a : b) + 1;
 
   /// PRD screen-list #38: "processing state." Mirrors the offline
   /// queue's simulated-delay convention (E4-08) -- always succeeds
@@ -18,7 +34,7 @@ class GalleryNotifier extends Notifier<GalleryState> {
     required String uploaderName,
     required MediaType type,
   }) async {
-    final id = _nextId++;
+    final id = _nextId;
     state = state.copyWith(
       items: [
         ...state.items,

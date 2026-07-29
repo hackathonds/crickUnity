@@ -2,6 +2,7 @@ import 'dart:math';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../persistence/persisted_notifier.dart';
 import '../teams/availability_matrix_models.dart';
 import 'match_models.dart';
 
@@ -13,6 +14,19 @@ class MatchesState {
   MatchesState copyWith({List<MatchRecord>? matches}) {
     return MatchesState(matches: matches ?? this.matches);
   }
+
+  Map<String, dynamic> toJson() => {
+    'matches': matches.map((m) => m.toJson()).toList(),
+  };
+
+  factory MatchesState.fromJson(Map<String, dynamic> json) {
+    return MatchesState(
+      matches: [
+        for (final m in (json['matches'] as List? ?? const []))
+          MatchRecord.fromJson(m as Map<String, dynamic>),
+      ],
+    );
+  }
 }
 
 /// PRD §7.1: "Creating notifies opponent captain -> Accept/Propose
@@ -23,9 +37,19 @@ class MatchesState {
 /// Availability Matrix module (E3-06), since that provider's shape
 /// assumes an existing team roster/squad context this match-creation
 /// flow doesn't have.
-class MatchesNotifier extends Notifier<MatchesState> {
+class MatchesNotifier extends PersistedNotifier<MatchesState> {
   @override
-  MatchesState build() => const MatchesState();
+  String get persistenceKey => 'matches_v1';
+
+  @override
+  MatchesState seed() => const MatchesState();
+
+  @override
+  Map<String, dynamic> toJson(MatchesState value) => value.toJson();
+
+  @override
+  MatchesState fromJson(Map<String, dynamic> json) =>
+      MatchesState.fromJson(json);
 
   String submitMatch({
     required MatchDraft draft,

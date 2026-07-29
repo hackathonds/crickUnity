@@ -56,6 +56,20 @@ class MatchFormat {
     required this.oversPerSide,
     required this.playersPerSide,
   });
+
+  Map<String, dynamic> toJson() => {
+    'label': label,
+    'oversPerSide': oversPerSide,
+    'playersPerSide': playersPerSide,
+  };
+
+  factory MatchFormat.fromJson(Map<String, dynamic> json) {
+    return MatchFormat(
+      label: json['label'] as String,
+      oversPerSide: json['oversPerSide'] as int,
+      playersPerSide: json['playersPerSide'] as int,
+    );
+  }
 }
 
 const MatchFormat defaultMatchFormat = MatchFormat(
@@ -94,6 +108,20 @@ class ExtraSubRules {
       noBallRebowl: noBallRebowl ?? this.noBallRebowl,
       noBallRuns: noBallRuns ?? this.noBallRuns,
       wideRuns: wideRuns ?? this.wideRuns,
+    );
+  }
+
+  Map<String, dynamic> toJson() => {
+    'noBallRebowl': noBallRebowl,
+    'noBallRuns': noBallRuns,
+    'wideRuns': wideRuns,
+  };
+
+  factory ExtraSubRules.fromJson(Map<String, dynamic> json) {
+    return ExtraSubRules(
+      noBallRebowl: json['noBallRebowl'] as bool? ?? true,
+      noBallRuns: json['noBallRuns'] as int? ?? 1,
+      wideRuns: json['wideRuns'] as int? ?? 1,
     );
   }
 }
@@ -176,6 +204,50 @@ class MatchDraft {
           availabilityDeadlineHours ?? this.availabilityDeadlineHours,
     );
   }
+
+  Map<String, dynamic> toJson() => {
+    'matchType': matchType.name,
+    'format': format.toJson(),
+    'ballType': ballType.name,
+    'subRules': subRules.toJson(),
+    'opponentTeamName': opponentTeamName,
+    'isGuestTeam': isGuestTeam,
+    'groundName': groundName,
+    'dateTime': dateTime.toIso8601String(),
+    'visibility': visibility.name,
+    'scorerAssignment': scorerAssignment.name,
+    'scorerMemberName': scorerMemberName,
+    'umpireNames': umpireNames,
+    'expensePresetEnabled': expensePresetEnabled,
+    'availabilityDeadlineHours': availabilityDeadlineHours,
+  };
+
+  factory MatchDraft.fromJson(Map<String, dynamic> json) {
+    return MatchDraft(
+      matchType: MatchType.values.byName(json['matchType'] as String),
+      format: MatchFormat.fromJson(json['format'] as Map<String, dynamic>),
+      ballType: BallType.values.byName(json['ballType'] as String),
+      subRules: ExtraSubRules.fromJson(
+        json['subRules'] as Map<String, dynamic>,
+      ),
+      opponentTeamName: json['opponentTeamName'] as String? ?? '',
+      isGuestTeam: json['isGuestTeam'] as bool? ?? false,
+      groundName: json['groundName'] as String? ?? '',
+      dateTime: DateTime.parse(json['dateTime'] as String),
+      visibility: MatchVisibility.values.byName(
+        json['visibility'] as String? ?? MatchVisibility.community.name,
+      ),
+      scorerAssignment: ScorerAssignment.values.byName(
+        json['scorerAssignment'] as String? ?? ScorerAssignment.self.name,
+      ),
+      scorerMemberName: json['scorerMemberName'] as String?,
+      umpireNames: (json['umpireNames'] as List? ?? const []).cast<String>(),
+      expensePresetEnabled: json['expensePresetEnabled'] as bool? ?? true,
+      availabilityDeadlineHours:
+          json['availabilityDeadlineHours'] as int? ??
+          defaultAvailabilityDeadlineHours,
+    );
+  }
 }
 
 /// AC: "Given I created a match last week, When I start the wizard,
@@ -230,6 +302,22 @@ class TossResult {
     required this.isManual,
     required this.recordedAt,
   });
+
+  Map<String, dynamic> toJson() => {
+    'winningTeamName': winningTeamName,
+    'decision': decision.name,
+    'isManual': isManual,
+    'recordedAt': recordedAt.toIso8601String(),
+  };
+
+  factory TossResult.fromJson(Map<String, dynamic> json) {
+    return TossResult(
+      winningTeamName: json['winningTeamName'] as String,
+      decision: TossDecision.values.byName(json['decision'] as String),
+      isManual: json['isManual'] as bool,
+      recordedAt: DateTime.parse(json['recordedAt'] as String),
+    );
+  }
 }
 
 /// PRD §7.1: "Creating notifies opponent captain -> Accept/Propose
@@ -365,6 +453,76 @@ class MatchRecord {
       opponentCaptainWaivedUmpireConflict:
           opponentCaptainWaivedUmpireConflict ??
           this.opponentCaptainWaivedUmpireConflict,
+    );
+  }
+
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'composerTeamName': composerTeamName,
+    'draft': draft.toJson(),
+    'status': status.name,
+    'proposedGroundName': proposedGroundName,
+    'proposedDateTime': proposedDateTime?.toIso8601String(),
+    'availabilityPollSent': availabilityPollSent,
+    'availabilityDeadline': availabilityDeadline?.toIso8601String(),
+    'cancelledReason': cancelledReason,
+    'rescheduleReason': rescheduleReason,
+    'squadNames': squadNames,
+    'availabilityResponses': availabilityResponses.map(
+      (k, v) => MapEntry(k, v.name),
+    ),
+    'pendingTossWinner': pendingTossWinner,
+    'tossResult': tossResult?.toJson(),
+    'timelineEntries': timelineEntries,
+    'pendingViewerRequests': pendingViewerRequests,
+    'approvedViewerNames': approvedViewerNames,
+    'composerCaptainApprovedSelfScoring': composerCaptainApprovedSelfScoring,
+    'opponentCaptainApprovedSelfScoring': opponentCaptainApprovedSelfScoring,
+    'composerCaptainWaivedUmpireConflict': composerCaptainWaivedUmpireConflict,
+    'opponentCaptainWaivedUmpireConflict': opponentCaptainWaivedUmpireConflict,
+  };
+
+  factory MatchRecord.fromJson(Map<String, dynamic> json) {
+    final tossJson = json['tossResult'] as Map<String, dynamic>?;
+    return MatchRecord(
+      id: json['id'] as String,
+      composerTeamName: json['composerTeamName'] as String,
+      draft: MatchDraft.fromJson(json['draft'] as Map<String, dynamic>),
+      status: MatchStatus.values.byName(json['status'] as String),
+      proposedGroundName: json['proposedGroundName'] as String?,
+      proposedDateTime: (json['proposedDateTime'] as String?) == null
+          ? null
+          : DateTime.parse(json['proposedDateTime'] as String),
+      availabilityPollSent: json['availabilityPollSent'] as bool? ?? false,
+      availabilityDeadline: (json['availabilityDeadline'] as String?) == null
+          ? null
+          : DateTime.parse(json['availabilityDeadline'] as String),
+      cancelledReason: json['cancelledReason'] as String?,
+      rescheduleReason: json['rescheduleReason'] as String?,
+      squadNames: (json['squadNames'] as List? ?? const []).cast<String>(),
+      availabilityResponses: {
+        for (final entry
+            in (json['availabilityResponses'] as Map<String, dynamic>? ??
+                    const {})
+                .entries)
+          entry.key: AvailabilityResponse.values.byName(entry.value as String),
+      },
+      pendingTossWinner: json['pendingTossWinner'] as String?,
+      tossResult: tossJson == null ? null : TossResult.fromJson(tossJson),
+      timelineEntries: (json['timelineEntries'] as List? ?? const [])
+          .cast<String>(),
+      pendingViewerRequests:
+          (json['pendingViewerRequests'] as List? ?? const []).cast<String>(),
+      approvedViewerNames: (json['approvedViewerNames'] as List? ?? const [])
+          .cast<String>(),
+      composerCaptainApprovedSelfScoring:
+          json['composerCaptainApprovedSelfScoring'] as bool? ?? false,
+      opponentCaptainApprovedSelfScoring:
+          json['opponentCaptainApprovedSelfScoring'] as bool? ?? false,
+      composerCaptainWaivedUmpireConflict:
+          json['composerCaptainWaivedUmpireConflict'] as bool? ?? false,
+      opponentCaptainWaivedUmpireConflict:
+          json['opponentCaptainWaivedUmpireConflict'] as bool? ?? false,
     );
   }
 }

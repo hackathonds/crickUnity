@@ -15,6 +15,13 @@ class CreateMatchState {
 /// PRD §7.1's 4-step wizard draft. AC: "Given I created a match last
 /// week, When I start the wizard, Then format/ground/time pre-fill
 /// from it" -- [build] seeds the draft from [mockLastMatchDraft].
+///
+/// Intentionally not persisted (lib/persistence/) -- this is in-progress
+/// wizard scratch state, same category as registration_flow_provider.dart
+/// and create_team_provider.dart: resuming mid-create-match-wizard after
+/// an app restart isn't the intended UX. The durable result is the
+/// [MatchRecord] `submitMatch` adds to matches_provider.dart, which does
+/// persist.
 class CreateMatchNotifier extends Notifier<CreateMatchState> {
   @override
   CreateMatchState build() => CreateMatchState(draft: mockLastMatchDraft());

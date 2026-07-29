@@ -244,7 +244,9 @@ class _SharePerformanceButtonState
       return const Icon(Icons.check_circle_outline, size: 20);
     }
     return AppButton(
-      key: ValueKey(_shared ? 'postPerformanceButton' : 'sharePerformanceButton'),
+      key: ValueKey(
+        _shared ? 'postPerformanceButton' : 'sharePerformanceButton',
+      ),
       variant: _shared ? AppButtonVariant.primary : AppButtonVariant.secondary,
       label: _shared ? 'Post' : 'Share',
       onPressed: _shared ? _post : _share,
@@ -253,9 +255,7 @@ class _SharePerformanceButtonState
 
   void _share() {
     Clipboard.setData(
-      ClipboardData(
-        text: '${widget.viewerPlayerName} -- ${widget.resultText}',
-      ),
+      ClipboardData(text: '${widget.viewerPlayerName} -- ${widget.resultText}'),
     );
     ScaffoldMessenger.of(
       context,
