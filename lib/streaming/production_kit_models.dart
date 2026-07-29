@@ -15,6 +15,18 @@ class LowerThird {
       bottomText: bottomText ?? this.bottomText,
     );
   }
+
+  Map<String, dynamic> toJson() => {
+    'topText': topText,
+    'bottomText': bottomText,
+  };
+
+  factory LowerThird.fromJson(Map<String, dynamic> json) {
+    return LowerThird(
+      topText: json['topText'] as String? ?? '',
+      bottomText: json['bottomText'] as String? ?? '',
+    );
+  }
 }
 
 enum StreamDestination { inApp, youtube, facebook }

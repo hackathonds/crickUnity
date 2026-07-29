@@ -10,6 +10,7 @@ import '../matches/matches_provider.dart';
 import '../matches/scoring_provider.dart';
 import '../messaging/chat_provider.dart';
 import '../notifications/notification_provider.dart';
+import '../persistence/persisted_notifier.dart';
 import '../recognition/challenges_provider.dart';
 import '../rewards/luck_provider.dart';
 import '../teams/availability_matrix_models.dart';
@@ -61,15 +62,59 @@ class HomeDashboardState {
           locationPermissionGranted ?? this.locationPermissionGranted,
     );
   }
+
+  Map<String, dynamic> toJson() => {
+    'preset': preset.name,
+    'pinned': [for (final id in pinned) id.name],
+    'hidden': [for (final id in hidden) id.name],
+    'lastUpdated': {
+      for (final entry in lastUpdated.entries)
+        entry.key.name: entry.value.toIso8601String(),
+    },
+    'locationPermissionGranted': locationPermissionGranted,
+  };
+
+  factory HomeDashboardState.fromJson(Map<String, dynamic> json) {
+    return HomeDashboardState(
+      preset: HomeRolePreset.values.byName(json['preset'] as String),
+      pinned: [
+        for (final id in json['pinned'] as List)
+          HomeWidgetId.values.byName(id as String),
+      ],
+      hidden: {
+        for (final id in json['hidden'] as List)
+          HomeWidgetId.values.byName(id as String),
+      },
+      lastUpdated: {
+        for (final entry
+            in (json['lastUpdated'] as Map<String, dynamic>).entries)
+          HomeWidgetId.values.byName(entry.key): DateTime.parse(
+            entry.value as String,
+          ),
+      },
+      locationPermissionGranted:
+          json['locationPermissionGranted'] as bool? ?? false,
+    );
+  }
 }
 
 /// PRD §4 -- the Home shell's pin/hide/preset state (E18-01). Ordering
 /// itself is computed on read by [computeHomeWidgets], not stored here,
 /// so it always reflects live cross-module state (e.g. a newly-overdue
 /// payment) rather than a stale snapshot.
-class HomeDashboardNotifier extends Notifier<HomeDashboardState> {
+class HomeDashboardNotifier extends PersistedNotifier<HomeDashboardState> {
   @override
-  HomeDashboardState build() => const HomeDashboardState();
+  String get persistenceKey => 'home_dashboard_v1';
+
+  @override
+  HomeDashboardState seed() => const HomeDashboardState();
+
+  @override
+  Map<String, dynamic> toJson(HomeDashboardState value) => value.toJson();
+
+  @override
+  HomeDashboardState fromJson(Map<String, dynamic> json) =>
+      HomeDashboardState.fromJson(json);
 
   /// PRD §4: "pin (max 3 pinned)." Silently no-ops past the cap rather
   /// than erroring -- the Edit Home UI (E18-02) is the one responsible

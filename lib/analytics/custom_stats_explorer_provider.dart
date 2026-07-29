@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../persistence/persisted_notifier.dart';
 import 'custom_stats_explorer_models.dart';
 
 class CustomStatsExplorerState {
@@ -20,15 +21,41 @@ class CustomStatsExplorerState {
       pinnedWidgets: pinnedWidgets ?? this.pinnedWidgets,
     );
   }
+
+  Map<String, dynamic> toJson() => {
+    'savedQueries': [for (final q in savedQueries) q.toJson()],
+    'pinnedWidgets': [for (final w in pinnedWidgets) w.toJson()],
+  };
+
+  factory CustomStatsExplorerState.fromJson(Map<String, dynamic> json) {
+    return CustomStatsExplorerState(
+      savedQueries: [
+        for (final q in json['savedQueries'] as List)
+          SavedQuery.fromJson(q as Map<String, dynamic>),
+      ],
+      pinnedWidgets: [
+        for (final w in json['pinnedWidgets'] as List)
+          SavedQuery.fromJson(w as Map<String, dynamic>),
+      ],
+    );
+  }
 }
 
-/// DS §7.10 screen 68: "[Save query][Pin as widget]." Saved queries and
-/// pinned widgets are session-local state (no backend query-storage
-/// service exists) -- same convention as every other missing-persistence
-/// gap this session.
-class CustomStatsExplorerNotifier extends Notifier<CustomStatsExplorerState> {
+/// DS §7.10 screen 68: "[Save query][Pin as widget]."
+class CustomStatsExplorerNotifier
+    extends PersistedNotifier<CustomStatsExplorerState> {
   @override
-  CustomStatsExplorerState build() => const CustomStatsExplorerState();
+  String get persistenceKey => 'custom_stats_explorer_v1';
+
+  @override
+  CustomStatsExplorerState seed() => const CustomStatsExplorerState();
+
+  @override
+  Map<String, dynamic> toJson(CustomStatsExplorerState value) => value.toJson();
+
+  @override
+  CustomStatsExplorerState fromJson(Map<String, dynamic> json) =>
+      CustomStatsExplorerState.fromJson(json);
 
   void saveQuery(
     String name,

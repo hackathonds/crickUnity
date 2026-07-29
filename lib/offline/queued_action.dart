@@ -34,6 +34,13 @@ class QueuedAction {
   }
 }
 
+/// Intentionally not persisted (lib/persistence/) -- [QueuedAction.perform]
+/// is a live closure captured at submit time, not data; there is no
+/// serializable representation of "what to retry" here (unlike every
+/// other provider in this migration, whose state is plain data). A
+/// restart drops the app's whole call stack anyway, so any pending
+/// queued action's closure would already be unreachable garbage by the
+/// time a persisted record could be replayed.
 class QueuedActionsNotifier extends Notifier<List<QueuedAction>> {
   int _nextId = 0;
 

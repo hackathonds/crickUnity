@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../persistence/persisted_notifier.dart';
 import 'data_controls_models.dart';
 
 class DataControlsState {
@@ -35,6 +36,13 @@ class DataControlsState {
       exportSummary: exportSummary,
     );
   }
+
+  /// Only [status]/[deletionRequestedAt] persist -- [exportSummary] is
+  /// static mock data no method ever mutates, re-seeded fresh on load.
+  Map<String, dynamic> toJson() => {
+    'status': status.name,
+    'deletionRequestedAt': deletionRequestedAt?.toIso8601String(),
+  };
 }
 
 /// No real account-lifecycle backend exists -- flagged, same convention
@@ -44,9 +52,25 @@ class DataControlsState {
 /// cross-module data-retention pipeline (nothing writes an
 /// "anonymized"/"Deactivated player" flag into any other module's
 /// records).
-class DataControlsNotifier extends Notifier<DataControlsState> {
+class DataControlsNotifier extends PersistedNotifier<DataControlsState> {
   @override
-  DataControlsState build() => const DataControlsState();
+  String get persistenceKey => 'data_controls_v1';
+
+  @override
+  Map<String, dynamic> toJson(DataControlsState value) => value.toJson();
+
+  @override
+  DataControlsState fromJson(Map<String, dynamic> json) {
+    return DataControlsState(
+      status: AccountLifecycleStatus.values.byName(json['status'] as String),
+      deletionRequestedAt: json['deletionRequestedAt'] != null
+          ? DateTime.parse(json['deletionRequestedAt'] as String)
+          : null,
+    );
+  }
+
+  @override
+  DataControlsState seed() => const DataControlsState();
 
   void deactivate() {
     state = state.copyWith(status: AccountLifecycleStatus.deactivated);

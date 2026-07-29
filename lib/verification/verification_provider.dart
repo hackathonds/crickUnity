@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../persistence/persisted_notifier.dart';
 import 'verification_models.dart';
 
 class VerificationState {
@@ -10,15 +11,38 @@ class VerificationState {
   VerificationState copyWith({List<VerificationRequest>? requests}) {
     return VerificationState(requests: requests ?? this.requests);
   }
+
+  Map<String, dynamic> toJson() => {
+    'requests': [for (final r in requests) r.toJson()],
+  };
+
+  factory VerificationState.fromJson(Map<String, dynamic> json) {
+    return VerificationState(
+      requests: [
+        for (final r in json['requests'] as List)
+          VerificationRequest.fromJson(r as Map<String, dynamic>),
+      ],
+    );
+  }
 }
 
 /// No real document-upload or Admin-review backend exists -- flagged
 /// mock, same convention as every other missing-backend gap this
 /// session. "document-based" is represented as a boolean checkbox
 /// rather than a real file upload (no file-picker package exists).
-class VerificationNotifier extends Notifier<VerificationState> {
+class VerificationNotifier extends PersistedNotifier<VerificationState> {
   @override
-  VerificationState build() {
+  String get persistenceKey => 'verification_v1';
+
+  @override
+  Map<String, dynamic> toJson(VerificationState value) => value.toJson();
+
+  @override
+  VerificationState fromJson(Map<String, dynamic> json) =>
+      VerificationState.fromJson(json);
+
+  @override
+  VerificationState seed() {
     return const VerificationState(
       requests: [
         VerificationRequest(
